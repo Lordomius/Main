@@ -1,0 +1,2096 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shattered Realms</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #0a0a12;
+  --panel: #12121e;
+  --border: #2a2a4a;
+  --text: #c8c8e0;
+  --text-dim: #6a6a8a;
+  --accent: #f0c040;
+  --hp: #e04040;
+  --mp: #4080e0;
+  --xp: #40c040;
+  --gold-color: #f0c040;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  line-height: 1.8;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+
+#game-container {
+  width: 800px;
+  max-width: 100vw;
+  height: 600px;
+  max-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  border: 2px solid var(--border);
+  background: var(--panel);
+  position: relative;
+  overflow: hidden;
+}
+
+/* === PIXEL ART DISPLAY === */
+#art-panel {
+  height: 240px;
+  background: #08080f;
+  border-bottom: 2px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+#art-canvas {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+/* === HUD === */
+#hud {
+  display: none;
+  height: 36px;
+  background: #0e0e1a;
+  border-bottom: 2px solid var(--border);
+  padding: 4px 12px;
+  align-items: center;
+  gap: 16px;
+  font-size: 8px;
+}
+
+#hud.active { display: flex; }
+
+.hud-stat {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.bar-container {
+  width: 80px;
+  height: 8px;
+  background: #1a1a2e;
+  border: 1px solid var(--border);
+}
+
+.bar-fill {
+  height: 100%;
+  transition: width 0.4s ease;
+}
+
+.bar-fill.hp { background: var(--hp); }
+.bar-fill.mp { background: var(--mp); }
+.bar-fill.xp { background: var(--xp); }
+
+.hud-label { color: var(--text-dim); }
+.hud-value { color: var(--accent); min-width: 40px; }
+
+/* === TEXT PANEL === */
+#text-panel {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+#text-panel::-webkit-scrollbar { width: 6px; }
+#text-panel::-webkit-scrollbar-track { background: transparent; }
+#text-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+.text-line {
+  opacity: 0;
+  animation: fadeIn 0.3s ease forwards;
+}
+
+@keyframes fadeIn {
+  to { opacity: 1; }
+}
+
+.text-narrator { color: var(--text); }
+.text-dialogue { color: #90d0f0; }
+.text-combat { color: var(--hp); }
+.text-system { color: var(--accent); font-size: 8px; }
+.text-loot { color: var(--xp); }
+
+/* === CHOICES PANEL === */
+#choices-panel {
+  min-height: 80px;
+  border-top: 2px solid var(--border);
+  padding: 10px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: #0e0e1a;
+}
+
+.choice-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  padding: 8px 12px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  line-height: 1.6;
+}
+
+.choice-btn:hover {
+  background: rgba(240, 192, 64, 0.1);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.choice-btn:active {
+  transform: scale(0.98);
+}
+
+.choice-btn.combat-btn {
+  display: inline-block;
+  width: auto;
+  text-align: center;
+  padding: 8px 16px;
+}
+
+#combat-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* === TITLE SCREEN === */
+#title-screen {
+  position: absolute;
+  inset: 0;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+#title-screen h1 {
+  font-size: 20px;
+  color: var(--accent);
+  text-shadow: 0 0 20px rgba(240, 192, 64, 0.5);
+  margin-bottom: 8px;
+  letter-spacing: 2px;
+}
+
+#title-screen .subtitle {
+  font-size: 8px;
+  color: var(--text-dim);
+  margin-bottom: 40px;
+}
+
+#title-screen canvas {
+  image-rendering: pixelated;
+  margin-bottom: 30px;
+}
+
+.title-btn {
+  background: transparent;
+  border: 2px solid var(--accent);
+  color: var(--accent);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 11px;
+  padding: 12px 32px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin: 6px 0;
+}
+
+.title-btn:hover {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+/* === CHARACTER CREATION === */
+#char-create {
+  position: absolute;
+  inset: 0;
+  background: var(--bg);
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  padding: 30px;
+  z-index: 10;
+  overflow-y: auto;
+}
+
+#char-create h2 {
+  font-size: 14px;
+  color: var(--accent);
+  margin-bottom: 20px;
+}
+
+#name-input {
+  background: var(--panel);
+  border: 2px solid var(--border);
+  color: var(--text);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  padding: 10px 16px;
+  width: 260px;
+  text-align: center;
+  margin-bottom: 20px;
+  outline: none;
+}
+
+#name-input:focus { border-color: var(--accent); }
+
+.class-grid {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.class-card {
+  width: 160px;
+  border: 2px solid var(--border);
+  padding: 12px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: var(--panel);
+}
+
+.class-card:hover, .class-card.selected {
+  border-color: var(--accent);
+  background: rgba(240, 192, 64, 0.05);
+}
+
+.class-card canvas {
+  image-rendering: pixelated;
+  margin-bottom: 8px;
+}
+
+.class-card h3 {
+  font-size: 10px;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+
+.class-card p {
+  font-size: 7px;
+  color: var(--text-dim);
+}
+
+.class-stats {
+  font-size: 7px;
+  color: var(--text);
+  margin-top: 8px;
+  text-align: left;
+  line-height: 2;
+}
+
+/* === COMBAT OVERLAY === */
+.combat-enemies {
+  display: flex;
+  gap: 20px;
+  position: absolute;
+  top: 20px;
+}
+
+.enemy-display {
+  text-align: center;
+}
+
+.enemy-display canvas {
+  image-rendering: pixelated;
+}
+
+.enemy-hp-bar {
+  width: 64px;
+  height: 6px;
+  background: #1a1a2e;
+  border: 1px solid var(--border);
+  margin: 4px auto 0;
+}
+
+.enemy-hp-fill {
+  height: 100%;
+  background: var(--hp);
+  transition: width 0.3s ease;
+}
+
+.enemy-name {
+  font-size: 7px;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+
+/* === DAMAGE NUMBERS === */
+.damage-number {
+  position: absolute;
+  font-size: 14px;
+  font-weight: bold;
+  pointer-events: none;
+  animation: floatUp 1s ease-out forwards;
+  z-index: 20;
+  text-shadow: 2px 2px 0 #000;
+}
+
+@keyframes floatUp {
+  0% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-40px); }
+}
+
+/* === SCREEN FLASH === */
+.screen-flash {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 15;
+  animation: flash 0.3s ease-out forwards;
+}
+
+@keyframes flash {
+  0% { opacity: 0.4; }
+  100% { opacity: 0; }
+}
+
+.shake {
+  animation: shake 0.3s ease-out;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-4px); }
+  40% { transform: translateX(4px); }
+  60% { transform: translateX(-2px); }
+  80% { transform: translateX(2px); }
+}
+
+/* === INVENTORY OVERLAY === */
+#inventory-overlay {
+  display: none;
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  z-index: 20;
+  padding: 30px;
+  flex-direction: column;
+  align-items: center;
+}
+
+#inventory-overlay.active { display: flex; }
+
+#inventory-overlay h2 {
+  font-size: 14px;
+  color: var(--accent);
+  margin-bottom: 16px;
+}
+
+.inv-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  max-width: 500px;
+  width: 100%;
+}
+
+.inv-slot {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  padding: 8px;
+  font-size: 8px;
+  text-align: center;
+  min-height: 60px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.inv-slot .item-name { color: var(--accent); }
+.inv-slot .item-desc { color: var(--text-dim); font-size: 7px; }
+.inv-slot .item-qty { color: var(--xp); }
+
+.inv-close {
+  margin-top: 16px;
+  background: transparent;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  padding: 8px 24px;
+  cursor: pointer;
+}
+
+/* === TRANSITIONS === */
+.fade-out { animation: fadeOut 0.5s ease forwards; }
+.fade-in { animation: fadeIn 0.5s ease forwards; }
+
+@keyframes fadeOut {
+  to { opacity: 0; }
+}
+</style>
+</head>
+<body>
+
+<div id="game-container">
+  <!-- Title Screen -->
+  <div id="title-screen">
+    <canvas id="title-art" width="128" height="64"></canvas>
+    <h1>SHATTERED REALMS</h1>
+    <p class="subtitle">A tale of choices and consequence</p>
+    <button class="title-btn" onclick="startNewGame()">NEW GAME</button>
+  </div>
+
+  <!-- Character Creation -->
+  <div id="char-create">
+    <h2>FORGE YOUR DESTINY</h2>
+    <input type="text" id="name-input" placeholder="Enter your name..." maxlength="12">
+    <div class="class-grid" id="class-grid"></div>
+    <button class="title-btn" id="begin-btn" onclick="beginAdventure()" style="display:none">BEGIN</button>
+  </div>
+
+  <!-- Game Panels -->
+  <div id="art-panel">
+    <canvas id="art-canvas" width="800" height="240"></canvas>
+  </div>
+
+  <div id="hud">
+    <div class="hud-stat">
+      <span class="hud-label">HP</span>
+      <div class="bar-container"><div class="bar-fill hp" id="hud-hp"></div></div>
+      <span class="hud-value" id="hud-hp-text"></span>
+    </div>
+    <div class="hud-stat">
+      <span class="hud-label">MP</span>
+      <div class="bar-container"><div class="bar-fill mp" id="hud-mp"></div></div>
+      <span class="hud-value" id="hud-mp-text"></span>
+    </div>
+    <div class="hud-stat">
+      <span class="hud-label">LV</span>
+      <span class="hud-value" id="hud-lv"></span>
+    </div>
+    <div class="hud-stat">
+      <span class="hud-label">EXP</span>
+      <div class="bar-container"><div class="bar-fill xp" id="hud-xp"></div></div>
+    </div>
+    <div class="hud-stat" style="margin-left:auto">
+      <span class="hud-label">GOLD</span>
+      <span class="hud-value" id="hud-gold"></span>
+    </div>
+  </div>
+
+  <div id="text-panel"></div>
+  <div id="choices-panel"></div>
+
+  <!-- Inventory Overlay -->
+  <div id="inventory-overlay">
+    <h2>INVENTORY</h2>
+    <div class="inv-grid" id="inv-grid"></div>
+    <button class="inv-close" onclick="closeInventory()">CLOSE</button>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// PIXEL ART ENGINE
+// ============================================================
+const PAL = {
+  _:'transparent',0:'#000000',1:'#1a1a2e',2:'#2a2a4a',3:'#4a4a6a',
+  4:'#6a6a8a',5:'#9a9ab0',6:'#c8c8e0',7:'#ffffff',
+  R:'#e04040',r:'#a02020',D:'#c03030',
+  G:'#40c040',g:'#208020',
+  B:'#4080e0',b:'#2050a0',
+  Y:'#f0c040',y:'#c09020',
+  O:'#e08030',o:'#a05020',
+  P:'#a040c0',p:'#602080',
+  C:'#40c0c0',c:'#208080',
+  S:'#c0a060',s:'#806030',
+  W:'#e0d0b0',w:'#b0a080',
+  M:'#804020',m:'#502010',
+  F:'#f08060',f:'#c05030',
+  L:'#60a0e0',l:'#3070b0',
+  H:'#f0f0a0',h:'#c0c060',
+  I:'#a0c0e0',i:'#7090b0',
+  K:'#303050',k:'#202038',
+  T:'#40a040',t:'#207020',
+  V:'#c060e0',v:'#8030a0',
+  N:'#e0b090',n:'#b08060',
+};
+
+function drawSprite(ctx, sprite, x, y, scale) {
+  const lines = sprite.trim().split('\n').map(l => l.trim());
+  for (let row = 0; row < lines.length; row++) {
+    for (let col = 0; col < lines[row].length; col++) {
+      const ch = lines[row][col];
+      if (ch === '_' || ch === ' ') continue;
+      const color = PAL[ch];
+      if (!color || color === 'transparent') continue;
+      ctx.fillStyle = color;
+      ctx.fillRect(x + col * scale, y + row * scale, scale, scale);
+    }
+  }
+}
+
+const SPRITES = {
+  warrior: `
+____0000____
+___0YY0Y0___
+___0YYYY0___
+__00066000__
+__0W0660W0__
+___066660___
+___0SSSS0___
+__0S0SS0S0__
+__00SSSS00__
+___0SSSS0___
+___033330___
+__03300330__
+__03____30__
+__00____00__
+__MM____MM__
+__00____00__
+`,
+  mage: `
+____PPPP____
+___PPPPPP___
+___0PP0P0___
+___0PPPP0___
+__000660____
+__060660____
+___066660___
+___0VVVV0___
+__0VVVVVV0__
+__0V0VV0V0__
+___0VVVV0___
+___0VVVV0___
+___011110___
+__01100110__
+__01____10__
+__00____00__
+`,
+  rogue: `
+____1111____
+___110011___
+___0110N0___
+___0NN110___
+__000NN000__
+__0006600___
+___066660___
+___022220___
+__02200220__
+__020SS020__
+___022220___
+___022220___
+___022220___
+__02200220__
+__02____20__
+__00____00__
+`,
+  slime: `
+_____________
+_____________
+____GGGG_____
+___GGGGgG____
+__GGGGGGgG___
+__G7GGG7GG___
+__G7GGG7GG___
+__GGGGGGGG___
+__GGGGGGGG___
+__GgGGGGgG___
+___GGGGgG____
+___GGgGGG____
+____GGGG_____
+_____________
+_____________
+_____________
+`,
+  skeleton: `
+____7777____
+___777777___
+___70070___
+___777777___
+___077770___
+____7007____
+___077770___
+__0070070___
+___077770___
+___077770___
+____7777____
+___770077___
+__77____77__
+__70____07__
+__70____07__
+__00____00__
+`,
+  goblin: `
+____gggg____
+___gGGGGg___
+__gG0GG0Gg__
+__gGGGGGGg__
+__ggGrrGgg__
+____GGGG____
+___0GGGG0___
+__0G0GG0G0__
+___0GGGG0___
+___0SSSS0___
+___0SSSS0___
+___0SSSS0___
+__0SS00SS0__
+__0S____S0__
+__00____00__
+__MM____MM__
+`,
+  darkKnight: `
+____KKKK____
+___K0KK0K___
+__K0KKKK0K__
+__KKKRRKK___
+___KKKKKK___
+__000KK000__
+__0K0KK0K0__
+___0KKKK0___
+__0K2222K0__
+__022KK220__
+___022220___
+___0K22K0___
+___0KKKK0___
+__0KK00KK0__
+__0K____K0__
+__00____00__
+`,
+  dragon: `
+__RR____RR______
+_R00R__R00R_____
+_RRRRRRRRRR_____
+__R0RRR0RR______
+__RRYRRYRR______
+___RRRRRR_______
+___RRRRRRRR_____
+__RRRRRRRRRR____
+_RRRRRRRRRRRR___
+_RR0RRRRRR0RR___
+_RRRRRRRRRRRR___
+__RRRRRRRRRR____
+__RRRROORRRR____
+___RRRRRRRR_____
+___RR_RR_RR_____
+___00_00__00____
+`,
+  sword: `
+________YY
+_______Y77
+______Y77_
+_____Y77__
+____Y77___
+___Y77____
+__Y77_____
+_M77______
+MM7_______
+M0________
+`,
+  tree: `
+____TTTT____
+___TTTTTT___
+__TTTTtTTT__
+_TTTtTTTTT__
+_TTTTTTTTT__
+__TTTTtTT___
+___MTTM____
+____MM______
+____MM______
+____MM______
+`,
+  house: `
+______0_________
+_____0R0________
+____0RRR0_______
+___0RRRRR0______
+__0RRRRRRR0_____
+_0RRRRRRRRR0____
+0000000000000___
+_0SSSSSSSSS0____
+_0S00SS00SS0____
+_0S00SS00SS0____
+_0SSSSSSSSS0____
+_0SSSMMMSSS0____
+_0SSSMMMSS0_____
+_00000000000____
+`,
+  campfire: `
+_____YY_____
+____YOOY____
+___YOOFOY___
+___OOFFOO___
+__YOOFFOY___
+__OOFFFOOY__
+___OOFFOO___
+____OOOO____
+___MMMMMM___
+__MMMMMMMM__
+`,
+  potion: `
+___00___
+___77___
+__0BB0__
+_0BBBB0_
+_0BBBB0_
+_0BBBB0_
+__0BB0__
+___00___
+`,
+  chest: `
+_00000000_
+0YYSSSSYY0
+0SYYYYYYS0
+0SYY00YYS0
+0SY0770YS0
+0SYY00YYS0
+0SYYYYYYS0
+0SSSSSSSS0
+_00000000_
+`,
+};
+
+function drawScene(ctx, w, h, sceneName) {
+  ctx.clearRect(0, 0, w, h);
+
+  switch(sceneName) {
+    case 'village':
+      drawGradient(ctx, w, h, '#0a0a20', '#1a1040');
+      for (let i = 0; i < 30; i++) {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(Math.random()*w, Math.random()*h*0.5, 1, 1);
+      }
+      ctx.fillStyle = '#1a2a10';
+      ctx.fillRect(0, h*0.7, w, h*0.3);
+      ctx.fillStyle = '#243818';
+      ctx.fillRect(0, h*0.7, w, 4);
+      drawSprite(ctx, SPRITES.house, 100, h*0.7 - 90, 4);
+      drawSprite(ctx, SPRITES.house, 420, h*0.7 - 90, 4);
+      drawSprite(ctx, SPRITES.tree, 300, h*0.7 - 60, 4);
+      drawSprite(ctx, SPRITES.tree, 600, h*0.7 - 55, 3);
+      drawSprite(ctx, SPRITES.campfire, 340, h*0.7 - 10, 2);
+      break;
+
+    case 'forest':
+      drawGradient(ctx, w, h, '#0a1a0a', '#05100a');
+      ctx.fillStyle = '#0a1a08';
+      ctx.fillRect(0, h*0.65, w, h*0.35);
+      for (let i = 0; i < 7; i++) {
+        const tx = i * 120 + Math.sin(i*3)*20;
+        const ts = 3 + Math.sin(i*2)*1;
+        drawSprite(ctx, SPRITES.tree, tx, h*0.65 - 50, ts);
+      }
+      drawMist(ctx, w, h);
+      break;
+
+    case 'dungeon':
+      drawGradient(ctx, w, h, '#0a0a0a', '#12101a');
+      for (let x = 0; x < w; x += 32) {
+        ctx.fillStyle = x % 64 === 0 ? '#1a1a2a' : '#141420';
+        ctx.fillRect(x, 0, 32, h);
+      }
+      ctx.fillStyle = '#0f0f18';
+      ctx.fillRect(0, h*0.8, w, h*0.2);
+      for (let i = 0; i < 10; i++) {
+        ctx.fillStyle = `rgba(240, 192, 64, ${0.02 + Math.random()*0.03})`;
+        ctx.fillRect(Math.random()*w, Math.random()*h, 2, 2);
+      }
+      break;
+
+    case 'throne':
+      drawGradient(ctx, w, h, '#1a0a1a', '#0a0510');
+      ctx.fillStyle = '#1a1028';
+      ctx.fillRect(w*0.3, h*0.1, w*0.4, h*0.8);
+      ctx.fillStyle = '#241838';
+      ctx.fillRect(w*0.35, h*0.15, w*0.3, h*0.2);
+      ctx.fillStyle = var_accent_glow();
+      ctx.fillRect(w*0.48, h*0.2, 30, 30);
+      ctx.fillStyle = '#100818';
+      ctx.fillRect(0, h*0.85, w, h*0.15);
+      break;
+
+    case 'crossroads':
+      drawGradient(ctx, w, h, '#0a1018', '#081010');
+      ctx.fillStyle = '#142018';
+      ctx.fillRect(0, h*0.65, w, h*0.35);
+      ctx.fillStyle = '#2a2018';
+      ctx.fillRect(w*0.4, h*0.5, w*0.2, h*0.5);
+      ctx.fillStyle = '#2a2018';
+      ctx.fillRect(0, h*0.7, w, 16);
+      drawSprite(ctx, SPRITES.tree, 50, h*0.65 - 50, 4);
+      drawSprite(ctx, SPRITES.tree, 650, h*0.65 - 50, 4);
+      break;
+
+    default:
+      drawGradient(ctx, w, h, '#0a0a12', '#12121e');
+  }
+}
+
+function var_accent_glow() { return 'rgba(240, 192, 64, 0.3)'; }
+
+function drawGradient(ctx, w, h, c1, c2) {
+  const g = ctx.createLinearGradient(0, 0, 0, h);
+  g.addColorStop(0, c1);
+  g.addColorStop(1, c2);
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, w, h);
+}
+
+function drawMist(ctx, w, h) {
+  for (let i = 0; i < 5; i++) {
+    ctx.fillStyle = `rgba(100, 140, 100, ${0.03 + Math.random()*0.02})`;
+    const my = h * 0.5 + Math.random() * h * 0.3;
+    ctx.fillRect(0, my, w, 8 + Math.random()*12);
+  }
+}
+
+function drawCombatScene(ctx, w, h, enemies, player) {
+  drawGradient(ctx, w, h, '#0a0a12', '#12121e');
+  ctx.fillStyle = '#0f0f1a';
+  ctx.fillRect(0, h * 0.75, w, h * 0.25);
+
+  if (player) {
+    const pSprite = SPRITES[player.cls] || SPRITES.warrior;
+    drawSprite(ctx, pSprite, 80, h * 0.75 - 80, 5);
+  }
+
+  if (enemies) {
+    const spacing = Math.min(200, (w - 300) / enemies.length);
+    enemies.forEach((e, i) => {
+      if (e.hp > 0) {
+        const sprite = SPRITES[e.spriteKey] || SPRITES.slime;
+        const ex = 450 + i * spacing;
+        const ey = h * 0.75 - 80;
+        drawSprite(ctx, sprite, ex, ey, 4);
+
+        ctx.fillStyle = '#1a1a2e';
+        ctx.fillRect(ex, ey - 14, 64, 6);
+        ctx.fillStyle = '#e04040';
+        ctx.fillRect(ex, ey - 14, 64 * (e.hp / e.maxHp), 6);
+        ctx.fillStyle = '#c8c8e0';
+        ctx.font = '8px "Press Start 2P"';
+        ctx.fillText(e.name, ex, ey - 20);
+      }
+    });
+  }
+}
+
+function drawTitleArt(canvas) {
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, 128, 64);
+  drawSprite(ctx, SPRITES.sword, 48, 8, 3);
+}
+
+// ============================================================
+// GAME STATE
+// ============================================================
+const state = {
+  player: null,
+  flags: {},
+  scene: null,
+  combat: null,
+  textQueue: [],
+  isTyping: false,
+};
+
+const CLASSES = {
+  warrior: {
+    name: 'Warrior',
+    desc: 'Strong and resilient. Masters of blade and shield.',
+    hp: 120, mp: 30, atk: 14, def: 12, spd: 8, mag: 4,
+    abilities: [
+      { name: 'Strike', type: 'physical', power: 1.2, cost: 0, desc: 'A powerful sword strike' },
+      { name: 'Shield Bash', type: 'physical', power: 0.8, cost: 5, desc: 'Stun chance, reduces enemy DEF', effect: 'defDown' },
+      { name: 'War Cry', type: 'buff', power: 0, cost: 8, desc: 'Boost ATK for 3 turns', effect: 'atkUp' },
+      { name: 'Cleave', type: 'physical', power: 1.5, cost: 12, desc: 'Hits all enemies', aoe: true },
+    ]
+  },
+  mage: {
+    name: 'Mage',
+    desc: 'Wielder of arcane forces. Devastating magical power.',
+    hp: 70, mp: 100, atk: 6, def: 6, spd: 10, mag: 16,
+    abilities: [
+      { name: 'Staff Hit', type: 'physical', power: 0.6, cost: 0, desc: 'A weak physical strike' },
+      { name: 'Fireball', type: 'magic', power: 1.6, cost: 12, desc: 'Blazing magical fire' },
+      { name: 'Ice Shard', type: 'magic', power: 1.0, cost: 8, desc: 'Chilling ice, slows enemy', effect: 'spdDown' },
+      { name: 'Arcane Burst', type: 'magic', power: 2.0, cost: 20, desc: 'Massive magic damage to all', aoe: true },
+    ]
+  },
+  rogue: {
+    name: 'Rogue',
+    desc: 'Swift and cunning. Strikes from the shadows.',
+    hp: 85, mp: 50, atk: 12, def: 7, spd: 16, mag: 8,
+    abilities: [
+      { name: 'Slash', type: 'physical', power: 1.0, cost: 0, desc: 'A quick blade strike' },
+      { name: 'Backstab', type: 'physical', power: 2.0, cost: 10, desc: 'Critical hit chance doubled' },
+      { name: 'Smoke Bomb', type: 'buff', power: 0, cost: 8, desc: 'Boost evasion for 3 turns', effect: 'evasion' },
+      { name: 'Poison Blade', type: 'physical', power: 0.8, cost: 6, desc: 'Poisons enemy, DOT for 3 turns', effect: 'poison' },
+    ]
+  },
+};
+
+const ENEMIES = {
+  slime: { name: 'Slime', hp: 30, atk: 6, def: 2, spd: 4, mag: 0, exp: 10, gold: 5, spriteKey: 'slime',
+    abilities: [{ name: 'Bounce', type: 'physical', power: 1.0 }] },
+  goblin: { name: 'Goblin', hp: 50, atk: 10, def: 5, spd: 10, mag: 2, exp: 20, gold: 12, spriteKey: 'goblin',
+    abilities: [{ name: 'Stab', type: 'physical', power: 1.0 }, { name: 'Throw Rock', type: 'physical', power: 0.7 }] },
+  skeleton: { name: 'Skeleton', hp: 65, atk: 12, def: 8, spd: 7, mag: 4, exp: 30, gold: 18, spriteKey: 'skeleton',
+    abilities: [{ name: 'Bone Strike', type: 'physical', power: 1.1 }, { name: 'Dark Bolt', type: 'magic', power: 0.9 }] },
+  darkKnight: { name: 'Dark Knight', hp: 120, atk: 18, def: 14, spd: 8, mag: 8, exp: 60, gold: 40, spriteKey: 'darkKnight',
+    abilities: [{ name: 'Dark Slash', type: 'physical', power: 1.3 }, { name: 'Shadow Wave', type: 'magic', power: 1.1, aoe: false }, { name: 'Guard', type: 'buff', power: 0, effect: 'defUp' }] },
+  dragon: { name: 'Ancient Dragon', hp: 300, atk: 24, def: 16, spd: 12, mag: 20, exp: 200, gold: 150, spriteKey: 'dragon',
+    abilities: [{ name: 'Claw', type: 'physical', power: 1.2 }, { name: 'Fire Breath', type: 'magic', power: 1.8 }, { name: 'Tail Sweep', type: 'physical', power: 1.0 }, { name: 'Roar', type: 'buff', power: 0, effect: 'atkUp' }] },
+};
+
+const ITEMS = {
+  potion: { name: 'Potion', desc: 'Restores 40 HP', type: 'heal', value: 40 },
+  ether: { name: 'Ether', desc: 'Restores 30 MP', type: 'mana', value: 30 },
+  elixir: { name: 'Elixir', desc: 'Full HP & MP restore', type: 'full', value: 999 },
+  antidote: { name: 'Antidote', desc: 'Cures poison', type: 'cure', value: 0 },
+  ironSword: { name: 'Iron Sword', desc: 'ATK +4', type: 'equip', stat: 'atk', value: 4 },
+  steelArmor: { name: 'Steel Armor', desc: 'DEF +5', type: 'equip', stat: 'def', value: 5 },
+  magicRing: { name: 'Magic Ring', desc: 'MAG +4, MP +20', type: 'equip', stat: 'mag', value: 4 },
+};
+
+// ============================================================
+// STORY DATA
+// ============================================================
+const SCENES = {
+  'intro': {
+    art: 'village',
+    text: [
+      { type: 'narrator', text: 'The village of Ashvale burns under a crimson sky. Three days ago, the Barrier that held the Shadow Realm at bay shattered without warning.' },
+      { type: 'narrator', text: 'You are {playerName}, a {className} who has called this village home. Now, as darkness creeps across the land, you must decide what comes next.' },
+      { type: 'narrator', text: 'The village elder, Maren, approaches you by the dying campfire.' },
+      { type: 'dialogue', speaker: 'Elder Maren', text: '"The Barrier Stones... five of them, scattered across the realm. Without them, the Shadow will consume everything. Someone must recover them."' },
+    ],
+    choices: [
+      { text: '"I\'ll find the Stones. Ashvale is my home."', next: 'accept_quest', flags: { heroic: true, maren_trust: true } },
+      { text: '"Why should I risk my life for a doomed village?"', next: 'reluctant_start', flags: { pragmatic: true } },
+      { text: '"What do you know about the Barrier\'s breaking?"', next: 'question_maren', flags: { curious: true } },
+    ]
+  },
+
+  'accept_quest': {
+    art: 'village',
+    text: [
+      { type: 'dialogue', speaker: 'Elder Maren', text: '"Bless you, child. Your courage gives me hope."' },
+      { type: 'narrator', text: 'Maren hands you a worn leather map and a pouch of gold.' },
+      { type: 'system', text: 'Received: Map of the Realm, 50 Gold, 3 Potions' },
+      { type: 'dialogue', speaker: 'Elder Maren', text: '"The first Stone lies in the Thornwood, east of here. But beware — the forest is no longer safe. Creatures of shadow roam freely now."' },
+    ],
+    onEnter: (p) => { p.gold += 50; addItem(p, 'potion', 3); },
+    choices: [
+      { text: 'Head to the Thornwood immediately', next: 'forest_entrance', flags: { rushed: true } },
+      { text: 'Prepare in the village first', next: 'village_prep', flags: {} },
+    ]
+  },
+
+  'reluctant_start': {
+    art: 'village',
+    text: [
+      { type: 'narrator', text: 'Maren\'s expression hardens.' },
+      { type: 'dialogue', speaker: 'Elder Maren', text: '"Because if you don\'t, there won\'t be anywhere left to run. The Shadow doesn\'t negotiate. It consumes."' },
+      { type: 'narrator', text: 'A child runs past, clutching a ragged doll, eyes wide with terror. In the distance, an unnatural darkness swallows the treeline.' },
+      { type: 'dialogue', speaker: 'Elder Maren', text: '"I\'m not asking you to be a hero. I\'m asking you to survive. And this is the only way."' },
+    ],
+    choices: [
+      { text: '"Fine. But I\'m doing this for myself, not for speeches."', next: 'accept_quest', flags: { pragmatic: true, reluctant_hero: true } },
+      { text: '"...Give me the map."', next: 'accept_quest', flags: { silent_resolve: true } },
+    ]
+  },
+
+  'question_maren': {
+    art: 'village',
+    text: [
+      { type: 'narrator', text: 'Maren hesitates. Something flickers in her eyes — guilt? Fear?' },
+      { type: 'dialogue', speaker: 'Elder Maren', text: '"The Barrier was ancient magic, older than any kingdom. It shouldn\'t have broken on its own."' },
+      { type: 'narrator', text: 'She lowers her voice.' },
+      { type: 'dialogue', speaker: 'Elder Maren', text: '"There are whispers that someone broke it deliberately. A figure seen at the Nexus Tower the night the sky turned red. But that is a matter for later. First, the Stones."' },
+      { type: 'system', text: 'Knowledge gained: The Barrier may have been sabotaged.' },
+    ],
+    onEnter: () => { state.flags.knows_sabotage = true; },
+    choices: [
+      { text: '"Who would do such a thing? Tell me more."', next: 'maren_secret', flags: { investigator: true }, condition: () => state.flags.curious },
+      { text: '"I\'ll find the Stones — and whoever did this."', next: 'accept_quest', flags: { heroic: true, vengeful: true } },
+      { text: '"Give me the map. I\'ll figure the rest out on my own."', next: 'accept_quest', flags: { lone_wolf: true } },
+    ]
+  },
+
+  'maren_secret': {
+    art: 'village',
+    text: [
+      { type: 'narrator', text: 'Maren looks around nervously, then pulls you closer.' },
+      { type: 'dialogue', speaker: 'Elder Maren', text: '"Forty years ago, I was part of the Order that maintained the Barrier. We were seven mages bound to its power. One of us... Varen... he believed the Barrier was a cage, not a shield."' },
+      { type: 'narrator', text: 'Her hands tremble.' },
+      { type: 'dialogue', speaker: 'Elder Maren', text: '"He was exiled. But if he survived all these years, if he found a way back to the Nexus... then this is my failure as much as anyone\'s."' },
+      { type: 'system', text: 'Deep lore unlocked: Varen the Exiled, former Order member.' },
+    ],
+    onEnter: () => { state.flags.knows_varen = true; state.flags.deep_lore = true; },
+    choices: [
+      { text: '"Your failure. Your responsibility. Come with me."', next: 'maren_joins_decision', flags: { direct: true } },
+      { text: '"I\'ll handle it. Give me what I need."', next: 'accept_quest', flags: { independent: true } },
+    ]
+  },
+
+  'maren_joins_decision': {
+    art: 'village',
+    text: [
+      { type: 'dialogue', speaker: 'Elder Maren', text: '"I... I am old, and my magic has faded. But perhaps at the Nexus, when the time comes, I could help seal the Barrier again."' },
+      { type: 'narrator', text: 'She straightens up, a shadow of the mage she once was.' },
+      { type: 'dialogue', speaker: 'Elder Maren', text: '"I cannot travel with you through the wilds. But I will make my way to the Nexus Tower. Find the Stones, and meet me there. Together, we may stand a chance."' },
+      { type: 'system', text: 'Alliance formed: Maren will meet you at the Nexus Tower.' },
+    ],
+    onEnter: () => { state.flags.maren_ally = true; },
+    choices: [
+      { text: 'Accept and prepare to leave', next: 'accept_quest', flags: {} },
+    ]
+  },
+
+  'village_prep': {
+    art: 'village',
+    text: [
+      { type: 'narrator', text: 'You spend time gathering supplies from what remains of the village.' },
+      { type: 'narrator', text: 'The blacksmith, though injured, offers you a choice from his remaining stock.' },
+    ],
+    choices: [
+      { text: 'Take the Iron Sword (ATK +4)', next: 'village_prep_2', flags: {}, onChoose: (p) => { addItem(p, 'ironSword', 1); p.atk += 4; } },
+      { text: 'Take the Steel Armor (DEF +5)', next: 'village_prep_2', flags: {}, onChoose: (p) => { addItem(p, 'steelArmor', 1); p.def += 5; } },
+      { text: 'Take the Magic Ring (MAG +4)', next: 'village_prep_2', flags: {}, onChoose: (p) => { addItem(p, 'magicRing', 1); p.mag += 4; } },
+    ]
+  },
+
+  'village_prep_2': {
+    art: 'village',
+    text: [
+      { type: 'narrator', text: 'With your new equipment secured, you turn east. The Thornwood awaits.' },
+      { type: 'narrator', text: 'A young girl tugs at your sleeve as you reach the village gate.' },
+      { type: 'dialogue', speaker: 'Girl', text: '"Please bring back the light. The dark scares me."' },
+    ],
+    choices: [
+      { text: '"I promise."', next: 'forest_entrance', flags: { promise_made: true } },
+      { text: 'Kneel down and hand her a small trinket from your pack.', next: 'forest_entrance', flags: { kind: true, promise_made: true } },
+      { text: 'Nod silently and walk on.', next: 'forest_entrance', flags: { stoic: true } },
+    ]
+  },
+
+  'forest_entrance': {
+    art: 'forest',
+    text: [
+      { type: 'narrator', text: 'The Thornwood rises before you like a wall of twisted shadows. The air is thick with the smell of rot and old magic.' },
+      { type: 'narrator', text: 'The path splits three ways: a wide trail showing signs of recent passage, a narrow overgrown path barely visible through the brush, and a stream bed leading deeper into the dark.' },
+    ],
+    choices: [
+      { text: 'Take the wide trail', next: 'forest_ambush', flags: {} },
+      { text: 'Slip through the overgrown path', next: 'forest_hidden', flags: { stealth: true }, condition: () => state.player?.cls === 'rogue' || state.flags.curious },
+      { text: 'Follow the stream bed', next: 'forest_stream', flags: {} },
+    ]
+  },
+
+  'forest_ambush': {
+    art: 'forest',
+    text: [
+      { type: 'narrator', text: 'The trail was a trap. Goblins drop from the canopy above, crude weapons drawn!' },
+      { type: 'combat', text: 'Battle: Goblin x2' },
+    ],
+    combat: { enemies: ['goblin', 'goblin'], canFlee: true },
+    onVictory: 'forest_after_ambush',
+    onFlee: 'forest_entrance',
+  },
+
+  'forest_after_ambush': {
+    art: 'forest',
+    text: [
+      { type: 'narrator', text: 'The goblins fall. Among their belongings, you find a crudely drawn map with an X marking something deeper in the forest.' },
+      { type: 'system', text: 'Found: Goblin\'s Map' },
+    ],
+    onEnter: () => { state.flags.goblin_map = true; },
+    choices: [
+      { text: 'Follow the goblin map deeper into the forest', next: 'forest_goblin_camp', flags: {} },
+      { text: 'Ignore it and press on toward the Stone', next: 'forest_crossroads', flags: {} },
+    ]
+  },
+
+  'forest_hidden': {
+    art: 'forest',
+    text: [
+      { type: 'narrator', text: 'The hidden path winds through ancient trees. You find markings carved into the bark — old elven waypoints.' },
+      { type: 'narrator', text: 'Following them leads you to a small clearing where a spectral figure shimmers in the moonlight.' },
+      { type: 'dialogue', speaker: '???', text: '"A mortal walks the old paths. Interesting. I am Lyra, bound to these woods since the first Barrier was raised."' },
+    ],
+    onEnter: () => { state.flags.met_lyra = true; },
+    choices: [
+      { text: '"I seek a Barrier Stone. Can you help me?"', next: 'lyra_help', flags: { diplomatic: true } },
+      { text: '"What are you? A ghost?"', next: 'lyra_story', flags: { curious: true } },
+      { text: 'Draw your weapon cautiously.', next: 'lyra_hostile', flags: { cautious: true } },
+    ]
+  },
+
+  'lyra_help': {
+    art: 'forest',
+    text: [
+      { type: 'dialogue', speaker: 'Lyra', text: '"The Stone is in the heart of the Thornwood, guarded by a creature of shadow that feeds on the forest\'s corruption. I can weaken the guardian — but you must do something for me."' },
+      { type: 'dialogue', speaker: 'Lyra', text: '"There is a shrine at the forest\'s core. Light the sacred flame there, and my spirit can finally rest. I have wandered for centuries..."' },
+    ],
+    choices: [
+      { text: '"I\'ll light the flame. You have my word."', next: 'forest_crossroads', flags: { lyra_quest: true } },
+      { text: '"Help me first, then we\'ll talk about your flame."', next: 'forest_crossroads', flags: { pragmatic: true, lyra_reluctant: true } },
+    ]
+  },
+
+  'lyra_story': {
+    art: 'forest',
+    text: [
+      { type: 'dialogue', speaker: 'Lyra', text: '"I was an elven mage, one of the original architects of the Barrier. When the spell was cast, it required anchors — living souls bound to the land."' },
+      { type: 'dialogue', speaker: 'Lyra', text: '"I volunteered. I have watched the seasons turn a thousand times from this clearing. And now the Barrier is broken, and my vigil was for nothing."' },
+      { type: 'system', text: 'Deep lore: The Barrier required living soul anchors.' },
+    ],
+    onEnter: () => { state.flags.barrier_lore = true; },
+    choices: [
+      { text: '"It wasn\'t for nothing. Help me restore it."', next: 'lyra_help', flags: { inspirational: true } },
+      { text: '"I\'m sorry. Is there anything I can do for you?"', next: 'lyra_help', flags: { compassionate: true } },
+    ]
+  },
+
+  'lyra_hostile': {
+    art: 'forest',
+    text: [
+      { type: 'narrator', text: 'Lyra\'s form flickers with sadness.' },
+      { type: 'dialogue', speaker: 'Lyra', text: '"I am no threat to you, mortal. But your caution is... understandable in these dark times. The Stone you seek lies at the forest\'s heart. That much I will tell you freely."' },
+      { type: 'narrator', text: 'She fades away, leaving you alone in the clearing.' },
+    ],
+    choices: [
+      { text: 'Continue deeper into the forest', next: 'forest_crossroads', flags: {} },
+    ]
+  },
+
+  'forest_stream': {
+    art: 'forest',
+    text: [
+      { type: 'narrator', text: 'The stream leads you through a peaceful grotto. Crystal clear water runs over smooth stones. It feels untouched by the corruption spreading through the forest.' },
+      { type: 'narrator', text: 'You notice a chest half-buried in the stream bed, sealed with old magic.' },
+    ],
+    choices: [
+      { text: 'Try to open the chest', next: 'forest_chest', flags: {} },
+      { text: 'Leave it and follow the stream further', next: 'forest_crossroads', flags: { cautious: true } },
+      { text: 'Rest here and recover strength', next: 'forest_rest', flags: {} },
+    ]
+  },
+
+  'forest_chest': {
+    art: 'forest',
+    text: [
+      { type: 'narrator', text: 'The chest springs open with a flash of light. Inside, you find an Elixir and a handful of gold.' },
+      { type: 'system', text: 'Found: Elixir, 30 Gold' },
+    ],
+    onEnter: (p) => { addItem(p, 'elixir', 1); p.gold += 30; },
+    choices: [
+      { text: 'Continue on', next: 'forest_crossroads', flags: {} },
+    ]
+  },
+
+  'forest_rest': {
+    art: 'forest',
+    text: [
+      { type: 'narrator', text: 'You rest by the stream. The sound of flowing water eases your mind, and you feel your strength returning.' },
+      { type: 'system', text: 'HP and MP fully restored.' },
+    ],
+    onEnter: (p) => { p.hp = p.maxHp; p.mp = p.maxMp; },
+    choices: [
+      { text: 'Continue on, refreshed', next: 'forest_crossroads', flags: {} },
+    ]
+  },
+
+  'forest_goblin_camp': {
+    art: 'forest',
+    text: [
+      { type: 'narrator', text: 'The map leads you to a goblin encampment. A cage sits at the center — inside, a battered traveler raises their head as you approach.' },
+      { type: 'dialogue', speaker: 'Prisoner', text: '"Please... they\'re going to sacrifice me at moonrise. I\'m a merchant from the eastern towns. I can reward you if you save me."' },
+      { type: 'narrator', text: 'Three goblins guard the camp. You could fight them head-on or try something clever.' },
+    ],
+    choices: [
+      { text: 'Attack the goblins head-on', next: 'goblin_fight', flags: { brave: true } },
+      { text: 'Create a distraction and sneak to the cage', next: 'goblin_sneak', flags: { clever: true } },
+      { text: 'Leave — it\'s not your problem', next: 'forest_crossroads', flags: { cold: true } },
+    ]
+  },
+
+  'goblin_fight': {
+    art: 'forest',
+    combat: { enemies: ['goblin', 'goblin', 'goblin'], canFlee: true },
+    text: [{ type: 'combat', text: 'Battle: Goblin x3' }],
+    onVictory: 'rescue_merchant',
+    onFlee: 'forest_crossroads',
+  },
+
+  'goblin_sneak': {
+    art: 'forest',
+    text: [
+      { type: 'narrator', text: 'You throw a rock into the bushes. Two goblins investigate, leaving one guard.' },
+    ],
+    combat: { enemies: ['goblin'], canFlee: false },
+    onVictory: 'rescue_merchant',
+  },
+
+  'rescue_merchant': {
+    art: 'forest',
+    text: [
+      { type: 'narrator', text: 'You break open the cage. The merchant stumbles out, relieved.' },
+      { type: 'dialogue', speaker: 'Merchant Doran', text: '"Thank the gods! Here — take this. And if you ever reach the eastern port of Saltmere, seek me out. I won\'t forget this debt."' },
+      { type: 'system', text: 'Received: 80 Gold, 2 Potions, 1 Ether' },
+      { type: 'system', text: 'Merchant Doran will remember your kindness.' },
+    ],
+    onEnter: (p) => { p.gold += 80; addItem(p, 'potion', 2); addItem(p, 'ether', 1); state.flags.saved_merchant = true; state.flags.doran_ally = true; },
+    choices: [
+      { text: 'Continue toward the forest\'s heart', next: 'forest_crossroads', flags: {} },
+    ]
+  },
+
+  'forest_crossroads': {
+    art: 'crossroads',
+    text: [
+      { type: 'narrator', text: 'Deep in the Thornwood, you reach an ancient crossroads. A weathered signpost points in two directions.' },
+      { type: 'narrator', text: 'To the north, the trees grow thick and dark — the heart of the forest. To the east, faint light glows between the trunks.' },
+    ],
+    choices: [
+      { text: 'North — toward the heart of the Thornwood', next: 'forest_guardian', flags: {} },
+      { text: 'East — toward the mysterious light', next: 'forest_shrine', flags: {}, condition: () => state.flags.lyra_quest || state.flags.curious },
+      { text: 'Search the area for supplies first', next: 'forest_search', flags: {} },
+    ]
+  },
+
+  'forest_shrine': {
+    art: 'forest',
+    text: [
+      { type: 'narrator', text: 'The light leads you to an ancient shrine, overgrown but still standing. A stone brazier sits at its center, cold and dark.' },
+      ...(state.flags?.lyra_quest ? [
+        { type: 'narrator', text: 'This must be the shrine Lyra spoke of.' },
+      ] : []),
+    ],
+    choices: [
+      { text: 'Light the sacred flame', next: 'shrine_lit', flags: { shrine_lit: true } },
+      { text: 'Examine the shrine more closely', next: 'shrine_examine', flags: {} },
+    ]
+  },
+
+  'shrine_lit': {
+    art: 'forest',
+    text: [
+      { type: 'narrator', text: 'You strike a flame and touch it to the brazier. Blue fire erupts, casting ethereal light across the clearing.' },
+      { type: 'narrator', text: 'Lyra\'s spectral form appears, tears of light streaming down her face.' },
+      { type: 'dialogue', speaker: 'Lyra', text: '"Thank you... After a thousand years, I can finally rest. Take this — my last gift to the mortal world."' },
+      { type: 'narrator', text: 'She places her hand over your heart. Warmth floods through you.' },
+      { type: 'system', text: 'Lyra\'s Blessing: All stats +3, Learned ability: Spirit Shield' },
+      { type: 'narrator', text: 'Lyra fades into the flame, a peaceful smile on her lips. The corruption in the air lessens noticeably.' },
+    ],
+    onEnter: (p) => {
+      p.atk += 3; p.def += 3; p.spd += 3; p.mag += 3;
+      p.maxHp += 15; p.hp += 15; p.maxMp += 15; p.mp += 15;
+      state.flags.lyra_blessed = true;
+      state.flags.lyra_freed = true;
+    },
+    choices: [
+      { text: 'Head to the heart of the Thornwood', next: 'forest_guardian', flags: {} },
+    ]
+  },
+
+  'shrine_examine': {
+    art: 'forest',
+    text: [
+      { type: 'narrator', text: 'The shrine bears inscriptions in ancient Elvish. Though faded, you can make out fragments:' },
+      { type: 'narrator', text: '"...bound by will, not by chain... the Barrier holds as long as the anchors endure... should the flame die, so too the binding..."' },
+      { type: 'system', text: 'Lore: The shrine is connected to the Barrier\'s anchor system.' },
+    ],
+    onEnter: () => { state.flags.shrine_lore = true; },
+    choices: [
+      { text: 'Light the sacred flame', next: 'shrine_lit', flags: { shrine_lit: true } },
+      { text: 'Leave the shrine and head north', next: 'forest_guardian', flags: {} },
+    ]
+  },
+
+  'forest_search': {
+    art: 'forest',
+    text: [
+      { type: 'narrator', text: 'You search the crossroads area and find a skeleton propped against a tree, its bony hand clutching a satchel.' },
+      { type: 'system', text: 'Found: 2 Potions, 1 Ether, Traveler\'s Journal' },
+      { type: 'narrator', text: 'The journal describes a guardian at the forest\'s heart — a "beast of living shadow that fears the light."' },
+    ],
+    onEnter: (p) => { addItem(p, 'potion', 2); addItem(p, 'ether', 1); state.flags.guardian_hint = true; },
+    choices: [
+      { text: 'Head north to the guardian', next: 'forest_guardian', flags: {} },
+    ]
+  },
+
+  'forest_guardian': {
+    art: 'dungeon',
+    text: [
+      { type: 'narrator', text: 'The heart of the Thornwood. The trees form a natural arena, their twisted branches blocking out the sky.' },
+      { type: 'narrator', text: 'At the center, a dark mass pulses with malevolent energy. Two burning eyes open in the darkness.' },
+      { type: 'narrator', text: 'The Shadow Guardian rises — a massive creature of living darkness, guarding the first Barrier Stone.' },
+      ...(state.flags?.lyra_blessed ? [
+        { type: 'system', text: 'Lyra\'s blessing weakens the guardian! Its defenses are lowered.' },
+      ] : []),
+    ],
+    combat: {
+      enemies: ['darkKnight'],
+      canFlee: false,
+      bossName: 'Shadow Guardian',
+      preModify: () => {
+        if (state.flags.lyra_blessed) {
+          return { defMod: -6, hpMod: -30 };
+        }
+        if (state.flags.guardian_hint) {
+          return { defMod: -2 };
+        }
+        return {};
+      }
+    },
+    onVictory: 'first_stone',
+  },
+
+  'first_stone': {
+    art: 'forest',
+    text: [
+      { type: 'narrator', text: 'The Shadow Guardian dissolves into wisps of darkness. Where it stood, a brilliant azure stone hovers in the air, pulsing with ancient power.' },
+      { type: 'narrator', text: 'You reach out and take the first Barrier Stone. Its warmth flows through you, and for a moment, the corruption in the forest recedes.' },
+      { type: 'system', text: 'BARRIER STONE 1 of 5 OBTAINED' },
+      { type: 'system', text: 'Level Up! All stats increased.' },
+      { type: 'narrator', text: 'As the Stone\'s light fades to a gentle glow in your pack, you hear a voice on the wind — distant but clear.' },
+      { type: 'dialogue', speaker: '???', text: '"One Stone claimed. Four remain. But tell me, hero... do you even understand what you\'re restoring? The Barrier caged more than shadows. It caged potential. It caged freedom."' },
+      { type: 'narrator', text: 'The voice fades. The path ahead leads out of the Thornwood — toward the eastern mountains and whatever trials await.' },
+    ],
+    onEnter: (p) => {
+      state.flags.stones = (state.flags.stones || 0) + 1;
+      levelUp(p);
+      p.hp = p.maxHp;
+      p.mp = p.maxMp;
+    },
+    choices: [
+      { text: 'Press onward. Four Stones remain.', next: 'chapter1_end', flags: {} },
+    ]
+  },
+
+  'chapter1_end': {
+    art: 'crossroads',
+    text: [
+      { type: 'system', text: '═══ END OF CHAPTER 1: THE THORNWOOD ═══' },
+      { type: 'narrator', text: 'Your journey has only begun. The choices you\'ve made echo in the world around you, shaping the path ahead.' },
+      { type: 'narrator', text: 'The road east leads to the mountain pass and the mining town of Ironhold, where whispers say the second Stone lies deep beneath the earth.' },
+      ...(state.flags?.knows_varen ? [
+        { type: 'narrator', text: 'And somewhere out there, Varen — the one who may have shattered the Barrier — continues his work in shadow.' },
+      ] : []),
+      { type: 'system', text: 'Thank you for playing! More chapters coming soon.' },
+      { type: 'system', text: 'Your choices have been recorded. They will shape the story to come.' },
+    ],
+    choices: [
+      { text: 'View your journey summary', next: 'summary', flags: {} },
+    ]
+  },
+
+  'summary': {
+    art: 'village',
+    text: [],
+    onEnter: () => {
+      const flags = state.flags;
+      const summary = [];
+      summary.push({ type: 'system', text: '═══ YOUR JOURNEY ═══' });
+      summary.push({ type: 'narrator', text: `${state.player.name} the ${CLASSES[state.player.cls].name}` });
+      summary.push({ type: 'narrator', text: `Level ${state.player.level} | Stones: ${flags.stones || 0}/5` });
+
+      if (flags.heroic) summary.push({ type: 'narrator', text: '• Accepted the quest with courage' });
+      if (flags.reluctant_hero) summary.push({ type: 'narrator', text: '• Reluctantly agreed to save the world' });
+      if (flags.knows_varen) summary.push({ type: 'narrator', text: '• Learned the truth about Varen' });
+      if (flags.maren_ally) summary.push({ type: 'narrator', text: '• Allied with Elder Maren' });
+      if (flags.lyra_freed) summary.push({ type: 'narrator', text: '• Freed the spirit Lyra' });
+      if (flags.saved_merchant) summary.push({ type: 'narrator', text: '• Rescued Merchant Doran' });
+      if (flags.promise_made) summary.push({ type: 'narrator', text: '• Promised the girl to bring back the light' });
+      if (flags.cold) summary.push({ type: 'narrator', text: '• Left the merchant to his fate' });
+      if (flags.deep_lore) summary.push({ type: 'narrator', text: '• Uncovered deep lore about the Barrier' });
+      if (flags.kind) summary.push({ type: 'narrator', text: '• Showed kindness to the villagers' });
+
+      summary.push({ type: 'system', text: 'These choices will shape chapters to come.' });
+      state.textQueue = summary;
+    },
+    choices: [
+      { text: 'Return to title', next: '_title', flags: {} },
+    ]
+  },
+};
+
+// ============================================================
+// GAME ENGINE
+// ============================================================
+function createPlayer(name, cls) {
+  const c = CLASSES[cls];
+  return {
+    name, cls,
+    hp: c.hp, maxHp: c.hp,
+    mp: c.mp, maxMp: c.mp,
+    atk: c.atk, def: c.def, spd: c.spd, mag: c.mag,
+    level: 1, exp: 0, expNext: 50,
+    gold: 0,
+    inventory: {},
+    abilities: [...c.abilities],
+    buffs: [],
+  };
+}
+
+function addItem(player, itemId, qty) {
+  player.inventory[itemId] = (player.inventory[itemId] || 0) + qty;
+}
+
+function removeItem(player, itemId, qty) {
+  if (player.inventory[itemId]) {
+    player.inventory[itemId] -= qty;
+    if (player.inventory[itemId] <= 0) delete player.inventory[itemId];
+  }
+}
+
+function levelUp(player) {
+  player.level++;
+  player.maxHp += 10 + Math.floor(Math.random() * 5);
+  player.maxMp += 5 + Math.floor(Math.random() * 3);
+  player.atk += 2;
+  player.def += 2;
+  player.spd += 1;
+  player.mag += 1;
+  player.hp = player.maxHp;
+  player.mp = player.maxMp;
+  player.expNext = Math.floor(player.expNext * 1.5);
+}
+
+function checkLevelUp(player) {
+  while (player.exp >= player.expNext) {
+    player.exp -= player.expNext;
+    levelUp(player);
+    addTextLine('system', `LEVEL UP! You are now level ${player.level}!`);
+  }
+}
+
+// ============================================================
+// UI ENGINE
+// ============================================================
+const textPanel = document.getElementById('text-panel');
+const choicesPanel = document.getElementById('choices-panel');
+const artCanvas = document.getElementById('art-canvas');
+const artCtx = artCanvas.getContext('2d');
+
+function clearText() {
+  textPanel.innerHTML = '';
+}
+
+function addTextLine(type, text) {
+  const div = document.createElement('div');
+  div.className = `text-line text-${type}`;
+  div.textContent = text;
+  textPanel.appendChild(div);
+  textPanel.scrollTop = textPanel.scrollHeight;
+}
+
+async function typeText(lines) {
+  state.isTyping = true;
+  for (const line of lines) {
+    let text = line.text;
+    text = text.replace('{playerName}', state.player?.name || 'Hero');
+    text = text.replace('{className}', state.player ? CLASSES[state.player.cls].name : 'Adventurer');
+
+    if (line.speaker) {
+      addTextLine('dialogue', `${line.speaker}: ${text}`);
+    } else {
+      addTextLine(line.type || 'narrator', text);
+    }
+    await sleep(80);
+  }
+  state.isTyping = false;
+}
+
+function sleep(ms) {
+  return new Promise(r => setTimeout(r, ms));
+}
+
+function showChoices(choices) {
+  choicesPanel.innerHTML = '';
+  const filtered = choices.filter(c => !c.condition || c.condition());
+  filtered.forEach((choice, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'choice-btn';
+    btn.textContent = `${i + 1}. ${choice.text}`;
+    btn.onclick = () => makeChoice(choice);
+    choicesPanel.appendChild(btn);
+  });
+}
+
+function makeChoice(choice) {
+  if (choice.flags) {
+    Object.assign(state.flags, choice.flags);
+  }
+  if (choice.onChoose) {
+    choice.onChoose(state.player);
+  }
+  if (choice.next === '_title') {
+    location.reload();
+    return;
+  }
+  loadScene(choice.next);
+}
+
+function updateHud() {
+  const p = state.player;
+  if (!p) return;
+  document.getElementById('hud').classList.add('active');
+  document.getElementById('hud-hp').style.width = `${(p.hp / p.maxHp) * 100}%`;
+  document.getElementById('hud-hp-text').textContent = `${p.hp}/${p.maxHp}`;
+  document.getElementById('hud-mp').style.width = `${(p.mp / p.maxMp) * 100}%`;
+  document.getElementById('hud-mp-text').textContent = `${p.mp}/${p.maxMp}`;
+  document.getElementById('hud-lv').textContent = p.level;
+  document.getElementById('hud-xp').style.width = `${(p.exp / p.expNext) * 100}%`;
+  document.getElementById('hud-gold').textContent = p.gold;
+}
+
+// ============================================================
+// SCENE MANAGEMENT
+// ============================================================
+async function loadScene(sceneId) {
+  const scene = SCENES[sceneId];
+  if (!scene) {
+    addTextLine('system', `[Scene "${sceneId}" not yet implemented]`);
+    return;
+  }
+
+  state.scene = sceneId;
+  clearText();
+  choicesPanel.innerHTML = '';
+
+  if (scene.art) {
+    drawScene(artCtx, artCanvas.width, artCanvas.height, scene.art);
+  }
+
+  if (scene.onEnter) {
+    scene.onEnter(state.player);
+  }
+
+  const textLines = state.textQueue.length > 0 ? state.textQueue : scene.text;
+  state.textQueue = [];
+
+  await typeText(textLines);
+  updateHud();
+
+  if (scene.combat) {
+    await sleep(400);
+    startCombat(scene.combat, scene.onVictory, scene.onFlee);
+  } else if (scene.choices) {
+    showChoices(scene.choices);
+  }
+}
+
+// ============================================================
+// COMBAT SYSTEM
+// ============================================================
+function createEnemy(enemyId) {
+  const template = ENEMIES[enemyId];
+  return {
+    ...template,
+    maxHp: template.hp,
+    id: enemyId + '_' + Math.random().toString(36).substr(2, 4),
+    buffs: [],
+  };
+}
+
+async function startCombat(config, onVictory, onFlee) {
+  const enemies = config.enemies.map(id => {
+    const e = createEnemy(id);
+    if (config.preModify) {
+      const mods = config.preModify();
+      if (mods.defMod) e.def += mods.defMod;
+      if (mods.hpMod) { e.hp += mods.hpMod; e.maxHp += mods.hpMod; }
+    }
+    if (config.bossName) e.name = config.bossName;
+    return e;
+  });
+
+  state.combat = {
+    enemies,
+    turn: 'player',
+    onVictory,
+    onFlee,
+    canFlee: config.canFlee,
+    round: 1,
+    log: [],
+  };
+
+  drawCombatScene(artCtx, artCanvas.width, artCanvas.height, enemies, state.player);
+  addTextLine('combat', '═══ BATTLE START ═══');
+  showCombatActions();
+}
+
+function showCombatActions() {
+  choicesPanel.innerHTML = '';
+  const actDiv = document.createElement('div');
+  actDiv.id = 'combat-actions';
+
+  state.player.abilities.forEach(ability => {
+    const btn = document.createElement('button');
+    btn.className = 'choice-btn combat-btn';
+    const costText = ability.cost > 0 ? ` [${ability.cost} MP]` : '';
+    btn.textContent = `${ability.name}${costText}`;
+    btn.title = ability.desc;
+    if (ability.cost > state.player.mp) {
+      btn.style.opacity = '0.4';
+      btn.style.cursor = 'not-allowed';
+    } else {
+      btn.onclick = () => playerAction(ability);
+    }
+    actDiv.appendChild(btn);
+  });
+
+  const itemBtn = document.createElement('button');
+  itemBtn.className = 'choice-btn combat-btn';
+  itemBtn.textContent = 'Item';
+  itemBtn.onclick = showCombatItems;
+  actDiv.appendChild(itemBtn);
+
+  if (state.combat.canFlee) {
+    const fleeBtn = document.createElement('button');
+    fleeBtn.className = 'choice-btn combat-btn';
+    fleeBtn.textContent = 'Flee';
+    fleeBtn.onclick = attemptFlee;
+    actDiv.appendChild(fleeBtn);
+  }
+
+  choicesPanel.appendChild(actDiv);
+}
+
+function showCombatItems() {
+  choicesPanel.innerHTML = '';
+  const p = state.player;
+  const usable = Object.entries(p.inventory).filter(([id]) => {
+    const item = ITEMS[id];
+    return item && (item.type === 'heal' || item.type === 'mana' || item.type === 'full' || item.type === 'cure');
+  });
+
+  if (usable.length === 0) {
+    addTextLine('system', 'No usable items!');
+    showCombatActions();
+    return;
+  }
+
+  usable.forEach(([id, qty]) => {
+    const item = ITEMS[id];
+    const btn = document.createElement('button');
+    btn.className = 'choice-btn';
+    btn.textContent = `${item.name} (${qty}) - ${item.desc}`;
+    btn.onclick = () => useItem(id);
+    choicesPanel.appendChild(btn);
+  });
+
+  const backBtn = document.createElement('button');
+  backBtn.className = 'choice-btn';
+  backBtn.textContent = 'Back';
+  backBtn.onclick = showCombatActions;
+  choicesPanel.appendChild(backBtn);
+}
+
+async function useItem(itemId) {
+  const item = ITEMS[itemId];
+  const p = state.player;
+  removeItem(p, itemId, 1);
+
+  switch(item.type) {
+    case 'heal':
+      p.hp = Math.min(p.maxHp, p.hp + item.value);
+      addTextLine('system', `Used ${item.name}! Restored ${item.value} HP.`);
+      break;
+    case 'mana':
+      p.mp = Math.min(p.maxMp, p.mp + item.value);
+      addTextLine('system', `Used ${item.name}! Restored ${item.value} MP.`);
+      break;
+    case 'full':
+      p.hp = p.maxHp;
+      p.mp = p.maxMp;
+      addTextLine('system', `Used ${item.name}! Fully restored!`);
+      break;
+    case 'cure':
+      p.buffs = p.buffs.filter(b => b.type !== 'poison');
+      addTextLine('system', `Used ${item.name}! Cured poison.`);
+      break;
+  }
+
+  updateHud();
+  await sleep(500);
+  await enemyTurn();
+}
+
+async function playerAction(ability) {
+  const p = state.player;
+  const combat = state.combat;
+
+  if (ability.cost > p.mp) {
+    addTextLine('system', 'Not enough MP!');
+    return;
+  }
+
+  choicesPanel.innerHTML = '';
+  p.mp -= ability.cost;
+
+  if (ability.type === 'buff') {
+    handleBuff(p, ability);
+  } else {
+    const targets = ability.aoe ? combat.enemies.filter(e => e.hp > 0) : [combat.enemies.find(e => e.hp > 0)];
+
+    for (const target of targets) {
+      if (!target || target.hp <= 0) continue;
+
+      const isMagic = ability.type === 'magic';
+      const atkStat = isMagic ? p.mag : p.atk;
+      const atkBuff = p.buffs.find(b => b.type === 'atkUp');
+      const totalAtk = atkStat * ability.power * (atkBuff ? 1.3 : 1);
+
+      const defDown = target.buffs.find(b => b.type === 'defDown');
+      const totalDef = Math.max(0, target.def * (defDown ? 0.6 : 1));
+
+      let damage = Math.max(1, Math.floor(totalAtk - totalDef * 0.5 + (Math.random() * 4 - 2)));
+
+      const critChance = ability.name === 'Backstab' ? 0.4 : 0.1;
+      const isCrit = Math.random() < critChance;
+      if (isCrit) damage = Math.floor(damage * 1.8);
+
+      target.hp = Math.max(0, target.hp - damage);
+
+      const critText = isCrit ? ' CRITICAL!' : '';
+      addTextLine('combat', `${p.name} uses ${ability.name} on ${target.name}! ${damage} damage!${critText}`);
+
+      if (ability.effect) {
+        applyEffect(target, ability.effect);
+      }
+
+      showDamageNumber(damage, isCrit, true);
+      shakeScreen();
+
+      if (target.hp <= 0) {
+        addTextLine('combat', `${target.name} is defeated!`);
+      }
+    }
+  }
+
+  updateHud();
+  drawCombatScene(artCtx, artCanvas.width, artCanvas.height, combat.enemies, p);
+
+  processBurnTicks(p);
+
+  if (combat.enemies.every(e => e.hp <= 0)) {
+    await sleep(600);
+    await combatVictory();
+    return;
+  }
+
+  await sleep(600);
+  await enemyTurn();
+}
+
+function handleBuff(entity, ability) {
+  const existing = entity.buffs.findIndex(b => b.type === ability.effect);
+  if (existing >= 0) entity.buffs.splice(existing, 1);
+  entity.buffs.push({ type: ability.effect, turns: 3 });
+  addTextLine('system', `${entity.name} activates ${ability.name}!`);
+}
+
+function applyEffect(target, effect) {
+  switch(effect) {
+    case 'defDown':
+      target.buffs.push({ type: 'defDown', turns: 3 });
+      addTextLine('system', `${target.name}'s defense is lowered!`);
+      break;
+    case 'spdDown':
+      target.buffs.push({ type: 'spdDown', turns: 3 });
+      addTextLine('system', `${target.name} is slowed!`);
+      break;
+    case 'poison':
+      target.buffs.push({ type: 'poison', turns: 3, damage: 5 });
+      addTextLine('system', `${target.name} is poisoned!`);
+      break;
+  }
+}
+
+function processBurnTicks(entity) {
+  entity.buffs = entity.buffs.filter(b => {
+    if (b.type === 'poison' && b.damage) {
+      entity.hp = Math.max(0, entity.hp - b.damage);
+      addTextLine('combat', `${entity.name} takes ${b.damage} poison damage!`);
+    }
+    b.turns--;
+    if (b.turns <= 0) {
+      addTextLine('system', `${entity.name}'s ${b.type} effect wore off.`);
+      return false;
+    }
+    return true;
+  });
+}
+
+async function enemyTurn() {
+  const combat = state.combat;
+  const p = state.player;
+
+  for (const enemy of combat.enemies) {
+    if (enemy.hp <= 0) continue;
+
+    processBurnTicks(enemy);
+    if (enemy.hp <= 0) {
+      addTextLine('combat', `${enemy.name} succumbs to poison!`);
+      continue;
+    }
+
+    await sleep(400);
+
+    const ability = enemy.abilities[Math.floor(Math.random() * enemy.abilities.length)];
+
+    if (ability.type === 'buff') {
+      handleBuff(enemy, ability);
+    } else {
+      const evasion = p.buffs.find(b => b.type === 'evasion');
+      if (evasion && Math.random() < 0.4) {
+        addTextLine('combat', `${enemy.name} attacks but ${p.name} dodges!`);
+        continue;
+      }
+
+      const isMagic = ability.type === 'magic';
+      const atkStat = isMagic ? (enemy.mag || enemy.atk) : enemy.atk;
+      const atkBuff = enemy.buffs.find(b => b.type === 'atkUp');
+      const totalAtk = atkStat * (ability.power || 1.0) * (atkBuff ? 1.3 : 1);
+      const totalDef = p.def * 0.5;
+      let damage = Math.max(1, Math.floor(totalAtk - totalDef + (Math.random() * 3 - 1)));
+
+      p.hp = Math.max(0, p.hp - damage);
+      addTextLine('combat', `${enemy.name} uses ${ability.name}! ${damage} damage to ${p.name}!`);
+      showDamageNumber(damage, false, false);
+      shakeScreen();
+    }
+  }
+
+  processBurnTicks(p);
+  updateHud();
+  drawCombatScene(artCtx, artCanvas.width, artCanvas.height, combat.enemies, p);
+
+  if (p.hp <= 0) {
+    await sleep(600);
+    addTextLine('combat', `${p.name} falls in battle...`);
+    addTextLine('system', 'GAME OVER');
+    choicesPanel.innerHTML = '';
+    const btn = document.createElement('button');
+    btn.className = 'choice-btn';
+    btn.textContent = 'Return to Title';
+    btn.onclick = () => location.reload();
+    choicesPanel.appendChild(btn);
+    return;
+  }
+
+  if (combat.enemies.every(e => e.hp <= 0)) {
+    await sleep(600);
+    await combatVictory();
+    return;
+  }
+
+  combat.round++;
+  showCombatActions();
+}
+
+async function combatVictory() {
+  const combat = state.combat;
+  const p = state.player;
+
+  let totalExp = 0, totalGold = 0;
+  combat.enemies.forEach(e => {
+    const template = Object.values(ENEMIES).find(t => t.name === e.name) || e;
+    totalExp += template.exp || e.exp || 10;
+    totalGold += template.gold || e.gold || 5;
+  });
+
+  p.exp += totalExp;
+  p.gold += totalGold;
+
+  addTextLine('system', '═══ VICTORY ═══');
+  addTextLine('loot', `Gained ${totalExp} EXP, ${totalGold} Gold`);
+
+  checkLevelUp(p);
+  p.buffs = [];
+  state.combat = null;
+
+  updateHud();
+  await sleep(800);
+
+  if (combat.onVictory) {
+    loadScene(combat.onVictory);
+  }
+}
+
+async function attemptFlee() {
+  const combat = state.combat;
+  const p = state.player;
+  const fleeChance = 0.4 + (p.spd / 40);
+
+  if (Math.random() < fleeChance) {
+    addTextLine('system', 'Got away safely!');
+    state.combat = null;
+    p.buffs = [];
+    await sleep(600);
+    if (combat.onFlee) loadScene(combat.onFlee);
+  } else {
+    addTextLine('system', 'Couldn\'t escape!');
+    await sleep(400);
+    await enemyTurn();
+  }
+}
+
+function showDamageNumber(damage, isCrit, isPlayer) {
+  const artPanel = document.getElementById('art-panel');
+  const num = document.createElement('div');
+  num.className = 'damage-number';
+  num.textContent = damage;
+  num.style.color = isCrit ? '#f0c040' : (isPlayer ? '#ffffff' : '#e04040');
+  num.style.fontSize = isCrit ? '18px' : '14px';
+  num.style.left = isPlayer ? '500px' : '120px';
+  num.style.top = '100px';
+  artPanel.appendChild(num);
+  setTimeout(() => num.remove(), 1000);
+}
+
+function shakeScreen() {
+  const container = document.getElementById('game-container');
+  container.classList.add('shake');
+  setTimeout(() => container.classList.remove('shake'), 300);
+}
+
+function openInventory() {
+  const overlay = document.getElementById('inventory-overlay');
+  const grid = document.getElementById('inv-grid');
+  grid.innerHTML = '';
+
+  const p = state.player;
+  Object.entries(p.inventory).forEach(([id, qty]) => {
+    const item = ITEMS[id];
+    if (!item) return;
+    const slot = document.createElement('div');
+    slot.className = 'inv-slot';
+    slot.innerHTML = `<span class="item-name">${item.name}</span><span class="item-desc">${item.desc}</span><span class="item-qty">x${qty}</span>`;
+    grid.appendChild(slot);
+  });
+
+  if (Object.keys(p.inventory).length === 0) {
+    const slot = document.createElement('div');
+    slot.className = 'inv-slot';
+    slot.innerHTML = '<span class="item-desc">Empty</span>';
+    grid.appendChild(slot);
+  }
+
+  overlay.classList.add('active');
+}
+
+function closeInventory() {
+  document.getElementById('inventory-overlay').classList.remove('active');
+}
+
+// ============================================================
+// INITIALIZATION
+// ============================================================
+function init() {
+  drawTitleArt(document.getElementById('title-art'));
+}
+
+function startNewGame() {
+  document.getElementById('title-screen').style.display = 'none';
+  document.getElementById('char-create').style.display = 'flex';
+  buildClassSelection();
+}
+
+function buildClassSelection() {
+  const grid = document.getElementById('class-grid');
+  grid.innerHTML = '';
+
+  Object.entries(CLASSES).forEach(([id, cls]) => {
+    const card = document.createElement('div');
+    card.className = 'class-card';
+    card.dataset.cls = id;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = 64;
+    canvas.height = 64;
+    const ctx = canvas.getContext('2d');
+    drawSprite(ctx, SPRITES[id], 8, 0, 3);
+
+    card.appendChild(canvas);
+    card.innerHTML += `
+      <h3>${cls.name}</h3>
+      <p>${cls.desc}</p>
+      <div class="class-stats">
+        HP: ${cls.hp} | MP: ${cls.mp}<br>
+        ATK: ${cls.atk} | DEF: ${cls.def}<br>
+        SPD: ${cls.spd} | MAG: ${cls.mag}
+      </div>
+    `;
+    card.prepend(canvas);
+
+    card.onclick = () => {
+      grid.querySelectorAll('.class-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+      state.selectedClass = id;
+      document.getElementById('begin-btn').style.display = 'block';
+    };
+
+    grid.appendChild(card);
+  });
+}
+
+function beginAdventure() {
+  const name = document.getElementById('name-input').value.trim() || 'Hero';
+  const cls = state.selectedClass;
+  if (!cls) return;
+
+  state.player = createPlayer(name, cls);
+  document.getElementById('char-create').style.display = 'none';
+  loadScene('intro');
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'i' || e.key === 'I') {
+    if (state.player && !state.combat) {
+      const overlay = document.getElementById('inventory-overlay');
+      if (overlay.classList.contains('active')) closeInventory();
+      else openInventory();
+    }
+  }
+
+  if (e.key >= '1' && e.key <= '9') {
+    const btns = choicesPanel.querySelectorAll('.choice-btn');
+    const idx = parseInt(e.key) - 1;
+    if (btns[idx]) btns[idx].click();
+  }
+});
+
+init();
+</script>
+
+</body>
+</html>
