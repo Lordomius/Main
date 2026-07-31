@@ -375,386 +375,381 @@ const artCanvas = document.getElementById('art-canvas');
 const artCtx = artCanvas.getContext('2d');
 
 // ============================================================
-// DESERT SCENE RENDERER
+// BIRD'S EYE DESERT + TENTS (pixelated)
 // ============================================================
+const PX = 4; // pixel scale
+
 function drawDesert(ctx, w, h) {
-  // Sky gradient — pale scorched horizon to deep bruised blue
-  const sky = ctx.createLinearGradient(0, 0, 0, h * 0.6);
-  sky.addColorStop(0, '#1A2844');
-  sky.addColorStop(0.3, '#2E3E5A');
-  sky.addColorStop(0.6, '#6B5A42');
-  sky.addColorStop(0.8, '#A08050');
-  sky.addColorStop(1, '#C8A060');
-  ctx.fillStyle = sky;
-  ctx.fillRect(0, 0, w, h * 0.6);
+  ctx.imageSmoothingEnabled = false;
 
-  // Sun — harsh white disc with glow
-  const sunX = w * 0.72, sunY = h * 0.18, sunR = 18;
-  const sunGlow = ctx.createRadialGradient(sunX, sunY, sunR * 0.5, sunX, sunY, sunR * 6);
-  sunGlow.addColorStop(0, 'rgba(255, 240, 200, 0.5)');
-  sunGlow.addColorStop(0.3, 'rgba(255, 220, 160, 0.15)');
-  sunGlow.addColorStop(1, 'rgba(255, 200, 120, 0)');
-  ctx.fillStyle = sunGlow;
-  ctx.fillRect(0, 0, w, h * 0.6);
+  // Sand base — layered dune colors from top-down view
+  ctx.fillStyle = '#C8A058';
+  ctx.fillRect(0, 0, w, h);
 
-  ctx.fillStyle = '#FFF0D0';
-  ctx.beginPath();
-  ctx.arc(sunX, sunY, sunR, 0, Math.PI * 2);
-  ctx.fill();
+  // Dune ridgelines — diagonal waves seen from above
+  for (let i = 0; i < 12; i++) {
+    const shade = i % 2 === 0 ? '#B89048' : '#D4AD62';
+    ctx.fillStyle = shade;
+    ctx.beginPath();
+    const baseY = i * (h / 10) - 20;
+    ctx.moveTo(0, baseY);
+    for (let x = 0; x <= w; x += PX) {
+      const y = baseY + Math.sin(x * 0.008 + i * 1.3) * 18
+                      + Math.sin(x * 0.003 + i * 0.7) * 30
+                      + Math.cos(x * 0.012 + i * 2.1) * 8;
+      ctx.lineTo(x, y);
+    }
+    ctx.lineTo(w, baseY + 50);
+    ctx.lineTo(0, baseY + 50);
+    ctx.fill();
+  }
 
-  // Distant empire buildings — silhouettes on the horizon
-  const horizonY = h * 0.52;
-
-  // Haze band at horizon
-  const haze = ctx.createLinearGradient(0, horizonY - 20, 0, horizonY + 10);
-  haze.addColorStop(0, 'rgba(200, 170, 120, 0)');
-  haze.addColorStop(0.5, 'rgba(200, 170, 120, 0.15)');
-  haze.addColorStop(1, 'rgba(200, 170, 120, 0)');
-  ctx.fillStyle = haze;
-  ctx.fillRect(0, horizonY - 20, w, 30);
-
-  // Empire structures — distant ziggurat/pyramid
-  ctx.fillStyle = '#3A3020';
-  // Large pyramid
-  ctx.beginPath();
-  ctx.moveTo(w * 0.35, horizonY);
-  ctx.lineTo(w * 0.40, horizonY - 45);
-  ctx.lineTo(w * 0.45, horizonY);
-  ctx.fill();
-
-  // Smaller pyramid
-  ctx.fillStyle = '#352C1C';
-  ctx.beginPath();
-  ctx.moveTo(w * 0.48, horizonY);
-  ctx.lineTo(w * 0.51, horizonY - 28);
-  ctx.lineTo(w * 0.54, horizonY);
-  ctx.fill();
-
-  // Tower/obelisk
-  ctx.fillStyle = '#3A3020';
-  ctx.fillRect(w * 0.58, horizonY - 35, 6, 35);
-  ctx.fillRect(w * 0.56, horizonY - 38, 10, 5);
-
-  // Low buildings cluster
-  ctx.fillStyle = '#332A1C';
+  // Dune shadow lines — dark creases between ridges
+  ctx.strokeStyle = 'rgba(80, 55, 25, 0.25)';
+  ctx.lineWidth = 2;
   for (let i = 0; i < 8; i++) {
-    const bx = w * 0.2 + i * 14 + Math.sin(i * 2.5) * 8;
-    const bh = 8 + Math.sin(i * 1.7) * 6;
-    ctx.fillRect(bx, horizonY - bh, 10, bh);
-  }
-
-  // Right side structures
-  ctx.fillStyle = '#38301E';
-  for (let i = 0; i < 5; i++) {
-    const bx = w * 0.65 + i * 18;
-    const bh = 6 + Math.sin(i * 2.1) * 5;
-    ctx.fillRect(bx, horizonY - bh, 12, bh);
-  }
-
-  // Far dunes — background layer
-  ctx.fillStyle = '#8B7040';
-  ctx.beginPath();
-  ctx.moveTo(0, horizonY + 5);
-  for (let x = 0; x <= w; x += 4) {
-    const y = horizonY + 5 + Math.sin(x * 0.008) * 12 + Math.sin(x * 0.003 + 1) * 8;
-    ctx.lineTo(x, y);
-  }
-  ctx.lineTo(w, h);
-  ctx.lineTo(0, h);
-  ctx.fill();
-
-  // Mid dunes
-  ctx.fillStyle = '#9A7D48';
-  ctx.beginPath();
-  ctx.moveTo(0, horizonY + 25);
-  for (let x = 0; x <= w; x += 4) {
-    const y = horizonY + 25 + Math.sin(x * 0.006 + 0.5) * 15 + Math.sin(x * 0.015) * 6;
-    ctx.lineTo(x, y);
-  }
-  ctx.lineTo(w, h);
-  ctx.lineTo(0, h);
-  ctx.fill();
-
-  // Light-catch on dune crests
-  ctx.strokeStyle = 'rgba(210, 180, 120, 0.15)';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  for (let x = 0; x <= w; x += 4) {
-    const y = horizonY + 25 + Math.sin(x * 0.006 + 0.5) * 15 + Math.sin(x * 0.015) * 6;
-    if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-  }
-  ctx.stroke();
-
-  // Near dunes — foreground
-  ctx.fillStyle = '#A8874E';
-  ctx.beginPath();
-  ctx.moveTo(0, horizonY + 55);
-  for (let x = 0; x <= w; x += 4) {
-    const y = horizonY + 55 + Math.sin(x * 0.005 + 2) * 18 + Math.sin(x * 0.012 + 1) * 8;
-    ctx.lineTo(x, y);
-  }
-  ctx.lineTo(w, h);
-  ctx.lineTo(0, h);
-  ctx.fill();
-
-  // Ground — closest sand
-  ctx.fillStyle = '#B89858';
-  ctx.beginPath();
-  ctx.moveTo(0, horizonY + 85);
-  for (let x = 0; x <= w; x += 4) {
-    const y = horizonY + 85 + Math.sin(x * 0.004 + 3) * 10;
-    ctx.lineTo(x, y);
-  }
-  ctx.lineTo(w, h);
-  ctx.lineTo(0, h);
-  ctx.fill();
-
-  // Sand texture — scattered dots
-  for (let i = 0; i < 200; i++) {
-    const sx = Math.random() * w;
-    const sy = horizonY + 40 + Math.random() * (h - horizonY - 40);
-    const brightness = 0.03 + Math.random() * 0.06;
-    ctx.fillStyle = `rgba(60, 40, 20, ${brightness})`;
-    ctx.fillRect(sx, sy, 1 + Math.random(), 1);
-  }
-  for (let i = 0; i < 80; i++) {
-    const sx = Math.random() * w;
-    const sy = horizonY + 40 + Math.random() * (h - horizonY - 40);
-    ctx.fillStyle = `rgba(220, 190, 140, ${0.02 + Math.random() * 0.04})`;
-    ctx.fillRect(sx, sy, 1, 1);
-  }
-
-  // Mine entrance — dark cave in a rocky outcrop, right of center
-  const mineX = w * 0.12;
-  const mineY = horizonY + 70;
-
-  // Rocky cliff face
-  ctx.fillStyle = '#4A3A28';
-  ctx.beginPath();
-  ctx.moveTo(mineX - 30, h);
-  ctx.lineTo(mineX - 25, mineY - 30);
-  ctx.lineTo(mineX - 10, mineY - 45);
-  ctx.lineTo(mineX + 10, mineY - 50);
-  ctx.lineTo(mineX + 40, mineY - 42);
-  ctx.lineTo(mineX + 60, mineY - 30);
-  ctx.lineTo(mineX + 70, mineY - 20);
-  ctx.lineTo(mineX + 80, h);
-  ctx.fill();
-
-  // Rock highlights
-  ctx.fillStyle = '#5A4A34';
-  ctx.beginPath();
-  ctx.moveTo(mineX - 10, mineY - 45);
-  ctx.lineTo(mineX + 10, mineY - 50);
-  ctx.lineTo(mineX + 20, mineY - 40);
-  ctx.lineTo(mineX - 5, mineY - 38);
-  ctx.fill();
-
-  // Rock texture
-  ctx.fillStyle = '#3E3020';
-  for (let i = 0; i < 15; i++) {
-    const rx = mineX - 20 + Math.random() * 90;
-    const ry = mineY - 40 + Math.random() * 60;
-    ctx.fillRect(rx, ry, 2 + Math.random() * 4, 1 + Math.random() * 2);
-  }
-
-  // Mine entrance — black void
-  ctx.fillStyle = '#0A0806';
-  ctx.beginPath();
-  ctx.moveTo(mineX, mineY + 2);
-  ctx.lineTo(mineX + 5, mineY - 18);
-  ctx.lineTo(mineX + 35, mineY - 18);
-  ctx.lineTo(mineX + 40, mineY + 2);
-  ctx.lineTo(mineX + 40, h * 0.95);
-  ctx.lineTo(mineX, h * 0.95);
-  ctx.fill();
-
-  // Darker interior
-  ctx.fillStyle = '#050403';
-  ctx.fillRect(mineX + 5, mineY - 10, 30, 50);
-
-  // Wooden support beams
-  ctx.fillStyle = '#5A4020';
-  ctx.fillRect(mineX - 1, mineY - 18, 4, h * 0.95 - mineY + 18);
-  ctx.fillRect(mineX + 37, mineY - 18, 4, h * 0.95 - mineY + 18);
-  ctx.fillRect(mineX - 1, mineY - 20, 42, 4);
-
-  // Beam wood grain
-  ctx.fillStyle = '#4A3418';
-  ctx.fillRect(mineX, mineY - 5, 2, 20);
-  ctx.fillRect(mineX + 38, mineY + 5, 2, 15);
-
-  // Cart tracks leading to mine
-  ctx.strokeStyle = 'rgba(80, 60, 30, 0.25)';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(mineX + 15, h);
-  ctx.lineTo(mineX + 18, mineY + 10);
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.moveTo(mineX + 25, h);
-  ctx.lineTo(mineX + 24, mineY + 10);
-  ctx.stroke();
-
-  // Chains on ground near entrance
-  ctx.strokeStyle = '#6A6A6A';
-  ctx.lineWidth = 1.5;
-  for (let i = 0; i < 4; i++) {
-    const cx = mineX + 50 + i * 6;
-    const cy = h * 0.92 + Math.sin(i) * 2;
+    const baseY = 30 + i * (h / 7);
     ctx.beginPath();
-    ctx.arc(cx, cy, 3, 0, Math.PI * 2);
-    ctx.stroke();
-  }
-
-  // Pickaxe leaning against rock
-  ctx.strokeStyle = '#5A4A38';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(mineX + 65, mineY - 5);
-  ctx.lineTo(mineX + 55, h * 0.92);
-  ctx.stroke();
-  ctx.fillStyle = '#6A6A6A';
-  ctx.beginPath();
-  ctx.moveTo(mineX + 63, mineY - 6);
-  ctx.lineTo(mineX + 72, mineY - 2);
-  ctx.lineTo(mineX + 68, mineY + 3);
-  ctx.lineTo(mineX + 63, mineY);
-  ctx.fill();
-
-  // Vultures in sky
-  drawVulture(ctx, w * 0.2, h * 0.12, 1);
-  drawVulture(ctx, w * 0.28, h * 0.08, 0.7);
-  drawVulture(ctx, w * 0.85, h * 0.15, 0.8);
-
-  // Dead tree — far right
-  ctx.strokeStyle = '#3A2A18';
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.moveTo(w * 0.88, h);
-  ctx.lineTo(w * 0.87, horizonY + 50);
-  ctx.stroke();
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.moveTo(w * 0.87, horizonY + 55);
-  ctx.lineTo(w * 0.84, horizonY + 42);
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.moveTo(w * 0.87, horizonY + 60);
-  ctx.lineTo(w * 0.91, horizonY + 48);
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.moveTo(w * 0.87, horizonY + 68);
-  ctx.lineTo(w * 0.83, horizonY + 58);
-  ctx.stroke();
-
-  // Second dead tree — far left
-  ctx.strokeStyle = '#352818';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(w * 0.03, h);
-  ctx.lineTo(w * 0.035, horizonY + 65);
-  ctx.stroke();
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(w * 0.035, horizonY + 68);
-  ctx.lineTo(w * 0.02, horizonY + 58);
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.moveTo(w * 0.035, horizonY + 72);
-  ctx.lineTo(w * 0.05, horizonY + 62);
-  ctx.stroke();
-
-  // Heat shimmer lines near horizon
-  ctx.strokeStyle = 'rgba(200, 170, 120, 0.04)';
-  ctx.lineWidth = 1;
-  for (let i = 0; i < 5; i++) {
-    const sy = horizonY + 2 + i * 4;
-    ctx.beginPath();
-    for (let x = 0; x <= w; x += 8) {
-      const y = sy + Math.sin(x * 0.02 + i) * 1.5;
+    for (let x = 0; x <= w; x += PX) {
+      const y = baseY + Math.sin(x * 0.007 + i * 1.8) * 14
+                      + Math.sin(x * 0.004 + i) * 20;
       if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
     }
     ctx.stroke();
   }
 
-  // Subtle dust in air
-  for (let i = 0; i < 40; i++) {
-    const dx = Math.random() * w;
-    const dy = Math.random() * h * 0.55;
-    ctx.fillStyle = `rgba(200, 170, 120, ${0.01 + Math.random() * 0.03})`;
-    ctx.fillRect(dx, dy, 1, 1);
+  // Dune highlight lines — sun catching the crests
+  ctx.strokeStyle = 'rgba(230, 200, 140, 0.2)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < 6; i++) {
+    const baseY = 20 + i * (h / 5);
+    ctx.beginPath();
+    for (let x = 0; x <= w; x += PX) {
+      const y = baseY + Math.sin(x * 0.007 + i * 1.8 + 0.3) * 14
+                      + Math.sin(x * 0.004 + i + 0.3) * 20;
+      if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
   }
-}
 
-function drawVulture(ctx, x, y, scale) {
-  ctx.strokeStyle = '#1A1510';
-  ctx.lineWidth = 1.5 * scale;
+  // Sand pixel texture
+  for (let i = 0; i < 600; i++) {
+    const sx = Math.floor(Math.random() * w / PX) * PX;
+    const sy = Math.floor(Math.random() * h / PX) * PX;
+    const v = Math.random();
+    ctx.fillStyle = v > 0.5
+      ? `rgba(60, 40, 15, ${0.04 + Math.random() * 0.06})`
+      : `rgba(230, 200, 140, ${0.03 + Math.random() * 0.05})`;
+    ctx.fillRect(sx, sy, PX, PX);
+  }
+
+  // --- TENTS (bird's eye view — diamond/rhombus shapes with shadow) ---
+  function drawTent(cx, cy, size, color, shadowDir) {
+    const s = size * PX;
+    // Shadow
+    ctx.fillStyle = 'rgba(60, 40, 15, 0.3)';
+    ctx.beginPath();
+    ctx.moveTo(cx + shadowDir * 3, cy + 3);
+    ctx.lineTo(cx + s * 0.6 + shadowDir * 3, cy + s * 0.35 + 3);
+    ctx.lineTo(cx + shadowDir * 3, cy + s * 0.7 + 3);
+    ctx.lineTo(cx - s * 0.6 + shadowDir * 3, cy + s * 0.35 + 3);
+    ctx.fill();
+    // Tent body — diamond from above
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + s * 0.6, cy + s * 0.35);
+    ctx.lineTo(cx, cy + s * 0.7);
+    ctx.lineTo(cx - s * 0.6, cy + s * 0.35);
+    ctx.fill();
+    // Ridge line
+    ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx, cy + s * 0.7);
+    ctx.stroke();
+    // Light half
+    ctx.fillStyle = 'rgba(255,240,200,0.1)';
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + s * 0.6, cy + s * 0.35);
+    ctx.lineTo(cx, cy + s * 0.7);
+    ctx.fill();
+  }
+
+  // Tent cluster — top right area
+  drawTent(w * 0.65, h * 0.15, 8, '#8B6538', 4);
+  drawTent(w * 0.72, h * 0.22, 6, '#9A7040', 4);
+  drawTent(w * 0.60, h * 0.28, 7, '#7A5830', 4);
+  drawTent(w * 0.69, h * 0.33, 5, '#8B6538', 4);
+
+  // Tent cluster — center left
+  drawTent(w * 0.22, h * 0.55, 9, '#8B6538', 4);
+  drawTent(w * 0.30, h * 0.50, 6, '#9A7040', 4);
+  drawTent(w * 0.18, h * 0.65, 7, '#7A5830', 4);
+  drawTent(w * 0.28, h * 0.62, 5, '#8B6538', 4);
+  drawTent(w * 0.35, h * 0.58, 4, '#9A7040', 4);
+
+  // Scattered lone tents
+  drawTent(w * 0.50, h * 0.42, 5, '#7A5830', 4);
+  drawTent(w * 0.82, h * 0.70, 7, '#8B6538', 4);
+  drawTent(w * 0.12, h * 0.30, 6, '#9A7040', 4);
+
+  // Paths between tent clusters — faint lines in sand
+  ctx.strokeStyle = 'rgba(100, 70, 30, 0.15)';
+  ctx.lineWidth = 3;
+  ctx.setLineDash([PX * 2, PX]);
   ctx.beginPath();
-  ctx.moveTo(x - 10 * scale, y + 2 * scale);
-  ctx.quadraticCurveTo(x - 5 * scale, y - 3 * scale, x, y);
-  ctx.quadraticCurveTo(x + 5 * scale, y - 3 * scale, x + 10 * scale, y + 2 * scale);
+  ctx.moveTo(w * 0.30, h * 0.55);
+  ctx.quadraticCurveTo(w * 0.45, h * 0.45, w * 0.65, h * 0.28);
   ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(w * 0.28, h * 0.62);
+  ctx.quadraticCurveTo(w * 0.50, h * 0.60, w * 0.82, h * 0.70);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Small figures near tents (tiny 2-3px dots)
+  ctx.fillStyle = '#3A2A18';
+  const figures = [
+    [w*0.64, h*0.20], [w*0.73, h*0.26], [w*0.21, h*0.60],
+    [w*0.25, h*0.53], [w*0.32, h*0.56], [w*0.84, h*0.72],
+  ];
+  figures.forEach(([fx, fy]) => {
+    ctx.fillRect(Math.floor(fx/PX)*PX, Math.floor(fy/PX)*PX, PX, PX);
+  });
+
+  // Campfire dots (warm pixel)
+  ctx.fillStyle = '#D4853E';
+  ctx.fillRect(Math.floor(w*0.67/PX)*PX, Math.floor(h*0.27/PX)*PX, PX, PX);
+  ctx.fillRect(Math.floor(w*0.25/PX)*PX, Math.floor(h*0.57/PX)*PX, PX, PX);
+  ctx.fillStyle = '#E8A84C';
+  ctx.fillRect(Math.floor(w*0.67/PX)*PX + PX, Math.floor(h*0.27/PX)*PX, PX, PX);
 }
 
 // ============================================================
-// TITLE SCREEN DESERT
+// MINE TUNNEL SCENE (pixelated)
+// ============================================================
+function drawMineTunnel(ctx, w, h) {
+  ctx.imageSmoothingEnabled = false;
+
+  // Deep dark background
+  ctx.fillStyle = '#0A0806';
+  ctx.fillRect(0, 0, w, h);
+
+  // Tunnel walls — perspective converging to center
+  const vanX = w * 0.5, vanY = h * 0.38;
+
+  // Ceiling rock
+  ctx.fillStyle = '#1A1410';
+  ctx.beginPath();
+  ctx.moveTo(0, 0); ctx.lineTo(w, 0);
+  ctx.lineTo(vanX + 80, vanY - 10);
+  ctx.lineTo(vanX - 80, vanY - 10);
+  ctx.fill();
+
+  // Floor
+  ctx.fillStyle = '#1E1810';
+  ctx.beginPath();
+  ctx.moveTo(0, h); ctx.lineTo(w, h);
+  ctx.lineTo(vanX + 80, vanY + 50);
+  ctx.lineTo(vanX - 80, vanY + 50);
+  ctx.fill();
+
+  // Left wall
+  ctx.fillStyle = '#161008';
+  ctx.beginPath();
+  ctx.moveTo(0, 0); ctx.lineTo(0, h);
+  ctx.lineTo(vanX - 80, vanY + 50);
+  ctx.lineTo(vanX - 80, vanY - 10);
+  ctx.fill();
+
+  // Right wall
+  ctx.fillStyle = '#14100A';
+  ctx.beginPath();
+  ctx.moveTo(w, 0); ctx.lineTo(w, h);
+  ctx.lineTo(vanX + 80, vanY + 50);
+  ctx.lineTo(vanX + 80, vanY - 10);
+  ctx.fill();
+
+  // Tunnel depth — darker center void
+  ctx.fillStyle = '#050403';
+  ctx.fillRect(vanX - 50, vanY - 5, 100, 40);
+  const depthGrad = ctx.createRadialGradient(vanX, vanY + 15, 10, vanX, vanY + 15, 120);
+  depthGrad.addColorStop(0, 'rgba(5,4,3,1)');
+  depthGrad.addColorStop(1, 'rgba(5,4,3,0)');
+  ctx.fillStyle = depthGrad;
+  ctx.fillRect(vanX - 140, vanY - 30, 280, 100);
+
+  // Wooden support beams — receding into tunnel
+  const beamPositions = [
+    { x: 0.15, s: 1.0 },
+    { x: 0.30, s: 0.7 },
+    { x: 0.42, s: 0.45 },
+  ];
+  beamPositions.forEach(bp => {
+    const leftX = w * bp.x;
+    const rightX = w * (1 - bp.x);
+    const topY = h * (0.08 + (1 - bp.s) * 0.30);
+    const botY = h * (0.92 - (1 - bp.s) * 0.30);
+    const bw = Math.max(PX, Math.floor(6 * bp.s / PX) * PX);
+
+    // Left beam
+    ctx.fillStyle = '#3A2818';
+    for (let y = topY; y < botY; y += PX) {
+      ctx.fillRect(Math.floor(leftX/PX)*PX, Math.floor(y/PX)*PX, bw, PX);
+    }
+    // Right beam
+    for (let y = topY; y < botY; y += PX) {
+      ctx.fillRect(Math.floor(rightX/PX)*PX - bw, Math.floor(y/PX)*PX, bw, PX);
+    }
+    // Cross beam
+    ctx.fillStyle = '#3E2C1A';
+    for (let x = leftX; x < rightX; x += PX) {
+      ctx.fillRect(Math.floor(x/PX)*PX, Math.floor(topY/PX)*PX, PX, bw);
+    }
+    // Wood grain
+    ctx.fillStyle = '#2E1E10';
+    ctx.fillRect(Math.floor(leftX/PX)*PX, Math.floor((topY+20)/PX)*PX, bw-PX, PX);
+    ctx.fillRect(Math.floor((rightX-bw)/PX)*PX, Math.floor((topY+30)/PX)*PX, bw-PX, PX);
+  });
+
+  // Rock texture on walls — scattered pixel blocks
+  for (let i = 0; i < 120; i++) {
+    const rx = Math.floor(Math.random() * w / PX) * PX;
+    const ry = Math.floor(Math.random() * h / PX) * PX;
+    const dist = Math.abs(rx - vanX) / w + Math.abs(ry - vanY) / h;
+    if (dist < 0.15) continue;
+    const v = Math.random();
+    ctx.fillStyle = v > 0.6
+      ? `rgba(40, 30, 15, ${0.2 + Math.random() * 0.3})`
+      : `rgba(25, 18, 8, ${0.3 + Math.random() * 0.3})`;
+    ctx.fillRect(rx, ry, PX, PX);
+  }
+
+  // Coal seams — dark glinting lines in walls
+  ctx.fillStyle = '#0E0E12';
+  for (let i = 0; i < 8; i++) {
+    const sx = Math.floor((Math.random() * w * 0.3) / PX) * PX;
+    const sy = Math.floor((h * 0.2 + Math.random() * h * 0.6) / PX) * PX;
+    for (let j = 0; j < 3 + Math.floor(Math.random() * 4); j++) {
+      ctx.fillRect(sx + j * PX, sy + Math.floor(Math.sin(j) * 2 / PX) * PX, PX, PX);
+    }
+  }
+  for (let i = 0; i < 8; i++) {
+    const sx = Math.floor((w * 0.7 + Math.random() * w * 0.3) / PX) * PX;
+    const sy = Math.floor((h * 0.2 + Math.random() * h * 0.6) / PX) * PX;
+    for (let j = 0; j < 3 + Math.floor(Math.random() * 4); j++) {
+      ctx.fillRect(sx + j * PX, sy + Math.floor(Math.sin(j) * 2 / PX) * PX, PX, PX);
+    }
+  }
+
+  // Coal glints
+  ctx.fillStyle = 'rgba(140, 150, 170, 0.15)';
+  for (let i = 0; i < 12; i++) {
+    const gx = Math.floor(Math.random() * w / PX) * PX;
+    const gy = Math.floor(Math.random() * h / PX) * PX;
+    ctx.fillRect(gx, gy, PX, PX);
+  }
+
+  // Cart rails on floor — two parallel pixel lines receding
+  ctx.fillStyle = '#4A4040';
+  for (let d = 0; d < 20; d++) {
+    const t = d / 20;
+    const cy = vanY + 40 + (h - vanY - 40) * t * t;
+    const spread = 8 + 80 * t * t;
+    const railW = Math.max(PX, Math.floor((1 + t * 2) / PX) * PX);
+    ctx.fillRect(Math.floor((vanX - spread)/PX)*PX, Math.floor(cy/PX)*PX, railW, PX);
+    ctx.fillRect(Math.floor((vanX + spread)/PX)*PX, Math.floor(cy/PX)*PX, railW, PX);
+  }
+
+  // Faint lantern glow from foreground
+  const lanternGlow = ctx.createRadialGradient(w * 0.18, h * 0.45, 5, w * 0.18, h * 0.45, 100);
+  lanternGlow.addColorStop(0, 'rgba(200, 140, 50, 0.12)');
+  lanternGlow.addColorStop(0.5, 'rgba(200, 140, 50, 0.04)');
+  lanternGlow.addColorStop(1, 'rgba(200, 140, 50, 0)');
+  ctx.fillStyle = lanternGlow;
+  ctx.fillRect(0, 0, w, h);
+
+  // Lantern — small pixel object on left wall
+  ctx.fillStyle = '#C9A84C';
+  ctx.fillRect(Math.floor(w*0.16/PX)*PX, Math.floor(h*0.42/PX)*PX, PX*2, PX*2);
+  ctx.fillStyle = '#E8C060';
+  ctx.fillRect(Math.floor(w*0.16/PX)*PX, Math.floor(h*0.42/PX)*PX, PX, PX);
+  // Hook
+  ctx.fillStyle = '#4A4040';
+  ctx.fillRect(Math.floor(w*0.16/PX)*PX, Math.floor(h*0.40/PX)*PX, PX, PX*2);
+
+  // Dust motes in lantern light
+  for (let i = 0; i < 15; i++) {
+    const dx = w * 0.10 + Math.random() * w * 0.20;
+    const dy = h * 0.30 + Math.random() * h * 0.35;
+    ctx.fillStyle = `rgba(200, 160, 80, ${0.04 + Math.random() * 0.06})`;
+    ctx.fillRect(Math.floor(dx/PX)*PX, Math.floor(dy/PX)*PX, PX, PX);
+  }
+}
+
+// ============================================================
+// TITLE SCREEN — small bird's eye desert
 // ============================================================
 function drawTitleDesert(canvas) {
   const ctx = canvas.getContext('2d');
   const w = canvas.width, h = canvas.height;
+  ctx.imageSmoothingEnabled = false;
+  const p = 3;
 
-  const sky = ctx.createLinearGradient(0, 0, 0, h * 0.6);
-  sky.addColorStop(0, '#1A2844');
-  sky.addColorStop(0.5, '#4A4030');
-  sky.addColorStop(1, '#8A7040');
-  ctx.fillStyle = sky;
-  ctx.fillRect(0, 0, w, h * 0.6);
-
-  // Sun
-  const sunGlow = ctx.createRadialGradient(w * 0.5, h * 0.22, 5, w * 0.5, h * 0.22, 50);
-  sunGlow.addColorStop(0, 'rgba(255, 240, 200, 0.4)');
-  sunGlow.addColorStop(1, 'rgba(255, 220, 160, 0)');
-  ctx.fillStyle = sunGlow;
+  // Sand
+  ctx.fillStyle = '#C8A058';
   ctx.fillRect(0, 0, w, h);
-  ctx.fillStyle = '#FFF0D0';
-  ctx.beginPath();
-  ctx.arc(w * 0.5, h * 0.22, 8, 0, Math.PI * 2);
-  ctx.fill();
 
-  // Dunes
-  ctx.fillStyle = '#9A7D48';
-  ctx.beginPath();
-  ctx.moveTo(0, h * 0.55);
-  for (let x = 0; x <= w; x += 2) {
-    ctx.lineTo(x, h * 0.55 + Math.sin(x * 0.015) * 10 + Math.sin(x * 0.006) * 15);
+  // Dune ridges
+  for (let i = 0; i < 8; i++) {
+    ctx.fillStyle = i % 2 === 0 ? '#B89048' : '#D4AD62';
+    ctx.beginPath();
+    const baseY = i * (h / 6) - 10;
+    ctx.moveTo(0, baseY);
+    for (let x = 0; x <= w; x += p) {
+      ctx.lineTo(x, baseY + Math.sin(x * 0.012 + i * 1.5) * 12 + Math.sin(x * 0.005 + i) * 18);
+    }
+    ctx.lineTo(w, baseY + 35); ctx.lineTo(0, baseY + 35); ctx.fill();
   }
-  ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.fill();
 
-  ctx.fillStyle = '#A8874E';
-  ctx.beginPath();
-  ctx.moveTo(0, h * 0.7);
-  for (let x = 0; x <= w; x += 2) {
-    ctx.lineTo(x, h * 0.7 + Math.sin(x * 0.01 + 1) * 12);
+  // Shadow creases
+  ctx.strokeStyle = 'rgba(80, 55, 25, 0.2)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < 5; i++) {
+    const baseY = 20 + i * (h / 4);
+    ctx.beginPath();
+    for (let x = 0; x <= w; x += p) {
+      const y = baseY + Math.sin(x * 0.01 + i * 2) * 10;
+      if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
   }
-  ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.fill();
 
-  ctx.fillStyle = '#B89858';
-  ctx.fillRect(0, h * 0.82, w, h * 0.18);
+  // Tents
+  function tent(cx, cy, s, col) {
+    const sz = s * p;
+    ctx.fillStyle = 'rgba(60,40,15,0.25)';
+    ctx.beginPath(); ctx.moveTo(cx+3,cy+3); ctx.lineTo(cx+sz*0.5+3,cy+sz*0.3+3); ctx.lineTo(cx+3,cy+sz*0.6+3); ctx.lineTo(cx-sz*0.5+3,cy+sz*0.3+3); ctx.fill();
+    ctx.fillStyle = col;
+    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(cx+sz*0.5,cy+sz*0.3); ctx.lineTo(cx,cy+sz*0.6); ctx.lineTo(cx-sz*0.5,cy+sz*0.3); ctx.fill();
+  }
+  tent(w*0.3, h*0.3, 5, '#8B6538');
+  tent(w*0.38, h*0.38, 4, '#9A7040');
+  tent(w*0.25, h*0.45, 4, '#7A5830');
+  tent(w*0.65, h*0.55, 6, '#8B6538');
+  tent(w*0.72, h*0.50, 4, '#9A7040');
+  tent(w*0.58, h*0.62, 5, '#7A5830');
 
-  // Pyramid silhouettes
-  ctx.fillStyle = '#3A3020';
-  ctx.beginPath();
-  ctx.moveTo(w * 0.3, h * 0.55); ctx.lineTo(w * 0.38, h * 0.3); ctx.lineTo(w * 0.46, h * 0.55);
-  ctx.fill();
-  ctx.fillStyle = '#352C1C';
-  ctx.beginPath();
-  ctx.moveTo(w * 0.55, h * 0.55); ctx.lineTo(w * 0.6, h * 0.38); ctx.lineTo(w * 0.65, h * 0.55);
-  ctx.fill();
-
-  // Vultures
-  drawVulture(ctx, w * 0.25, h * 0.12, 0.5);
-  drawVulture(ctx, w * 0.75, h * 0.1, 0.4);
+  // Texture
+  for (let i = 0; i < 100; i++) {
+    const sx = Math.floor(Math.random()*w/p)*p;
+    const sy = Math.floor(Math.random()*h/p)*p;
+    ctx.fillStyle = `rgba(60,40,15,${0.03+Math.random()*0.05})`;
+    ctx.fillRect(sx, sy, p, p);
+  }
 }
 
 // ============================================================
@@ -790,6 +785,11 @@ function showPage(index) {
 
   currentPage = index;
   textPanel.innerHTML = '';
+
+  // Switch to mine tunnel art on the last page
+  if (index === PAGES.length - 1) {
+    drawMineTunnel(artCtx, artCanvas.width, artCanvas.height);
+  }
 
   const page = PAGES[index];
   const div = document.createElement('div');
