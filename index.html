@@ -174,6 +174,106 @@ body {
   outline-offset: 3px;
 }
 
+/* === CLICK PROMPT === */
+.click-prompt {
+  text-align: center;
+  color: #3D2E1A;
+  font-size: 11px;
+  letter-spacing: 2px;
+  margin-top: 12px;
+  animation: pulse 2.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.7; }
+}
+
+/* === CHOICES PANEL === */
+#choices-panel {
+  display: none;
+  border-top: 1px solid #2A2218;
+  padding: 12px 24px;
+  flex-direction: column;
+  gap: 6px;
+  background: #0D0B08;
+}
+
+#choices-panel.active { display: flex; }
+
+.choice-btn {
+  background: transparent;
+  border: 1px solid #2A2218;
+  border-left: 2px solid #3D2E1A;
+  color: #A09585;
+  font-family: 'Convergence', 'Segoe UI', system-ui, sans-serif;
+  font-size: 13px;
+  padding: 10px 16px 10px 18px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  line-height: 1.6;
+}
+
+.choice-btn:hover {
+  background: rgba(201, 168, 76, 0.06);
+  border-color: #3D2E1A;
+  border-left-color: #C9A84C;
+  color: #C9A84C;
+}
+
+.choice-btn:focus-visible {
+  outline: 1px solid #C9A84C;
+  outline-offset: 1px;
+}
+
+/* === GAME OVER === */
+#gameover-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(10, 8, 6, 0);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+  transition: background 2s ease;
+}
+
+#gameover-overlay.active {
+  display: flex;
+  background: rgba(10, 8, 6, 0.92);
+}
+
+.go-content {
+  text-align: center;
+  max-width: 420px;
+  padding: 0 24px;
+  opacity: 0;
+  animation: endFade 2s ease 0.8s forwards;
+}
+
+.go-title {
+  color: #A63D3D;
+  font-size: 16px;
+  letter-spacing: 3px;
+  margin-bottom: 20px;
+}
+
+.go-text {
+  color: #6B5D3E;
+  font-size: 13px;
+  line-height: 2;
+  margin-bottom: 28px;
+}
+
+.go-label {
+  color: #3D2E1A;
+  font-size: 11px;
+  letter-spacing: 5px;
+  text-transform: uppercase;
+  margin-bottom: 24px;
+}
+
 /* === HEAT SHIMMER === */
 .heat-line {
   position: absolute;
@@ -253,8 +353,19 @@ body {
 
   <div id="text-panel"></div>
 
+  <div id="choices-panel"></div>
+
   <div id="end-overlay">
     <span class="end-text">to be continued</span>
+  </div>
+
+  <div id="gameover-overlay">
+    <div class="go-content">
+      <div class="go-title">You gave up.</div>
+      <div class="go-text">The dust fills your lungs. The work breaks your hands. Weeks pass, then months. You stop counting. One morning you don't get up. Nobody notices.</div>
+      <div class="go-label">game over</div>
+      <button class="title-btn" onclick="location.reload()">Try again</button>
+    </div>
   </div>
 </div>
 
@@ -647,59 +758,131 @@ function drawTitleDesert(canvas) {
 }
 
 // ============================================================
-// TEXT ENGINE
+// TEXT ENGINE — click to advance
 // ============================================================
-const INTRO_LINES = [
-  { type: 'narrator', text: 'The chains bite into your wrists as the cart lurches to a halt.' },
-  { type: 'narrator', text: 'Dust fills your lungs. The same red dust that coats everything in the Solari Empire.' },
-  { type: 'narrator', delay: 600, text: 'Your name is Seth.' },
-  { type: 'narrator', text: 'Three weeks ago, you had a family.' },
-  { type: 'narrator', delay: 800, text: 'They found your parents at dawn. Blood on the floor of the small home you shared on the outskirts of Khet-Amara. The empire guard came for you before the sun had fully risen.' },
-  { type: 'thought', text: 'You did not kill them.' },
-  { type: 'thought', text: 'Why would you? They were poor — a potter and a seamstress — but they loved you. That was enough. That was everything.' },
-  { type: 'narrator', delay: 600, text: 'No trial. No witness called. The magistrate barely looked up from his ledger.' },
-  { type: 'narrator', text: '"Murder in the first degree. Sentenced to the Ashenmaw."' },
-  { type: 'narrator', delay: 800, text: 'The Ashenmaw. The empire\'s coal mines, carved into the bones of the desert. Men go in. Coal comes out.' },
-  { type: 'narrator', text: 'Men do not.' },
-  { type: 'narrator', delay: 1000, text: 'A guard shoves you forward. The mine entrance yawns before you — a black mouth in the sunbaked cliff face.' },
-  { type: 'narrator', text: 'Other prisoners shuffle in ahead of you. Heads down. Shoulders bent. Already broken.' },
-  { type: 'thought', delay: 800, text: 'You are not broken. Not yet.' },
-  { type: 'system', delay: 1200, text: '...' },
-  { type: 'title-line', delay: 600, text: 'End of Prologue' },
+const PAGES = [
+  { type: 'narrator', text: 'The empire is a cold and distant land, even with the sun almost burning your skin. You grew up in the north, a land where companionship is deadly. But even so you found one. Well, more like were born with one.' },
+  { type: 'narrator', text: 'Your parents were as loving as they could be. Not like you experienced any greater warmth. They didn\'t beat you or shower you with love. They were just there. Unfeeling and cold as stone. Maybe they couldn\'t even be bothered to hit you, to feel something else.' },
+  { type: 'narrator', text: 'You grew up to be the same. And when the guards told you they were killed and you did it, they took your distant stare as the admission of guilt. Turns out you were a province of the empire, even though no one saw it that way.' },
+  { type: 'narrator', text: 'They threw you into Chrosireth, a coal mine where you will spend the rest of your life. Just a child, but already having your hands bleed from the work and your lungs fill with dust and smoke. You spend a week thinking that this is temporary.' },
+  { type: 'narrator', text: 'But it\'s not. You will die here unless you do something. But how? You didn\'t even meet that many people yet. Should you try to find allies, or finally rely on yourself? Since trusting someone didn\'t turn out so well last time.' },
 ];
 
-let lineIndex = 0;
+let currentPage = 0;
+let waitingForClick = false;
 
 async function playIntro() {
   document.getElementById('title-screen').style.display = 'none';
   drawDesert(artCtx, artCanvas.width, artCanvas.height);
   startSandParticles();
 
-  for (let i = 0; i < INTRO_LINES.length; i++) {
-    const line = INTRO_LINES[i];
-    const delay = line.delay || 400;
-    await sleep(delay);
+  showPage(0);
 
-    const div = document.createElement('div');
-    div.className = `text-line text-${line.type}`;
-    div.textContent = line.text;
-    textPanel.appendChild(div);
+  document.getElementById('game-container').addEventListener('click', handleAdvance);
+  document.addEventListener('keydown', handleAdvanceKey);
+}
 
-    await sleep(50);
-    div.classList.add('visible');
-
-    textPanel.scrollTop = textPanel.scrollHeight;
-
-    // Wait for the text to be read
-    const readTime = Math.max(800, line.text.length * 35);
-    await sleep(readTime);
+function showPage(index) {
+  if (index >= PAGES.length) {
+    showChoices();
+    return;
   }
 
-  // End sequence
-  await sleep(2000);
-  const overlay = document.getElementById('end-overlay');
-  overlay.style.display = 'flex';
-  requestAnimationFrame(() => overlay.classList.add('active'));
+  currentPage = index;
+  textPanel.innerHTML = '';
+
+  const page = PAGES[index];
+  const div = document.createElement('div');
+  div.className = `text-line text-${page.type}`;
+  div.textContent = page.text;
+  textPanel.appendChild(div);
+
+  requestAnimationFrame(() => {
+    div.classList.add('visible');
+  });
+
+  const prompt = document.createElement('div');
+  prompt.className = 'click-prompt';
+  prompt.textContent = 'click to continue';
+  prompt.id = 'click-prompt';
+  textPanel.appendChild(prompt);
+  setTimeout(() => prompt.classList.add('visible'), 600);
+
+  waitingForClick = true;
+}
+
+function handleAdvance(e) {
+  if (e.target.closest('#choices-panel') || e.target.closest('#title-screen') || e.target.closest('#gameover-overlay')) return;
+  if (!waitingForClick) return;
+  waitingForClick = false;
+  showPage(currentPage + 1);
+}
+
+function handleAdvanceKey(e) {
+  if (!waitingForClick) return;
+  if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault();
+    waitingForClick = false;
+    showPage(currentPage + 1);
+  }
+}
+
+function showChoices() {
+  textPanel.innerHTML = '';
+  document.getElementById('game-container').removeEventListener('click', handleAdvance);
+  document.removeEventListener('keydown', handleAdvanceKey);
+
+  const panel = document.getElementById('choices-panel');
+  panel.classList.add('active');
+  panel.innerHTML = '';
+
+  const choices = [
+    { text: 'Try to escape on your own. Trust no one.', action: 'solo' },
+    { text: 'Look for allies among the other prisoners.', action: 'allies' },
+    { text: 'Give up. Accept your fate.', action: 'gameover' },
+  ];
+
+  choices.forEach((choice, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'choice-btn';
+    btn.textContent = choice.text;
+    btn.style.opacity = '0';
+    btn.style.animation = `textFade 0.6s ease ${0.2 + i * 0.15}s forwards`;
+    btn.onclick = () => handleChoice(choice.action);
+    panel.appendChild(btn);
+  });
+}
+
+function handleChoice(action) {
+  const panel = document.getElementById('choices-panel');
+
+  if (action === 'gameover') {
+    panel.classList.remove('active');
+    const overlay = document.getElementById('gameover-overlay');
+    overlay.style.display = 'flex';
+    requestAnimationFrame(() => overlay.classList.add('active'));
+    return;
+  }
+
+  // Solo or allies — end of demo
+  panel.classList.remove('active');
+  textPanel.innerHTML = '';
+
+  const div = document.createElement('div');
+  div.className = 'text-line text-narrator';
+  if (action === 'solo') {
+    div.textContent = 'You clench your bleeding fists. If the world gives you nothing, you\'ll take what you need. Alone.';
+  } else {
+    div.textContent = 'You look around the mine shaft. Somewhere in this darkness, there must be others who haven\'t given up yet.';
+  }
+  textPanel.appendChild(div);
+  requestAnimationFrame(() => div.classList.add('visible'));
+
+  setTimeout(() => {
+    const overlay = document.getElementById('end-overlay');
+    overlay.style.display = 'flex';
+    requestAnimationFrame(() => overlay.classList.add('active'));
+  }, 3000);
 }
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
