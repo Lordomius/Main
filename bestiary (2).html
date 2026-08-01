@@ -1339,7 +1339,9 @@
         gotSubtitle = true;
         var subMatch = line.match(/^\*([^*].*[^*])\*$/);
         if(subMatch){
-          var subParts = subMatch[1].trim().match(/^([\w\-]+)\s+(.+),\s*(.+)$/);
+          var sizeWord = '(?:Tiny|Small|Medium|Large|Huge|Gargantuan)';
+          var subParts = subMatch[1].trim().match(new RegExp('^(' + sizeWord + '(?:\\s+or\\s+' + sizeWord + ')?)\\s+(.+),\\s*(.+)$', 'i'));
+          if(!subParts) subParts = subMatch[1].trim().match(/^([\w\-]+)\s+(.+),\s*(.+)$/);
           if(subParts){
             m.size = subParts[1];
             m.type = subParts[2];
@@ -1380,13 +1382,23 @@
 
       var val;
       if((val = mdLabelValue(line, 'Armor Class')) !== null){
-        var acMatch = val.match(/(\d+)\s*(?:\(([^)]+)\))?/);
-        if(acMatch){ m.ac = parseInt(acMatch[1], 10); m.acNote = stripMdEmphasis(acMatch[2] || ''); }
+        var acMatch = val.match(/^(\d+)\s*(.*)$/);
+        if(acMatch){
+          m.ac = parseInt(acMatch[1], 10);
+          var acRest = acMatch[2].trim();
+          if(/^\(.*\)$/.test(acRest)) acRest = acRest.slice(1, -1);
+          m.acNote = stripMdEmphasis(acRest);
+        }
         continue;
       }
       if((val = mdLabelValue(line, 'Hit Points')) !== null){
-        var hpMatch = val.match(/(\d+)\s*(?:\(([^)]+)\))?/);
-        if(hpMatch){ m.hp = parseInt(hpMatch[1], 10); m.hpDice = stripMdEmphasis(hpMatch[2] || ''); }
+        var hpMatch = val.match(/^(\d+)\s*(.*)$/);
+        if(hpMatch){
+          m.hp = parseInt(hpMatch[1], 10);
+          var hpRest = hpMatch[2].trim();
+          if(/^\(.*\)$/.test(hpRest)) hpRest = hpRest.slice(1, -1);
+          m.hpDice = stripMdEmphasis(hpRest);
+        }
         continue;
       }
       if((val = mdLabelValue(line, 'Speed')) !== null){ m.speed = stripMdEmphasis(val); continue; }
@@ -1619,7 +1631,7 @@
   })();
 
   function highlightNumbers(text){
-    var re = /\bDC\s*(\d+)\b|\b(\d+(?:\/\d+)?)-?\s?(?:foot|feet|ft\.?)\b/gi;
+    var re = /\bDC\s*(\d+)\b|\b(\d{1,3}(?:,\d{3})*(?:\/\d+)?)-?\s?(?:foot|feet|ft\.?)\b/gi;
     return text.replace(re, function(match, dcNum, distNum){
       if(dcNum !== undefined){
         return '<span class="num-highlight">DC ' + dcNum + '</span>';
