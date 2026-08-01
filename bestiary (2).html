@@ -1797,7 +1797,7 @@
       var first = ac[0];
       if(typeof first === 'number') return {ac: first, note:''};
       if(first && typeof first === 'object'){
-        var note = (first.from || []).join(', ');
+        var note = (first.from || []).map(stripJsonTags).join(', ');
         if(first.condition) note = (note ? note + ', ' : '') + stripJsonTags(first.condition);
         return {ac: first.ac || 10, note: note};
       }
@@ -1837,7 +1837,7 @@
   function jsonDamageListToText(arr){
     if(!arr || !arr.length) return '';
     var parts = arr.map(function(x){
-      if(typeof x === 'string') return x;
+      if(typeof x === 'string') return stripJsonTags(x);
       if(x && typeof x === 'object'){
         if(x.special) return stripJsonTags(x.special);
         var inner = (x.resist || x.immune || x.vulnerable || []).join(', ');
@@ -1936,9 +1936,9 @@
     if(entry.conditionImmune && entry.conditionImmune.length) immParts.push(jsonDamageListToText(entry.conditionImmune));
     m.immunities = immParts.filter(function(x){ return x; }).join('; ');
 
-    var senses = (entry.senses || []).join(', ');
+    var senses = (entry.senses || []).map(stripJsonTags).join(', ');
     m.senses = senses + (entry.passive ? (senses ? ', ' : '') + 'passive Perception ' + entry.passive : '');
-    m.languages = (entry.languages || []).join(', ');
+    m.languages = (entry.languages || []).map(stripJsonTags).join(', ');
 
     m.cr = jsonCrToText(entry.cr);
     m.prof = profFromCR(m.cr);
@@ -1953,23 +1953,172 @@
     return m;
   }
 
-  function parseJsonMonsterLibrary(jsonText){
+  function extractRawMonsterEntries(jsonText){
     var data;
-    try{ data = JSON.parse(jsonText); }catch(err){ return []; }
-    if(data && Array.isArray(data.monster)){
-      return data.monster.map(parseJsonMonster).filter(function(m){ return m; });
+    try{ data = JSON.parse(jsonText); }catch(err){ return null; }
+    if(data && Array.isArray(data.monster)) return {kind: '5etools', entries: data.monster};
+    if(data && Array.isArray(data.monsters)) return {kind: 'app', entries: data.monsters};
+    if(Array.isArray(data)) return {kind: '5etools', entries: data};
+    return null;
+  }
+
+  // --- 5etools "_copy" reprint support -------------------------------------
+  // Many official bestiary files (esp. adventure books) don't repeat a full
+  // stat block for a reprinted/reskinned monster; instead they point at a
+  // base monster elsewhere (possibly in another file) via `_copy` and layer
+  // on modifications via `_copy._mod`. Without resolving this, ~1 in 4
+  // monsters across the official files would import as empty shells (default
+  // 10s, no AC/HP/traits). This resolves `_copy` chains and applies the
+  // subset of `_mod` operations seen in the official data.
+
+  function jsonMonsterKey(name, source){
+    return String(name || '').trim().toLowerCase() + '|' + String(source || '').trim().toLowerCase();
+  }
+
+  function toModArray(v){
+    return v === undefined || v === null ? [] : (Array.isArray(v) ? v : [v]);
+  }
+
+  function modItemName(x){
+    if(x && typeof x === 'object' && x.name) return String(x.name).toLowerCase();
+    return String(x).toLowerCase();
+  }
+
+  function escapeRegExpLiteral(s){
+    return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  function deepReplaceStrings(obj, fn){
+    if(obj == null || typeof obj !== 'object') return;
+    if(Array.isArray(obj)){
+      for(var i = 0; i < obj.length; i++){
+        if(typeof obj[i] === 'string') obj[i] = fn(obj[i]);
+        else deepReplaceStrings(obj[i], fn);
+      }
+    } else {
+      for(var k in obj){
+        if(!obj.hasOwnProperty(k) || k === '_copy') continue;
+        if(typeof obj[k] === 'string') obj[k] = fn(obj[k]);
+        else deepReplaceStrings(obj[k], fn);
+      }
     }
-    if(data && Array.isArray(data.monsters)){
-      return data.monsters.map(function(m){
-        var copy = JSON.parse(JSON.stringify(m));
-        copy.id = 'repo_' + uid();
-        return copy;
+  }
+
+  function applyArrayMod(merged, propKey, item){
+    var arr = Array.isArray(merged[propKey]) ? merged[propKey] : [];
+    var mode = item.mode;
+    if(mode === 'replaceArr'){
+      var target = String(item.replace || '').toLowerCase();
+      var replacement = toModArray(item.items);
+      var foundAt = -1;
+      for(var i = 0; i < arr.length; i++){ if(modItemName(arr[i]) === target){ foundAt = i; break; } }
+      merged[propKey] = foundAt === -1 ? arr.concat(replacement) : arr.slice(0, foundAt).concat(replacement, arr.slice(foundAt + 1));
+    } else if(mode === 'appendArr'){
+      merged[propKey] = arr.concat(toModArray(item.items));
+    } else if(mode === 'prependArr'){
+      merged[propKey] = toModArray(item.items).concat(arr);
+    } else if(mode === 'insertArr'){
+      var at = typeof item.index === 'number' ? item.index : arr.length;
+      merged[propKey] = arr.slice(0, at).concat(toModArray(item.items), arr.slice(at));
+    } else if(mode === 'removeArr'){
+      var names = toModArray(item.names).map(function(n){ return String(n).toLowerCase(); });
+      if(item.name) names.push(String(item.name).toLowerCase());
+      toModArray(item.items).forEach(function(x){ names.push(modItemName(x)); });
+      merged[propKey] = arr.filter(function(x){ return names.indexOf(modItemName(x)) === -1; });
+    } else if(mode === 'appendIfNotExistsArr'){
+      var existing = arr.map(modItemName);
+      toModArray(item.items).forEach(function(x){
+        if(existing.indexOf(modItemName(x)) === -1){ arr.push(x); existing.push(modItemName(x)); }
       });
+      merged[propKey] = arr;
     }
-    if(Array.isArray(data)){
-      return data.map(parseJsonMonster).filter(function(m){ return m; });
+  }
+
+  function applyGlobalTextMod(merged, item){
+    if(item.mode !== 'replaceTxt' || item.replace === undefined || item.with === undefined) return;
+    var flags = String(item.flags || 'g');
+    if(flags.indexOf('g') === -1) flags += 'g';
+    var re;
+    try{ re = new RegExp(escapeRegExpLiteral(item.replace), flags); }catch(e){ return; }
+    deepReplaceStrings(merged, function(str){ return str.replace(re, item.with); });
+  }
+
+  function applySpellLevelMerge(spellcasting, spellsByLevel, action){
+    (spellcasting || []).forEach(function(sc){
+      if(!sc.spells) return;
+      Object.keys(spellsByLevel).forEach(function(lvl){
+        var lvlData = spellsByLevel[lvl];
+        var target = sc.spells[lvl];
+        if(action === 'add'){
+          if(!target) target = sc.spells[lvl] = {spells: []};
+          var toAdd = (lvlData && lvlData.spells) || [];
+          target.spells = (target.spells || []).concat(toAdd);
+        } else if(action === 'remove' && target){
+          var toRemove = ((lvlData && lvlData.spells) || []).map(function(s){ return String(s).toLowerCase(); });
+          target.spells = (target.spells || []).filter(function(s){ return toRemove.indexOf(String(s).toLowerCase()) === -1; });
+        } else if(action === 'replace' && target && Array.isArray(lvlData)){
+          lvlData.forEach(function(pair){
+            target.spells = (target.spells || []).map(function(s){ return s === pair.replace ? pair['with'] : s; });
+          });
+        }
+      });
+    });
+  }
+
+  function applyRootMod(merged, item){
+    if(item.mode === 'setProp' && item.prop){
+      if(item.value === null || item.value === undefined) delete merged[item.prop];
+      else merged[item.prop] = item.value;
+    } else if(item.mode === 'addSkills' && item.skills){
+      merged.skill = merged.skill || {};
+      Object.keys(item.skills).forEach(function(sk){
+        var v = item.skills[sk];
+        merged.skill[sk] = typeof v === 'number' ? (v >= 0 ? '+' : '') + v : v;
+      });
+    } else if(item.mode === 'addSpells' && item.spells && merged.spellcasting){
+      applySpellLevelMerge(merged.spellcasting, item.spells, 'add');
+    } else if(item.mode === 'removeSpells' && item.spells && merged.spellcasting){
+      applySpellLevelMerge(merged.spellcasting, item.spells, 'remove');
+    } else if(item.mode === 'replaceSpells' && item.spells && merged.spellcasting){
+      applySpellLevelMerge(merged.spellcasting, item.spells, 'replace');
     }
-    return [];
+  }
+
+  function applyJsonMonsterMods(merged, modObj){
+    if(!modObj) return;
+    Object.keys(modObj).forEach(function(propKey){
+      toModArray(modObj[propKey]).forEach(function(item){
+        if(!item || !item.mode) return;
+        try{
+          if(propKey === '*') applyGlobalTextMod(merged, item);
+          else if(propKey === '_') applyRootMod(merged, item);
+          else applyArrayMod(merged, propKey, item);
+        }catch(err){
+          console.error('Could not apply _copy mod for ' + propKey, item, err);
+        }
+      });
+    });
+  }
+
+  function resolveJsonMonsterCopy(entry, rawIndex, seenKeys){
+    if(!entry || !entry._copy) return entry;
+    var key = jsonMonsterKey(entry._copy.name, entry._copy.source);
+    seenKeys = seenKeys || {};
+    if(seenKeys[key]) return entry; // circular _copy chain guard
+    var base = rawIndex[key];
+    if(!base) return entry; // unresolved reference (base not loaded): keep entry as-is
+    var nextSeen = {};
+    for(var k in seenKeys) nextSeen[k] = seenKeys[k];
+    nextSeen[key] = true;
+    var resolvedBase = resolveJsonMonsterCopy(base, rawIndex, nextSeen);
+    var merged = JSON.parse(JSON.stringify(resolvedBase));
+    delete merged._copy;
+    for(var prop in entry){
+      if(prop === '_copy') continue;
+      merged[prop] = entry[prop];
+    }
+    applyJsonMonsterMods(merged, entry._copy._mod);
+    return merged;
   }
 
   function fetchRepoLibrary(){
@@ -2000,15 +2149,50 @@
       }));
     }).then(function(fileResults){
       var monsters = [];
+      var rawEntries = [];
+      var rawIndex = {};
+      // Pass 1: parse every file and collect raw 5etools monster entries into
+      // one shared index so `_copy` references can resolve across files
+      // (e.g. an adventure book reprinting a Monster Manual creature).
       fileResults.forEach(function(fr){
-        try{
-          if(/\.md$/i.test(fr.name)){
+        if(/\.md$/i.test(fr.name)){
+          try{
             parseMarkdownLibrary(fr.text).forEach(function(m){ m.id = 'repo_' + uid(); monsters.push(m); });
+          }catch(err){
+            console.error('Could not parse repo file ' + fr.name, err);
+          }
+          return;
+        }
+        try{
+          var parsed = extractRawMonsterEntries(fr.text);
+          if(!parsed) return;
+          if(parsed.kind === 'app'){
+            parsed.entries.forEach(function(m){
+              var copy = JSON.parse(JSON.stringify(m));
+              copy.id = 'repo_' + uid();
+              monsters.push(copy);
+            });
           } else {
-            monsters = monsters.concat(parseJsonMonsterLibrary(fr.text));
+            parsed.entries.forEach(function(e){
+              if(!e || !e.name) return;
+              rawEntries.push(e);
+              var key = jsonMonsterKey(e.name, e.source);
+              if(!(key in rawIndex)) rawIndex[key] = e;
+            });
           }
         }catch(err){
           console.error('Could not parse repo file ' + fr.name, err);
+        }
+      });
+      // Pass 2: resolve `_copy` (possibly chained, possibly cross-file) and
+      // convert every 5etools entry now that the full index is built.
+      rawEntries.forEach(function(e){
+        try{
+          var resolved = e._copy ? resolveJsonMonsterCopy(e, rawIndex, null) : e;
+          var m = parseJsonMonster(resolved);
+          if(m) monsters.push(m);
+        }catch(err){
+          console.error('Could not convert monster ' + (e && e.name), err);
         }
       });
       state.repoMonsters = monsters;
