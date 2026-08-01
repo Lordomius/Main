@@ -219,9 +219,13 @@
 
   .catalog{
     width:230px;flex-shrink:0;background:var(--desk-light);
-    border-right:2px solid var(--gold);
     overflow-y:auto;padding:14px 10px;
   }
+  .catalog-resize{
+    width:7px;flex-shrink:0;cursor:ew-resize;touch-action:none;
+    background:var(--gold);opacity:0.5;
+  }
+  .catalog-resize:hover, .catalog-resize.resizing{opacity:1;}
   .cat-search{
     width:100%;padding:7px 9px;border-radius:3px;border:1px solid var(--forest-light);
     background:var(--desk);color:var(--parchment);font-size:15px;margin-bottom:12px;
@@ -550,7 +554,8 @@
 
   @media (max-width: 700px){
     .layout{flex-direction:column;}
-    .catalog{width:100%;max-height:180px;}
+    .catalog{width:100% !important;max-height:180px;}
+    .catalog-resize{display:none;}
     .ability-grid{grid-template-columns:repeat(3,1fr);}
   }
 </style>
@@ -598,7 +603,7 @@
 <div class="context-menu" id="contextMenu" style="display:none;"></div>
 
 <div class="layout">
-  <aside class="catalog">
+  <aside class="catalog" id="catalogPanel">
     <input class="cat-search" id="catSearch" placeholder="Search library…">
     <div class="cat-folder-tools">
       <select class="cat-sort-select" id="catSortSelect" title="Sort library">
@@ -635,6 +640,8 @@
     <div class="cat-status-strip" id="catStatusStrip" style="display:none;"></div>
     <div id="catList"></div>
   </aside>
+
+  <div class="catalog-resize" id="catalogResize" title="Drag to resize"></div>
 
   <main class="stage" id="stageMain">
     <div class="stage-inner" id="stageInner"></div>
@@ -704,7 +711,8 @@
     filterTypes: [],
     filterCrMinIdx: 0,
     filterCrMaxIdx: CR_SCALE.length - 1,
-    filtersOpen: false
+    filtersOpen: false,
+    catalogWidth: 230
   };
 
   var CREATURE_SIZES = ['tiny','small','medium','large','huge','gargantuan'];
@@ -819,7 +827,8 @@
         version:1, monsters: state.monsters, folders: state.folders, collapsedFolders: state.collapsedFolders,
         sortMode: state.sortMode, repoLibraryConfig: state.repoLibraryConfig, repoOverrides: state.repoOverrides,
         filterSizes: state.filterSizes, filterTypes: state.filterTypes,
-        filterCrMinIdx: state.filterCrMinIdx, filterCrMaxIdx: state.filterCrMaxIdx
+        filterCrMinIdx: state.filterCrMinIdx, filterCrMaxIdx: state.filterCrMaxIdx,
+        catalogWidth: state.catalogWidth
       }));
     }catch(err){
       console.error('Could not save library', err);
@@ -1051,6 +1060,7 @@
         state.filterTypes = (data && data.filterTypes) || [];
         state.filterCrMinIdx = (data && typeof data.filterCrMinIdx === 'number') ? data.filterCrMinIdx : 0;
         state.filterCrMaxIdx = (data && typeof data.filterCrMaxIdx === 'number') ? data.filterCrMaxIdx : CR_SCALE.length - 1;
+        state.catalogWidth = (data && typeof data.catalogWidth === 'number') ? data.catalogWidth : 230;
         return;
       }
     }catch(err){
@@ -3167,6 +3177,32 @@
     handle.addEventListener('pointercancel', function(){ dragging = false; });
   }
 
+  function makeHResizable(panel, handle, minW, getMaxW, onResizeEnd){
+    var resizing = false, startX = 0, startW = 0, lastW = 0;
+    handle.addEventListener('pointerdown', function(e){
+      resizing = true;
+      startX = e.clientX;
+      startW = panel.getBoundingClientRect().width;
+      lastW = startW;
+      handle.classList.add('resizing');
+      handle.setPointerCapture(e.pointerId);
+      e.stopPropagation();
+    });
+    handle.addEventListener('pointermove', function(e){
+      if(!resizing) return;
+      lastW = Math.max(minW, Math.min(startW + (e.clientX - startX), getMaxW()));
+      panel.style.width = lastW + 'px';
+    });
+    function endDrag(){
+      if(!resizing) return;
+      resizing = false;
+      handle.classList.remove('resizing');
+      if(onResizeEnd) onResizeEnd(lastW);
+    }
+    handle.addEventListener('pointerup', endDrag);
+    handle.addEventListener('pointercancel', endDrag);
+  }
+
   function makeResizable(panel, handle, minW, minH, maxW, maxH, otherPanel){
     var resizing = false, startX = 0, startY = 0, startW = 0, startH = 0, lastGoodW = 0, lastGoodH = 0;
     handle.addEventListener('pointerdown', function(e){
@@ -3212,8 +3248,15 @@
   if(state.monsters.length) state.currentId = state.monsters[0].id;
   loadTheme();
   loadBgImage();
+  if(window.innerWidth > 700) document.getElementById('catalogPanel').style.width = state.catalogWidth + 'px';
   render();
   fetchRepoLibrary();
+  makeHResizable(document.getElementById('catalogPanel'), document.getElementById('catalogResize'), 230, function(){
+    return Math.min(700, window.innerWidth - 320);
+  }, function(w){
+    state.catalogWidth = Math.round(w);
+    saveLibrary();
+  });
   var rolllogPanelEl = document.getElementById('rolllogPanel');
   var spellWindowEl = document.getElementById('spellWindow');
   makeDraggable(rolllogPanelEl, document.getElementById('rolllogHead'), spellWindowEl);
