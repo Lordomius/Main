@@ -376,6 +376,17 @@
     position:fixed;inset:0;background:rgba(0,0,0,0.65);display:flex;align-items:center;justify-content:center;
     z-index:300;padding:20px;
   }
+
+  .drop-overlay{
+    position:fixed;inset:0;z-index:500;display:none;align-items:center;justify-content:center;
+    background:rgba(0,0,0,0.7);border:4px dashed var(--gold);pointer-events:none;
+  }
+  .drop-overlay.active{display:flex;}
+  .drop-overlay-inner{
+    font-family:var(--font-display);font-size:26px;color:var(--gold-light);
+    padding:26px 46px;border:2px solid var(--gold);border-radius:10px;background:var(--card-bg);
+    text-align:center;
+  }
   .confirm-box{
     background:var(--card-bg);border:3px solid var(--gold);border-radius:6px;
     max-width:400px;width:100%;padding:20px 24px;box-shadow:0 10px 30px rgba(0,0,0,0.6);
@@ -446,9 +457,12 @@
   <button class="settings-btn-full" data-action="remove-bg-image">Remove image</button>
 </div>
 <input type="file" id="fileImportInput" accept="application/json,.json">
-<input type="file" id="mdImportInput" accept=".md,text/markdown,text/plain">
+<input type="file" id="mdImportInput" accept=".md,text/markdown,text/plain" multiple>
 <input type="file" id="imageUploadInput" accept="image/*">
 <input type="file" id="bgImageInput" accept="image/*">
+<div class="drop-overlay" id="dropOverlay">
+  <div class="drop-overlay-inner">Drop .md stat block file(s) to import</div>
+</div>
 
 <div class="layout">
   <aside class="catalog">
@@ -601,6 +615,215 @@
     }
   }
 
+  var SEED_MARKDOWN_STATBLOCKS = [
+    `___
+>## Aarakocra Aeromancer
+>*Medium Elemental, Neutral*
+>___
+>- **Armor Class** 16
+>- **Hit Points** 66 (12d8 + 12)
+>- **Speed** 20 ft., Fly 50 ft.
+>- **Initiative** +3 (13)
+>___
+>|STR|DEX|CON|INT|WIS|CHA|
+>|:---:|:---:|:---:|:---:|:---:|:---:|
+>|10 (+0)|16 (+3)|12 (+1)|13 (+1)|17 (+3)|12 (+1)|
+>___
+>- **Saving Throws** Dex +5, Wis +5
+>- **Skills** Arcana +3, Nature +5, Perception +7
+>- **Senses** Passive Perception 17
+>- **Languages** Aarakocra, Primordial (Auran)
+>- **Challenge** 4 (XP 1 100; PB +2)
+>- **Proficiency Bonus** +2
+>___
+>### Actions
+>***Multiattack.*** The aarakocra makes two Wind Staff attacks, and it can use Spellcasting to cast *Gust of Wind*.  
+>
+>***Spellcasting.*** The aarakocra casts one of the following spells, requiring no Material components and using Wisdom as the spellcasting ability (spell save DC 13):  
+>
+>At will: *Elementalism*, *Gust of Wind*, *Mage Hand*, *Message*  
+>1/day: *Lightning Bolt*  
+>
+>***Wind Staff.*** *Melee  or Ranged Attack Roll:*  +5, reach 5 ft. or range 120 ft. *Hit:* 7 (1d8 + 3) Bludgeoning damage plus 11 (2d10) Lightning damage.  
+>
+>### Reactions
+>***Feather Fall (1/Day).*** The aarakocra casts *Feather Fall* in response to that spell's trigger, using the same spellcasting ability as Spellcasting.
+`,
+    `___
+>## Awakened White Moose
+>*Large Beast, Neutral Evil*
+>___
+>- **Armor Class** 11 (natural armor)
+>- **Hit Points** 68 (8d10 + 24)
+>- **Speed** 40 ft.
+>- **Initiative** +0 (10)
+>___
+>|STR|DEX|CON|INT|WIS|CHA|
+>|:---:|:---:|:---:|:---:|:---:|:---:|
+>|19 (+4)|11 (+0)|16 (+3)|10 (+0)|12 (+1)|6 (-2)|
+>___
+>- **Senses** Passive Perception 11
+>- **Languages** Druidic
+>- **Challenge** 3 (XP 700; PB +2)
+>- **Proficiency Bonus** +2
+>___
+>***Charge.*** If the moose moves at least 20 feet straight toward a target and then hits it with an antlers attack on the same turn, the target takes an extra 9 (2d8) bludgeoning damage. If the target is a creature, it must succeed on a DC 14 Strength saving throw or be knocked prone.  
+>
+>***Sure-Footed.*** The moose has advantage on Strength and Dexterity saving throws made against effects that would knock it prone.  
+>
+>### Actions
+>***Multiattack.*** The moose makes two attacks: one with its antlers and one with its hooves.  
+>
+>***Antlers.*** *Melee Weapon Attack:*  +6 to hit, reach 5 ft., one target. *Hit:* 13 (2d8 + 4) piercing damage.  
+>
+>***Hooves.*** *Melee Weapon Attack:*  +6 to hit, reach 5 ft., one target. *Hit:* 9 (2d4 + 4) bludgeoning damage.
+`,
+    `___
+>## Black Dragon Wyrmling
+>*Medium Dragon (Chromatic), Chaotic Evil*
+>___
+>- **Armor Class** 17
+>- **Hit Points** 33 (6d8 + 6)
+>- **Speed** 30 ft., Fly 60 ft., Swim 30 ft.
+>- **Initiative** +4 (14)
+>___
+>|STR|DEX|CON|INT|WIS|CHA|
+>|:---:|:---:|:---:|:---:|:---:|:---:|
+>|15 (+2)|14 (+2)|13 (+1)|10 (+0)|11 (+0)|13 (+1)|
+>___
+>- **Saving Throws** Dex +4, Wis +2
+>- **Skills** Perception +4, Stealth +4
+>- **Immunities** Acid
+>- **Senses** Blindsight 10 ft., Darkvision 60 ft., Passive Perception 14
+>- **Languages** Draconic
+>- **Challenge** 2 (XP 450; PB +2)
+>- **Proficiency Bonus** +2
+>___
+>***Amphibious.*** The dragon can breathe air and water.  
+>
+>### Actions
+>***Multiattack.*** The dragon makes two Rend attacks.  
+>
+>***Rend.*** *Melee Attack Roll:*  +4, reach 5 ft. *Hit:* 5 (1d6 + 2) Slashing damage plus 2 (1d4) Acid damage.  
+>
+>***Acid Breath (Recharge 5–6).*** *Dexterity Saving Throw:* DC 11, each creature in a 15-foot-long, 5-foot-wide Line. *Failure:* 22 (5d8) Acid damage. *Success:* Half damage.
+`,
+    `___
+>## Baphomet
+>*Huge Fiend (Demon), Chaotic Evil*
+>___
+>- **Armor Class** 22 (natural armor)
+>- **Hit Points** 319 (22d12 + 176)
+>- **Speed** 40 ft.
+>- **Initiative** +2 (12)
+>___
+>|STR|DEX|CON|INT|WIS|CHA|
+>|:---:|:---:|:---:|:---:|:---:|:---:|
+>|30 (+10)|14 (+2)|26 (+8)|18 (+4)|24 (+7)|16 (+3)|
+>___
+>- **Saving Throws** Dex +9, Con +15, Wis +14
+>- **Skills** Intimidation +17, Perception +14
+>- **Damage Resistances** Cold, Fire, Lightning
+>- **Immunities** Poison; Bludgeoning, Piercing, and Slashing that is nonmagical<span class="ve-italic">;</span> Charmed, Exhaustion, Frightened, Poisoned
+>- **Senses** Truesight 120 ft., Passive Perception 24
+>- **Languages** All, telepathy 120 ft.
+>- **Challenge** 23 (XP 50 000; PB +7)
+>- **Proficiency Bonus** +7
+>___
+>***Labyrinthine Recall.*** Baphomet can perfectly recall any path he has traveled, and he is immune to the *maze* spell.  
+>
+>***Legendary Resistance (3/Day).*** If Baphomet fails a saving throw, he can choose to succeed instead.  
+>
+>***Magic Resistance.*** Baphomet has advantage on saving throws against spells and other magical effects.  
+>
+>### Actions
+>***Multiattack.*** Baphomet makes one Bite attack, one Gore attack, and one Heartcleaver attack. He also uses Frightful Presence.  
+>
+>***Bite.*** *Melee Weapon Attack:*  +17 to hit, reach 10 ft., one target. *Hit:* 19 (2d8 + 10) piercing damage.  
+>
+>***Gore.*** *Melee Weapon Attack:*  +17 to hit, reach 10 ft., one target. *Hit:* 17 (2d6 + 10) piercing damage. If Baphomet moved at least 10 feet straight toward the target immediately before the hit, the target takes an extra 16 (3d10) piercing damage. If the target is a creature, it must succeed on a DC 25 Strength saving throw or be pushed up to 10 feet away and knocked prone.  
+>
+>***Heartcleaver.*** *Melee Weapon Attack:*  +17 to hit, reach 15 ft., one target. *Hit:* 21 (2d10 + 10) force damage.  
+>
+>***Frightful Presence.*** Each creature of Baphomet's choice within 120 feet of him and aware of him must succeed on a DC 18 Wisdom saving throw or become frightened for 1 minute. A frightened creature can repeat the saving throw at the end of each of its turns, ending the effect on itself on a success. These later saves have disadvantage if Baphomet is within line of sight of the creature.  
+>If a creature succeeds on any of these saves or the effect ends on it, the creature is immune to Baphomet's Frightful Presence for the next 24 hours.  
+>
+>***Spellcasting.*** Baphomet casts one of the following spells, requiring no material components and using Charisma as the spellcasting ability (spell save DC 18):  
+>
+>3/day each: *dispel magic*, *dominate beast*, *maze*, *wall of stone*  
+>1/day: *teleport*  
+>
+>### Legendary Actions
+>*Legendary Action Uses: 3. Immediately after another creature's turn, Baphomet can expend a use to take one of the following actions. Baphomet regains all expended uses at the start of each of their turns.*
+>
+>- **Heartcleaver Attack.** Baphomet makes one Heartcleaver attack.
+>- **Charge (Costs 2 Actions).** Baphomet moves up to his speed without provoking opportunity attacks, then makes a Gore attack.
+>
+>### Lair Actions
+>On initiative count 20 (losing initiative ties), Baphomet can take one of the following lair actions; he can't take the same lair action two rounds in a row:
+>- **Illusory Room.** Baphomet casts mirage arcane, affecting a room within the lair that is no larger in any dimension than 100 feet. The effect ends on the next initiative count 20. Charisma is Baphomet's spellcasting ability for this spell.
+>- **Reverse Gravity.** Baphomet chooses a room within the lair that is no larger in any dimension than 100 feet. Until the next initiative count 20, gravity is reversed within that room. Any creatures or objects in the room when this happens fall in the direction of the new pull of gravity, unless they have some means of remaining aloft. Baphomet can ignore the gravity reversal if he's in the room, although he likes to use this action to land on a ceiling to attack targets flying near it.
+>- **Seal the Way.** Baphomet seals one doorway or other entryway within the lair. The opening must be unoccupied. It is filled with solid stone for 1 minute or until Baphomet takes this lair action again.
+>
+>### Regional Effects
+>The region containing Baphomet's lair is warped by his magic, creating one or more of the following effects:
+>- **Beguiling Realm.** Within 6 miles of the lair, all Charisma (Persuasion) and Charisma (Performance) checks have disadvantage, and all Charisma (Deception) and Charisma (Intimidation) checks have advantage.
+>- **Hedge Mazes.** Plant life within 1 mile of the lair grows thick and forms walls of trees, hedges, and other flora in the form of small mazes.
+>- **Panicked Beasts.** Beasts within 1 mile of the lair become frightened and disoriented, as though constantly under threat of being hunted, and might lash out or panic even when no visible threat is nearby.
+>
+>If Baphomet dies, these effects fade over the course of 1d10 days.
+`,
+    `___
+>## Asteria
+>*Medium Humanoid (Human, Paladin), Chaotic Good*
+>___
+>- **Armor Class** 18 (*breastplate*, *shield*)
+>- **Hit Points** 195 (26d8 + 78)
+>- **Speed** 30 ft., Fly 30 ft. (winged boots)
+>- **Initiative** +5 (15)
+>___
+>|STR|DEX|CON|INT|WIS|CHA|
+>|:---:|:---:|:---:|:---:|:---:|:---:|
+>|12 (+1)|21 (+5)|17 (+3)|15 (+2)|11 (+0)|20 (+5)|
+>___
+>- **Saving Throws** Dex +11, Con +9, Wis +6, Cha +11
+>- **Skills** Acrobatics +11, Arcana +14, Investigation +8, Perception +12, Persuasion +11, Survival +6
+>- **Immunities** Poison; Charmed, Exhaustion, Frightened, Poisoned
+>- **Senses** Passive Perception 22
+>- **Languages** Common, Druidic
+>- **Challenge** 18 (XP 20 000; PB +6)
+>- **Proficiency Bonus** +6
+>___
+>***Special Equipment.*** Asteria wears *Winged Boots*, which grant her a flying speed (included in her statistics). She also carries one half of a pair of *Sending Stones*; the other half of the pair is held by Euryale.  
+>
+>***Guardian Aura.*** Whenever a creature of Asteria's choice within 30 feet of her makes a saving throw, Asteria can give the creature advantage on the saving throw (no action required). This trait doesn't function if Asteria has the incapacitated condition.  
+>
+>***Legendary Resistance (3/Day).*** If Asteria fails a saving throw, she can choose to succeed instead.  
+>
+>### Actions
+>***Multiattack.*** Asteria makes two Radiant Blade attacks and uses Bursting Benediction.  
+>
+>***Radiant Blade.*** *Melee Weapon Attack:*  +11 to hit, reach 5 ft., one target. *Hit:* 9 (1d8 + 5) slashing damage plus 13 (3d8) radiant damage.  
+>
+>***Bursting Benediction.*** Asteria causes a burst of magical energy to envelop one creature she can see within 60 feet of herself. The target must make a DC 19 Dexterity saving throw, taking 40 (9d8) force damage on a failed save, or half as much damage on a successful one. Asteria or another creature that she can see within 60 feet of herself then regains 10 hit points.  
+>
+>***Spellcasting.*** Asteria casts one of the following spells, requiring no material components and using Charisma as the spellcasting ability (spell save DC 19):  
+>
+>At will: *Guidance*, *Light*, *Thaumaturgy*  
+>2/day each: *Bless*, *Freedom of Movement*, *Greater Restoration*, *Plane Shift* (self only), *Protection from Evil and Good*, *Revivify*  
+>
+>### Bonus Actions
+>***Empowering Aegis (Recharge 4–6).*** Asteria summons a spectral version of her shield, which orbits and bolsters one creature of Asteria's choice that she can see within 60 feet of herself. The spectral shield lasts until the start of Asteria's next turn. While the shield is orbiting the creature, the creature has half cover, is immune to the frightened condition, and makes weapon attack rolls with advantage.  
+>
+>### Legendary Actions
+>*Legendary Action Uses: 3. Immediately after another creature's turn, Asteria can expend a use to take one of the following actions. Asteria regains all expended uses at the start of each of their turns.*
+>
+>- **Brazen Strike.** Asteria makes one Radiant Blade attack.
+>- **Nimble Sprint.** Asteria moves up to her speed. This movement doesn't provoke opportunity attacks.
+>- **Cast a Spell (Costs 2 Actions).** Asteria uses Spellcasting.
+`,
+  ];
+
   function loadLibrary(){
     try{
       var raw = localStorage.getItem(STORAGE_KEY);
@@ -613,6 +836,13 @@
       console.error('Could not load library', err);
     }
     state.monsters = [seedMonster()];
+    try{
+      SEED_MARKDOWN_STATBLOCKS.forEach(function(md){
+        state.monsters = state.monsters.concat(parseMarkdownLibrary(md));
+      });
+    }catch(err){
+      console.error('Could not seed markdown statblocks', err);
+    }
   }
 
   function applyTheme(themeId){
@@ -991,12 +1221,14 @@
 
   function stripMdEmphasis(s){
     return String(s || '')
+      .replace(/<[^>]+>/g, '')
       .replace(/\*\*\*(.+?)\*\*\*/g, '$1')
       .replace(/\*\*(.+?)\*\*/g, '$1')
       .replace(/\*(.+?)\*/g, '$1')
       .replace(/__(.+?)__/g, '$1')
       .replace(/_(.+?)_/g, '$1')
       .replace(/\\([*_])/g, '$1')
+      .replace(/[ \t]+/g, ' ')
       .trim();
   }
 
@@ -1059,7 +1291,7 @@
 
   function extractAttackRolls(item){
     var text = item.text;
-    var hitMatch = text.match(/([+\-]\s?\d+)\s*to hit/i);
+    var hitMatch = text.match(/([+\-]\s?\d+)\s*to hit/i) || text.match(/Attack Roll:\s*([+\-]\s?\d+)/i);
     if(hitMatch) item.toHit = parseInt(hitMatch[1].replace(/\s/g, ''), 10);
     var dmgMatch = text.match(/\(\s*(\d+d\d+(?:\s*[+\-]\s*\d+)?)\s*\)\s*([A-Za-z]+)?\s*damage/i);
     if(dmgMatch){
@@ -1071,7 +1303,7 @@
   function parseMarkdownMonster(block){
     var rawLines = block.split('\n');
     var m = blankMonster();
-    var vulnerabilities = '', resistancesRaw = '', damageImmunitiesRaw = '', conditionImmunitiesRaw = '';
+    var vulnerabilities = '', resistancesRaw = '', damageImmunitiesRaw = '', conditionImmunitiesRaw = '', unifiedImmunitiesRaw = '', unifiedResistancesRaw = '';
     var gotName = false, gotSubtitle = false, profExplicit = false;
     var currentSection = 'traits';
     var currentItem = null;
@@ -1107,7 +1339,7 @@
         gotSubtitle = true;
         var subMatch = line.match(/^\*([^*].*[^*])\*$/);
         if(subMatch){
-          var subParts = subMatch[1].trim().match(/^([\w\-]+)\s+(.+?),\s*(.+)$/);
+          var subParts = subMatch[1].trim().match(/^([\w\-]+)\s+(.+),\s*(.+)$/);
           if(subParts){
             m.size = subParts[1];
             m.type = subParts[2];
@@ -1149,12 +1381,12 @@
       var val;
       if((val = mdLabelValue(line, 'Armor Class')) !== null){
         var acMatch = val.match(/(\d+)\s*(?:\(([^)]+)\))?/);
-        if(acMatch){ m.ac = parseInt(acMatch[1], 10); m.acNote = acMatch[2] || ''; }
+        if(acMatch){ m.ac = parseInt(acMatch[1], 10); m.acNote = stripMdEmphasis(acMatch[2] || ''); }
         continue;
       }
       if((val = mdLabelValue(line, 'Hit Points')) !== null){
         var hpMatch = val.match(/(\d+)\s*(?:\(([^)]+)\))?/);
-        if(hpMatch){ m.hp = parseInt(hpMatch[1], 10); m.hpDice = hpMatch[2] || ''; }
+        if(hpMatch){ m.hp = parseInt(hpMatch[1], 10); m.hpDice = stripMdEmphasis(hpMatch[2] || ''); }
         continue;
       }
       if((val = mdLabelValue(line, 'Speed')) !== null){ m.speed = stripMdEmphasis(val); continue; }
@@ -1174,6 +1406,9 @@
       if((val = mdLabelValue(line, 'Damage Resistances')) !== null){ resistancesRaw = stripMdEmphasis(val); continue; }
       if((val = mdLabelValue(line, 'Damage Immunities')) !== null){ damageImmunitiesRaw = stripMdEmphasis(val); continue; }
       if((val = mdLabelValue(line, 'Condition Immunities')) !== null){ conditionImmunitiesRaw = stripMdEmphasis(val); continue; }
+      if((val = mdLabelValue(line, 'Vulnerabilities')) !== null){ vulnerabilities = stripMdEmphasis(val); continue; }
+      if((val = mdLabelValue(line, 'Resistances')) !== null){ unifiedResistancesRaw = stripMdEmphasis(val); continue; }
+      if((val = mdLabelValue(line, 'Immunities')) !== null){ unifiedImmunitiesRaw = stripMdEmphasis(val); continue; }
       if((val = mdLabelValue(line, 'Senses')) !== null){ m.senses = stripMdEmphasis(val); continue; }
       if((val = mdLabelValue(line, 'Languages')) !== null){ m.languages = stripMdEmphasis(val); continue; }
       if((val = mdLabelValue(line, 'Challenge')) !== null){
@@ -1191,7 +1426,7 @@
         continue;
       }
 
-      var plainText = stripMdEmphasis(line.replace(/^[-*]\s*/, ''));
+      var plainText = stripMdEmphasis(line.replace(/^[-*]\s+/, ''));
       if(!plainText) continue;
       if(currentItem){
         currentItem.text = (currentItem.text + ' ' + plainText).trim();
@@ -1211,12 +1446,14 @@
 
     var resParts = [];
     if(resistancesRaw) resParts.push(resistancesRaw);
+    if(unifiedResistancesRaw) resParts.push(unifiedResistancesRaw);
     if(vulnerabilities) resParts.push('Vulnerable: ' + vulnerabilities);
     m.resistances = resParts.join('; ');
 
     var immParts = [];
     if(damageImmunitiesRaw) immParts.push(damageImmunitiesRaw);
     if(conditionImmunitiesRaw) immParts.push(conditionImmunitiesRaw);
+    if(unifiedImmunitiesRaw) immParts.push(unifiedImmunitiesRaw);
     m.immunities = immParts.join('; ');
 
     if(!profExplicit) m.prof = profFromCR(m.cr);
@@ -1228,31 +1465,84 @@
     return splitMarkdownBlocks(text).map(parseMarkdownMonster).filter(function(m){ return m; });
   }
 
+  function readFileAsText(file){
+    return new Promise(function(resolve){
+      var reader = new FileReader();
+      reader.onload = function(){ resolve(reader.result); };
+      reader.onerror = function(){ resolve(null); };
+      reader.readAsText(file);
+    });
+  }
+
+  function importMarkdownFiles(fileList){
+    var files = Array.prototype.filter.call(fileList, function(f){
+      return /\.md$/i.test(f.name) || f.type === 'text/markdown' || f.type === 'text/plain' || f.type === '';
+    });
+    if(!files.length){
+      alert('No .md files found to import. Drop or select files with a .md extension.');
+      return;
+    }
+    Promise.all(files.map(function(file){
+      return readFileAsText(file).then(function(text){ return {name: file.name, text: text}; });
+    })).then(function(results){
+      var allImported = [];
+      var failedFiles = [];
+      results.forEach(function(r){
+        if(r.text === null){ failedFiles.push(r.name); return; }
+        var imported;
+        try{ imported = parseMarkdownLibrary(r.text); }catch(err){ console.error('Markdown import failed for ' + r.name, err); imported = []; }
+        if(!imported.length){ failedFiles.push(r.name); return; }
+        allImported = allImported.concat(imported);
+      });
+      if(allImported.length){
+        allImported.forEach(function(m){ state.monsters.push(m); });
+        state.currentId = allImported[allImported.length - 1].id;
+        saveLibrary();
+        render();
+      }
+      var msg = '';
+      if(allImported.length){
+        msg = 'Imported ' + allImported.length + ' creature' + (allImported.length === 1 ? '' : 's') + ': ' + allImported.map(function(m){ return m.name; }).join(', ') + '.';
+      }
+      if(failedFiles.length){
+        msg += (msg ? '\n\n' : '') + 'Could not find a recognizable stat block in: ' + failedFiles.join(', ') + '.';
+      }
+      if(!msg) msg = 'Could not find a recognizable stat block in that file. Expected a 5e-style markdown stat block (name heading, "Armor Class", "Hit Points", ability score table, etc.).';
+      else if(allImported.length) msg += '\n\nReview the stat block(s) and use Edit to fix anything the parser missed.';
+      alert(msg);
+    });
+  }
+
   document.getElementById('mdImportInput').addEventListener('change', function(e){
-    var file = e.target.files[0];
-    if(!file) return;
-    var reader = new FileReader();
-    reader.onload = function(){
-      var imported;
-      try{
-        imported = parseMarkdownLibrary(reader.result);
-      }catch(err){
-        console.error('Markdown import failed', err);
-        imported = [];
-      }
-      if(!imported.length){
-        alert('Could not find a recognizable stat block in that file. Expected a 5e-style markdown stat block (name heading, "Armor Class", "Hit Points", ability score table, etc.).');
-        e.target.value = '';
-        return;
-      }
-      imported.forEach(function(m){ state.monsters.push(m); });
-      state.currentId = imported[imported.length - 1].id;
-      saveLibrary();
-      render();
-      alert('Imported ' + imported.length + ' creature' + (imported.length === 1 ? '' : 's') + ' from Markdown: ' + imported.map(function(m){ return m.name; }).join(', ') + '.\n\nReview the stat block and use Edit to fix anything the parser missed.');
-      e.target.value = '';
-    };
-    reader.readAsText(file);
+    if(e.target.files.length) importMarkdownFiles(e.target.files);
+    e.target.value = '';
+  });
+
+  var dragDepth = 0;
+  function dragHasFiles(e){
+    return e.dataTransfer && e.dataTransfer.types && Array.prototype.indexOf.call(e.dataTransfer.types, 'Files') !== -1;
+  }
+  window.addEventListener('dragenter', function(e){
+    if(!dragHasFiles(e)) return;
+    e.preventDefault();
+    dragDepth++;
+    document.getElementById('dropOverlay').classList.add('active');
+  });
+  window.addEventListener('dragover', function(e){
+    if(!dragHasFiles(e)) return;
+    e.preventDefault();
+  });
+  window.addEventListener('dragleave', function(e){
+    if(!dragHasFiles(e)) return;
+    dragDepth = Math.max(0, dragDepth - 1);
+    if(dragDepth === 0) document.getElementById('dropOverlay').classList.remove('active');
+  });
+  window.addEventListener('drop', function(e){
+    if(!dragHasFiles(e)){ return; }
+    e.preventDefault();
+    dragDepth = 0;
+    document.getElementById('dropOverlay').classList.remove('active');
+    if(e.dataTransfer.files && e.dataTransfer.files.length) importMarkdownFiles(e.dataTransfer.files);
   });
 
   var ABILITY_LABELS = {str:'Strength', dex:'Dexterity', con:'Constitution', int:'Intelligence', wis:'Wisdom', cha:'Charisma'};
