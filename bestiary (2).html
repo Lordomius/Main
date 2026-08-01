@@ -963,14 +963,11 @@
     }).join('');
   }
 
-  function findAllDamages(text){
-    var re = /\(\s*(\d+d\d+(?:\s*[+\-]\s*\d+)?)\s*\)\s*([A-Za-z]+)?\s*damage/gi;
-    var matches = [];
-    var m;
-    while((m = re.exec(String(text || '')))){
-      matches.push({dice: m[1].replace(/\s/g, ''), type: m[2] ? m[2].toLowerCase() : ''});
-    }
-    return matches;
+  function findBonusDamage(text){
+    var re = /\b(?:plus|extra)\s+\d+\s*\(\s*(\d+d\d+(?:\s*[+\-]\s*\d+)?)\s*\)\s*([A-Za-z]+)?\s*damage/i;
+    var m = String(text || '').match(re);
+    if(!m) return null;
+    return {dice: m[1].replace(/\s/g, ''), type: m[2] ? m[2].toLowerCase() : ''};
   }
 
   function renderStage(){
@@ -1020,10 +1017,9 @@
       }
       if(a.damage){
         rolls += '<button class="stamp dmg" data-action="roll-damage" data-dice="' + esc(a.damage) + '" data-typelabel="' + esc(a.damageType||'') + '" data-label="' + esc(m.name) + ' \u2014 ' + esc(a.name) + ' damage">' + esc(a.damage) + (a.damageType ? (' ' + esc(a.damageType)) : '') + '</button>';
-        var extraDamages = findAllDamages(a.text);
-        if(extraDamages.length > 1){
-          var d2 = extraDamages[1];
-          rolls += '<button class="stamp dmg" data-action="roll-damage" data-dice="' + esc(d2.dice) + '" data-typelabel="' + esc(d2.type) + '" data-label="' + esc(m.name) + ' \u2014 ' + esc(a.name) + ' extra damage">' + esc(d2.dice) + (d2.type ? (' ' + esc(d2.type)) : '') + '</button>';
+        var bonusDmg = findBonusDamage(a.text);
+        if(bonusDmg && (bonusDmg.dice !== a.damage || bonusDmg.type !== a.damageType)){
+          rolls += '<button class="stamp dmg" data-action="roll-damage" data-dice="' + esc(bonusDmg.dice) + '" data-typelabel="' + esc(bonusDmg.type) + '" data-label="' + esc(m.name) + ' \u2014 ' + esc(a.name) + ' extra damage">' + esc(bonusDmg.dice) + (bonusDmg.type ? (' ' + esc(bonusDmg.type)) : '') + '</button>';
         }
       }
       return '<div class="action-row"><span class="a-name">' + esc(a.name) + '.</span> ' + highlightSpells(highlightCastingFrequency(highlightNumbers(esc(a.text)))) +
@@ -1253,6 +1249,19 @@
     return m ? m[1].trim() : null;
   }
 
+  function stripWrappingParens(s){
+    if(s.charAt(0) !== '(' || s.charAt(s.length - 1) !== ')') return s;
+    var depth = 0;
+    for(var i = 0; i < s.length; i++){
+      if(s.charAt(i) === '(') depth++;
+      else if(s.charAt(i) === ')'){
+        depth--;
+        if(depth === 0) return (i === s.length - 1) ? s.slice(1, -1) : s;
+      }
+    }
+    return s;
+  }
+
   function parseNameBonusList(text){
     return String(text || '').split(',').map(function(part){
       var m = part.trim().match(/^([A-Za-z][A-Za-z\s]*?)\s*([+\-]\s?\d+)$/);
@@ -1400,9 +1409,7 @@
         var acMatch = val.match(/^(\d+)\s*(.*)$/);
         if(acMatch){
           m.ac = parseInt(acMatch[1], 10);
-          var acRest = acMatch[2].trim();
-          if(/^\(.*\)$/.test(acRest)) acRest = acRest.slice(1, -1);
-          m.acNote = stripMdEmphasis(acRest);
+          m.acNote = stripMdEmphasis(stripWrappingParens(acMatch[2].trim()));
         }
         continue;
       }
@@ -1410,9 +1417,7 @@
         var hpMatch = val.match(/^(\d+)\s*(.*)$/);
         if(hpMatch){
           m.hp = parseInt(hpMatch[1], 10);
-          var hpRest = hpMatch[2].trim();
-          if(/^\(.*\)$/.test(hpRest)) hpRest = hpRest.slice(1, -1);
-          m.hpDice = stripMdEmphasis(hpRest);
+          m.hpDice = stripMdEmphasis(stripWrappingParens(hpMatch[2].trim()));
         }
         continue;
       }
