@@ -323,6 +323,21 @@
   }
   .cat-filter-clear:hover{color:var(--gold-light);}
 
+  .cr-slider{position:relative;height:22px;margin-top:6px;}
+  .cr-slider input[type=range]{
+    position:absolute;left:0;right:0;top:0;width:100%;height:22px;margin:0;
+    -webkit-appearance:none;appearance:none;background:transparent;pointer-events:none;
+  }
+  .cr-slider input[type=range]::-webkit-slider-runnable-track{height:3px;background:var(--forest-light);border-radius:2px;}
+  .cr-slider input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;appearance:none;pointer-events:all;
+    width:14px;height:14px;border-radius:50%;background:var(--gold);cursor:pointer;margin-top:-5.5px;border:1px solid var(--desk);
+  }
+  .cr-slider input[type=range]::-moz-range-track{height:3px;background:var(--forest-light);border-radius:2px;}
+  .cr-slider input[type=range]::-moz-range-thumb{
+    pointer-events:all;width:14px;height:14px;border-radius:50%;background:var(--gold);cursor:pointer;border:1px solid var(--desk);
+  }
+
   .cat-status-strip{
     font-size:12px;color:var(--text-light-secondary);background:var(--desk);
     border:1px solid var(--forest-light);border-radius:3px;padding:6px 9px;margin-bottom:10px;
@@ -605,6 +620,13 @@
         <div class="cat-filter-group-label">Type</div>
         <div class="cat-filter-chips" id="filterTypeChips"></div>
       </div>
+      <div class="cat-filter-group">
+        <div class="cat-filter-group-label">Challenge rating: <span id="crRangeLabel">0 – 30</span></div>
+        <div class="cr-slider">
+          <input type="range" id="crMinSlider" min="0" max="33" step="1" value="0">
+          <input type="range" id="crMaxSlider" min="0" max="33" step="1" value="33">
+        </div>
+      </div>
       <button type="button" class="cat-filter-clear" data-action="clear-filters">Clear filters</button>
     </div>
     <div class="cat-folder-new-row" id="catFolderNewRow">
@@ -655,6 +677,12 @@
   var STORAGE_KEY = 'dndBestiaryLibrary_v1';
   var THEME_STORAGE_KEY = 'dndBestiaryTheme_v1';
   var BGIMG_STORAGE_KEY = 'dndBestiaryBgImage_v1';
+
+  // Every valid CR value in ascending order, used as slider steps: the
+  // sub-1 fractions first, then whole numbers 1-30.
+  var CR_SCALE = [0, 0.125, 0.25, 0.5];
+  for(var __crStep = 1; __crStep <= 30; __crStep++) CR_SCALE.push(__crStep);
+
   var state = {
     monsters: [],
     currentId: null,
@@ -674,11 +702,21 @@
     repoOverrides: {},
     filterSizes: [],
     filterTypes: [],
+    filterCrMinIdx: 0,
+    filterCrMaxIdx: CR_SCALE.length - 1,
     filtersOpen: false
   };
 
   var CREATURE_SIZES = ['tiny','small','medium','large','huge','gargantuan'];
   var CREATURE_TYPES = ['aberration','beast','celestial','construct','dragon','elemental','fey','fiend','giant','humanoid','monstrosity','ooze','plant','undead'];
+
+  function crLabelForIndex(idx){
+    var v = CR_SCALE[idx];
+    if(v === 0.125) return '1/8';
+    if(v === 0.25) return '1/4';
+    if(v === 0.5) return '1/2';
+    return String(v);
+  }
 
   function monsterSizeTokens(m){
     var text = String((m && m.size) || '').toLowerCase();
@@ -780,7 +818,8 @@
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
         version:1, monsters: state.monsters, folders: state.folders, collapsedFolders: state.collapsedFolders,
         sortMode: state.sortMode, repoLibraryConfig: state.repoLibraryConfig, repoOverrides: state.repoOverrides,
-        filterSizes: state.filterSizes, filterTypes: state.filterTypes
+        filterSizes: state.filterSizes, filterTypes: state.filterTypes,
+        filterCrMinIdx: state.filterCrMinIdx, filterCrMaxIdx: state.filterCrMaxIdx
       }));
     }catch(err){
       console.error('Could not save library', err);
@@ -1010,6 +1049,8 @@
         state.repoOverrides = (data && data.repoOverrides) || {};
         state.filterSizes = (data && data.filterSizes) || [];
         state.filterTypes = (data && data.filterTypes) || [];
+        state.filterCrMinIdx = (data && typeof data.filterCrMinIdx === 'number') ? data.filterCrMinIdx : 0;
+        state.filterCrMaxIdx = (data && typeof data.filterCrMaxIdx === 'number') ? data.filterCrMaxIdx : CR_SCALE.length - 1;
         return;
       }
     }catch(err){
@@ -1193,6 +1234,7 @@
   function renderCatalog(){
     var list = document.getElementById('catList');
     var q = (document.getElementById('catSearch').value || '').toLowerCase();
+    var crRangeActive = state.filterCrMinIdx > 0 || state.filterCrMaxIdx < CR_SCALE.length - 1;
     var matches = function(m){
       if(q && m.name.toLowerCase().indexOf(q) === -1) return false;
       if(state.filterSizes.length){
@@ -1203,9 +1245,13 @@
         var types = monsterTypeTokens(m);
         if(!state.filterTypes.some(function(t){ return types.indexOf(t) !== -1; })) return false;
       }
+      if(crRangeActive){
+        var crNum = crToNumber(m.cr);
+        if(crNum < CR_SCALE[state.filterCrMinIdx] || crNum > CR_SCALE[state.filterCrMaxIdx]) return false;
+      }
       return true;
     };
-    var filtersActive = !!(q || state.filterSizes.length || state.filterTypes.length);
+    var filtersActive = !!(q || state.filterSizes.length || state.filterTypes.length || crRangeActive);
 
     function sortMonsters(arr){
       var mode = state.sortMode || 'name-asc';
@@ -1323,7 +1369,15 @@
     sizeEl.innerHTML = CREATURE_SIZES.map(function(s){ return chipHtml('toggle-filter-size', s, state.filterSizes); }).join('');
     typeEl.innerHTML = CREATURE_TYPES.map(function(t){ return chipHtml('toggle-filter-type', t, state.filterTypes); }).join('');
 
-    var count = state.filterSizes.length + state.filterTypes.length;
+    var crMinEl = document.getElementById('crMinSlider');
+    var crMaxEl = document.getElementById('crMaxSlider');
+    var crLabel = document.getElementById('crRangeLabel');
+    if(crMinEl) crMinEl.value = state.filterCrMinIdx;
+    if(crMaxEl) crMaxEl.value = state.filterCrMaxIdx;
+    if(crLabel) crLabel.textContent = crLabelForIndex(state.filterCrMinIdx) + ' – ' + crLabelForIndex(state.filterCrMaxIdx);
+    var crRangeActive = state.filterCrMinIdx > 0 || state.filterCrMaxIdx < CR_SCALE.length - 1;
+
+    var count = state.filterSizes.length + state.filterTypes.length + (crRangeActive ? 1 : 0);
     var badge = document.getElementById('filterBadge');
     if(badge){
       badge.textContent = count;
@@ -1539,6 +1593,8 @@
     } else if(action === 'clear-filters'){
       state.filterSizes = [];
       state.filterTypes = [];
+      state.filterCrMinIdx = 0;
+      state.filterCrMaxIdx = CR_SCALE.length - 1;
       saveLibrary();
       renderCatalog();
     } else if(action === 'delete-folder'){
@@ -1635,6 +1691,27 @@
 
   document.getElementById('catSortSelect').addEventListener('change', function(e){
     state.sortMode = e.target.value;
+    saveLibrary();
+    renderCatalog();
+  });
+
+  document.getElementById('crMinSlider').addEventListener('input', function(e){
+    var v = parseInt(e.target.value, 10);
+    if(v > state.filterCrMaxIdx) v = state.filterCrMaxIdx;
+    state.filterCrMinIdx = v;
+    renderFilterPanel();
+  });
+  document.getElementById('crMinSlider').addEventListener('change', function(){
+    saveLibrary();
+    renderCatalog();
+  });
+  document.getElementById('crMaxSlider').addEventListener('input', function(e){
+    var v = parseInt(e.target.value, 10);
+    if(v < state.filterCrMinIdx) v = state.filterCrMinIdx;
+    state.filterCrMaxIdx = v;
+    renderFilterPanel();
+  });
+  document.getElementById('crMaxSlider').addEventListener('change', function(){
     saveLibrary();
     renderCatalog();
   });
