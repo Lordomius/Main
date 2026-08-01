@@ -283,18 +283,51 @@
   }
   .folder-body{padding:6px 0 2px 14px;}
   .folder-empty{color:var(--text-light-secondary);font-size:12px;font-style:italic;padding:4px 2px 8px;}
-  .folder-empty.repo-error{color:var(--fumble-color);}
 
   .cat-card[draggable]{cursor:grab;}
   .cat-card.dragging{opacity:0.4;}
-  .cat-card.repo-card{cursor:pointer;}
-  .cat-card.repo-card .cc-name::after{
-    content:'repo';font-size:9px;font-weight:normal;color:var(--text-light-secondary);
-    border:1px solid var(--forest-light);border-radius:3px;padding:0 4px;margin-left:6px;vertical-align:middle;
+
+  .cat-refresh-btn{
+    background:transparent;border:1px solid var(--forest-light);color:var(--parchment);
+    padding:4px 9px;border-radius:3px;font-size:13px;cursor:pointer;font-family:var(--font-body);flex-shrink:0;
   }
-  .repo-library-header{border-color:var(--forest-light);}
-  .repo-refresh-btn{font-size:14px;color:var(--text-light-secondary);}
-  .repo-refresh-btn:hover{color:var(--gold-light);}
+  .cat-refresh-btn:hover{background:var(--forest-dark);}
+  .cat-filter-btn{
+    background:transparent;border:1px solid var(--forest-light);color:var(--parchment);
+    padding:4px 10px;border-radius:3px;font-size:12.5px;cursor:pointer;font-family:var(--font-body);
+    flex-shrink:0;display:flex;align-items:center;gap:5px;
+  }
+  .cat-filter-btn:hover{background:var(--forest-dark);}
+  .cat-filter-btn.active{border-color:var(--gold);color:var(--gold-light);}
+  .filter-badge{
+    background:var(--gold);color:var(--desk);font-size:10px;font-weight:bold;
+    border-radius:8px;padding:0 5px;line-height:15px;min-width:15px;text-align:center;
+  }
+  .cat-filter-panel{
+    background:var(--desk);border:1px solid var(--forest-light);border-radius:4px;
+    padding:8px 10px;margin-bottom:10px;
+  }
+  .cat-filter-group{margin-bottom:6px;}
+  .cat-filter-group:last-of-type{margin-bottom:8px;}
+  .cat-filter-group-label{font-size:11px;text-transform:uppercase;letter-spacing:0.4px;color:var(--text-light-secondary);margin-bottom:4px;}
+  .cat-filter-chips{display:flex;flex-wrap:wrap;gap:5px;}
+  .filter-chip{
+    background:transparent;border:1px solid var(--forest-light);color:var(--text-light-secondary);
+    padding:3px 8px;border-radius:12px;font-size:12px;cursor:pointer;font-family:var(--font-body);
+  }
+  .filter-chip:hover{border-color:var(--gold);}
+  .filter-chip.active{background:var(--forest);border-color:var(--gold);color:#fff;}
+  .cat-filter-clear{
+    background:transparent;border:none;color:var(--text-light-secondary);text-decoration:underline;
+    font-size:12px;cursor:pointer;font-family:var(--font-body);padding:0;
+  }
+  .cat-filter-clear:hover{color:var(--gold-light);}
+
+  .cat-status-strip{
+    font-size:12px;color:var(--text-light-secondary);background:var(--desk);
+    border:1px solid var(--forest-light);border-radius:3px;padding:6px 9px;margin-bottom:10px;
+  }
+  .cat-status-strip.error{color:var(--fumble-color);border-color:var(--crimson-light);}
 
   .context-menu{
     position:fixed;z-index:600;display:none;
@@ -532,8 +565,8 @@
   <button class="settings-btn-full" data-action="upload-bg-image">Upload image</button>
   <button class="settings-btn-full" data-action="remove-bg-image">Remove image</button>
   <div class="settings-divider"></div>
-  <div class="settings-row-label">Repo library source</div>
-  <p class="settings-sub">GitHub folder the catalog's "Repo Library" section loads stat blocks from.</p>
+  <div class="settings-row-label">Statblock source</div>
+  <p class="settings-sub">GitHub folder your library automatically pulls stat blocks from and merges into the catalog below.</p>
   <div class="repo-cfg-row"><label>Owner</label><input type="text" id="repoCfgOwner"></div>
   <div class="repo-cfg-row"><label>Repo</label><input type="text" id="repoCfgRepo"></div>
   <div class="repo-cfg-row"><label>Branch</label><input type="text" id="repoCfgBranch"></div>
@@ -559,11 +592,25 @@
         <option value="cr-asc">CR 0→30</option>
         <option value="cr-desc">CR 30→0</option>
       </select>
+      <button class="cat-filter-btn" id="catFilterBtn" data-action="toggle-filters" title="Filter by creature type &amp; size">Filters<span class="filter-badge" id="filterBadge" style="display:none;">0</span></button>
+      <button class="cat-refresh-btn" data-action="refresh-repo-library" title="Refresh statblocks from repo">⟳</button>
       <button class="cat-folder-add-btn" data-action="toggle-new-folder">+ Folder</button>
+    </div>
+    <div class="cat-filter-panel" id="catFilterPanel" style="display:none;">
+      <div class="cat-filter-group">
+        <div class="cat-filter-group-label">Size</div>
+        <div class="cat-filter-chips" id="filterSizeChips"></div>
+      </div>
+      <div class="cat-filter-group">
+        <div class="cat-filter-group-label">Type</div>
+        <div class="cat-filter-chips" id="filterTypeChips"></div>
+      </div>
+      <button type="button" class="cat-filter-clear" data-action="clear-filters">Clear filters</button>
     </div>
     <div class="cat-folder-new-row" id="catFolderNewRow">
       <input type="text" id="catFolderNewInput" placeholder="Folder name…" maxlength="40">
     </div>
+    <div class="cat-status-strip" id="catStatusStrip" style="display:none;"></div>
     <div id="catList"></div>
   </aside>
 
@@ -624,8 +671,24 @@
     repoMonsters: [],
     repoLibraryStatus: 'idle',
     repoLibraryError: '',
-    repoLibraryCollapsed: false
+    repoOverrides: {},
+    filterSizes: [],
+    filterTypes: [],
+    filtersOpen: false
   };
+
+  var CREATURE_SIZES = ['tiny','small','medium','large','huge','gargantuan'];
+  var CREATURE_TYPES = ['aberration','beast','celestial','construct','dragon','elemental','fey','fiend','giant','humanoid','monstrosity','ooze','plant','undead'];
+
+  function monsterSizeTokens(m){
+    var text = String((m && m.size) || '').toLowerCase();
+    return CREATURE_SIZES.filter(function(s){ return new RegExp('\\b' + s + '\\b').test(text); });
+  }
+
+  function monsterTypeTokens(m){
+    var text = String((m && m.type) || '').toLowerCase();
+    return CREATURE_TYPES.filter(function(t){ return new RegExp('\\b' + t + '\\b').test(text); });
+  }
 
   var THEMES = [
     {id:'blue', label:'Blue', swatch:['#4fa8d8','#2b6f93','#163d54']},
@@ -716,7 +779,8 @@
     try{
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
         version:1, monsters: state.monsters, folders: state.folders, collapsedFolders: state.collapsedFolders,
-        sortMode: state.sortMode, repoLibraryConfig: state.repoLibraryConfig
+        sortMode: state.sortMode, repoLibraryConfig: state.repoLibraryConfig, repoOverrides: state.repoOverrides,
+        filterSizes: state.filterSizes, filterTypes: state.filterTypes
       }));
     }catch(err){
       console.error('Could not save library', err);
@@ -943,6 +1007,9 @@
         state.collapsedFolders = (data && data.collapsedFolders) || {};
         state.sortMode = (data && data.sortMode) || 'name-asc';
         if(data && data.repoLibraryConfig) state.repoLibraryConfig = data.repoLibraryConfig;
+        state.repoOverrides = (data && data.repoOverrides) || {};
+        state.filterSizes = (data && data.filterSizes) || [];
+        state.filterTypes = (data && data.filterTypes) || [];
         return;
       }
     }catch(err){
@@ -1058,6 +1125,16 @@
     return !!(m && typeof m.id === 'string' && m.id.indexOf('repo_') === 0);
   }
 
+  // Hides a live repo-sourced monster (by its stable repoKey) from future
+  // renders/fetches. Used whenever the user touches a repo monster in a way
+  // that needs to persist locally (edit, delete, file into a folder) — from
+  // then on it's an ordinary entry in state.monsters instead.
+  function hideRepoOriginal(repoKey){
+    if(!repoKey) return;
+    state.repoOverrides[repoKey] = true;
+    state.repoMonsters = state.repoMonsters.filter(function(x){ return x.repoKey !== repoKey; });
+  }
+
   function getFolder(id){
     for(var i = 0; i < state.folders.length; i++) if(state.folders[i].id === id) return state.folders[i];
     return null;
@@ -1095,6 +1172,19 @@
   function moveMonsterToFolder(monsterId, folderId){
     var m = getMonster(monsterId);
     if(!m) return;
+    if(isRepoMonster(m)){
+      var clone = JSON.parse(JSON.stringify(m));
+      clone.id = uid();
+      var repoKey = clone.repoKey;
+      delete clone.repoKey;
+      clone.folderId = folderId || null;
+      hideRepoOriginal(repoKey);
+      state.monsters.push(clone);
+      if(state.currentId === monsterId) state.currentId = clone.id;
+      saveLibrary();
+      render();
+      return;
+    }
     m.folderId = folderId || null;
     saveLibrary();
     renderCatalog();
@@ -1103,7 +1193,19 @@
   function renderCatalog(){
     var list = document.getElementById('catList');
     var q = (document.getElementById('catSearch').value || '').toLowerCase();
-    var matches = function(m){ return m.name.toLowerCase().indexOf(q) !== -1; };
+    var matches = function(m){
+      if(q && m.name.toLowerCase().indexOf(q) === -1) return false;
+      if(state.filterSizes.length){
+        var sizes = monsterSizeTokens(m);
+        if(!state.filterSizes.some(function(s){ return sizes.indexOf(s) !== -1; })) return false;
+      }
+      if(state.filterTypes.length){
+        var types = monsterTypeTokens(m);
+        if(!state.filterTypes.some(function(t){ return types.indexOf(t) !== -1; })) return false;
+      }
+      return true;
+    };
+    var filtersActive = !!(q || state.filterSizes.length || state.filterTypes.length);
 
     function sortMonsters(arr){
       var mode = state.sortMode || 'name-asc';
@@ -1128,14 +1230,6 @@
       '</div>';
     }
 
-    function repoCardHtml(m){
-      var sel = m.id === state.currentId ? ' selected' : '';
-      return '<div class="cat-card repo-card' + sel + '" data-action="select-monster" data-id="' + m.id + '">' +
-        '<div class="cc-name">' + esc(m.name) + '</div>' +
-        '<div class="cc-meta">CR ' + esc(m.cr) + ' \u00b7 ' + esc(m.type) + '</div>' +
-      '</div>';
-    }
-
     function folderHeaderHtml(folderId, name, count, collapsed){
       if(state.renamingFolderId === folderId){
         return '<div class="folder-header" data-folder-id="' + esc(folderId || '') + '">' +
@@ -1153,12 +1247,13 @@
     }
 
     var html = '';
+    var totalCount = state.monsters.length + state.repoMonsters.length;
 
     if(state.folders.length){
       state.folders.forEach(function(f){
         var inFolder = state.monsters.filter(function(m){ return m.folderId === f.id; });
         var shown = sortMonsters(inFolder.filter(matches));
-        if(q && !shown.length) return;
+        if(filtersActive && !shown.length) return;
         var collapsed = !!state.collapsedFolders[f.id];
         html += '<div class="folder-section">' + folderHeaderHtml(f.id, f.name, inFolder.length, collapsed);
         if(!collapsed){
@@ -1167,9 +1262,9 @@
         html += '</div>';
       });
 
-      var unsortedAll = state.monsters.filter(function(m){ return !m.folderId; });
+      var unsortedAll = state.monsters.filter(function(m){ return !m.folderId; }).concat(state.repoMonsters);
       var unsortedShown = sortMonsters(unsortedAll.filter(matches));
-      if(!q || unsortedShown.length){
+      if(!filtersActive || unsortedShown.length){
         var collapsedU = !!state.collapsedFolders[''];
         html += '<div class="folder-section">' + folderHeaderHtml('', 'Unsorted', unsortedAll.length, collapsedU);
         if(!collapsedU){
@@ -1178,38 +1273,12 @@
         html += '</div>';
       }
     } else {
-      html += sortMonsters(state.monsters.filter(matches)).map(cardHtml).join('');
+      var allFlat = state.monsters.concat(state.repoMonsters);
+      html += sortMonsters(allFlat.filter(matches)).map(cardHtml).join('');
     }
 
     if(!html){
-      html = '<div class="cat-empty">' + (state.monsters.length ? 'No matches.' : 'No monsters yet. Click "+ New monster" to add your first creature.') + '</div>';
-    }
-
-    var repoShown = sortMonsters(state.repoMonsters.filter(matches));
-    var repoCollapsed = !!state.repoLibraryCollapsed;
-    var repoChevron = repoCollapsed ? '▸' : '▾';
-    var repoBody = '';
-    if(state.repoLibraryStatus === 'loading'){
-      repoBody = '<div class="folder-empty">Loading…</div>';
-    } else if(state.repoLibraryStatus === 'error'){
-      repoBody = '<div class="folder-empty repo-error">' + esc(state.repoLibraryError || 'Could not load.') + '</div>';
-    } else if(!state.repoMonsters.length){
-      repoBody = '<div class="folder-empty">' + (state.repoLibraryStatus === 'loaded' ? 'No stat block files found in the folder.' : 'Not loaded yet.') + '</div>';
-    } else if(!repoShown.length){
-      repoBody = '<div class="folder-empty">No matches.</div>';
-    } else {
-      repoBody = repoShown.map(repoCardHtml).join('');
-    }
-    if(!q || repoShown.length || state.repoLibraryStatus !== 'loaded'){
-      html += '<div class="folder-section repo-library-section">' +
-        '<div class="folder-header repo-library-header" data-action="toggle-repo-collapse">' +
-          '<span class="folder-chevron">' + repoChevron + '</span>' +
-          '<span class="folder-name">Repo Library</span>' +
-          '<span class="folder-count">' + state.repoMonsters.length + '</span>' +
-          '<button class="folder-del-btn repo-refresh-btn" data-action="refresh-repo-library" title="Refresh from GitHub">⟳</button>' +
-        '</div>' +
-        (repoCollapsed ? '' : '<div class="folder-body">' + repoBody + '</div>') +
-      '</div>';
+      html = '<div class="cat-empty">' + (totalCount ? 'No matches.' : 'No monsters yet. Click "+ New monster" to add your first creature.') + '</div>';
     }
 
     list.innerHTML = html;
@@ -1221,6 +1290,50 @@
       var input = document.getElementById('folderRenameInput');
       if(input){ input.focus(); input.select(); }
     }
+
+    renderRepoStatus();
+    renderFilterPanel();
+  }
+
+  function renderRepoStatus(){
+    var el = document.getElementById('catStatusStrip');
+    if(!el) return;
+    if(state.repoLibraryStatus === 'loading'){
+      el.style.display = '';
+      el.className = 'cat-status-strip';
+      el.textContent = 'Loading statblocks from repo…';
+    } else if(state.repoLibraryStatus === 'error'){
+      el.style.display = '';
+      el.className = 'cat-status-strip error';
+      el.textContent = 'Could not load repo statblocks: ' + (state.repoLibraryError || 'unknown error');
+    } else {
+      el.style.display = 'none';
+    }
+  }
+
+  function renderFilterPanel(){
+    var sizeEl = document.getElementById('filterSizeChips');
+    var typeEl = document.getElementById('filterTypeChips');
+    if(!sizeEl || !typeEl) return;
+    function chipHtml(action, value, activeList){
+      var active = activeList.indexOf(value) !== -1;
+      var label = value.charAt(0).toUpperCase() + value.slice(1);
+      return '<button type="button" class="filter-chip' + (active ? ' active' : '') + '" data-action="' + action + '" data-value="' + value + '">' + label + '</button>';
+    }
+    sizeEl.innerHTML = CREATURE_SIZES.map(function(s){ return chipHtml('toggle-filter-size', s, state.filterSizes); }).join('');
+    typeEl.innerHTML = CREATURE_TYPES.map(function(t){ return chipHtml('toggle-filter-type', t, state.filterTypes); }).join('');
+
+    var count = state.filterSizes.length + state.filterTypes.length;
+    var badge = document.getElementById('filterBadge');
+    if(badge){
+      badge.textContent = count;
+      badge.style.display = count ? '' : 'none';
+    }
+    var filterBtn = document.getElementById('catFilterBtn');
+    if(filterBtn) filterBtn.classList.toggle('active', count > 0);
+
+    var panel = document.getElementById('catFilterPanel');
+    if(panel) panel.style.display = state.filtersOpen ? '' : 'none';
   }
 
   function traitLikeHtml(list){
@@ -1312,9 +1425,7 @@
     var dexMod = abilityMod(m.abilities.dex || 10);
     var initBonus = (m.initiative === null || m.initiative === undefined || m.initiative === '') ? dexMod : Number(m.initiative);
 
-    var topbarButtons = isRepoMonster(m) ?
-      '<button data-action="copy-to-library" data-id="' + m.id + '">Copy to my library</button>' +
-      '<button data-action="export-monster" data-id="' + m.id + '">Export</button>' :
+    var topbarButtons =
       '<button data-action="duplicate-monster" data-id="' + m.id + '">Duplicate</button>' +
       '<button data-action="export-monster" data-id="' + m.id + '">Export</button>' +
       '<button data-action="edit-monster" data-id="' + m.id + '">Edit</button>' +
@@ -1406,24 +1517,30 @@
       state.collapsedFolders[fid] = !state.collapsedFolders[fid];
       saveLibrary();
       renderCatalog();
-    } else if(action === 'toggle-repo-collapse'){
-      state.repoLibraryCollapsed = !state.repoLibraryCollapsed;
-      renderCatalog();
     } else if(action === 'refresh-repo-library'){
       fetchRepoLibrary();
       e.stopPropagation();
-    } else if(action === 'copy-to-library'){
-      var srcId = t.getAttribute('data-id');
-      var src = getMonster(srcId);
-      if(src){
-        var copy = JSON.parse(JSON.stringify(src));
-        copy.id = uid();
-        copy.folderId = null;
-        state.monsters.push(copy);
-        state.currentId = copy.id;
-        saveLibrary();
-        render();
-      }
+    } else if(action === 'toggle-filters'){
+      state.filtersOpen = !state.filtersOpen;
+      renderFilterPanel();
+      e.stopPropagation();
+    } else if(action === 'toggle-filter-size'){
+      var sizeVal = t.getAttribute('data-value');
+      var sizeIdx = state.filterSizes.indexOf(sizeVal);
+      if(sizeIdx === -1) state.filterSizes.push(sizeVal); else state.filterSizes.splice(sizeIdx, 1);
+      saveLibrary();
+      renderCatalog();
+    } else if(action === 'toggle-filter-type'){
+      var typeVal = t.getAttribute('data-value');
+      var typeIdx = state.filterTypes.indexOf(typeVal);
+      if(typeIdx === -1) state.filterTypes.push(typeVal); else state.filterTypes.splice(typeIdx, 1);
+      saveLibrary();
+      renderCatalog();
+    } else if(action === 'clear-filters'){
+      state.filterSizes = [];
+      state.filterTypes = [];
+      saveLibrary();
+      renderCatalog();
     } else if(action === 'delete-folder'){
       deleteFolder(t.getAttribute('data-folder-id'));
       e.stopPropagation();
@@ -1463,8 +1580,15 @@
       var target = getMonster(id);
       if(target){
         showConfirm('Delete "' + target.name + '"? This cannot be undone.', function(){
-          state.monsters = state.monsters.filter(function(m){ return m.id !== id; });
-          if(state.currentId === id) state.currentId = state.monsters.length ? state.monsters[0].id : null;
+          if(isRepoMonster(target)){
+            hideRepoOriginal(target.repoKey);
+          } else {
+            state.monsters = state.monsters.filter(function(m){ return m.id !== id; });
+          }
+          if(state.currentId === id){
+            var remaining = state.monsters.concat(state.repoMonsters);
+            state.currentId = remaining.length ? remaining[0].id : null;
+          }
           saveLibrary();
           render();
         });
@@ -1776,6 +1900,9 @@
     if(!type) return '';
     if(typeof type === 'string') return type;
     var base = type.type || '';
+    if(base && typeof base === 'object'){
+      base = Array.isArray(base.choose) ? base.choose.join(' or ') : '';
+    }
     var tags = (type.tags || []).map(function(tg){
       return typeof tg === 'string' ? tg : (tg && tg.tag) || '';
     }).filter(function(x){ return x; });
@@ -1906,7 +2033,8 @@
   function parseJsonMonster(entry){
     if(!entry || !entry.name) return null;
     var m = blankMonster();
-    m.id = 'repo_' + uid();
+    m.repoKey = jsonMonsterKey(entry.name, entry.source);
+    m.id = 'repo_' + m.repoKey;
     m.name = stripJsonTags(entry.name);
     m.size = jsonSizeToText(entry.size);
     m.type = jsonTypeToText(entry.type);
@@ -2157,7 +2285,11 @@
       fileResults.forEach(function(fr){
         if(/\.md$/i.test(fr.name)){
           try{
-            parseMarkdownLibrary(fr.text).forEach(function(m){ m.id = 'repo_' + uid(); monsters.push(m); });
+            parseMarkdownLibrary(fr.text).forEach(function(m){
+              m.repoKey = 'md|' + fr.name + '|' + m.name;
+              m.id = 'repo_' + m.repoKey;
+              monsters.push(m);
+            });
           }catch(err){
             console.error('Could not parse repo file ' + fr.name, err);
           }
@@ -2169,7 +2301,8 @@
           if(parsed.kind === 'app'){
             parsed.entries.forEach(function(m){
               var copy = JSON.parse(JSON.stringify(m));
-              copy.id = 'repo_' + uid();
+              copy.repoKey = 'app|' + fr.name + '|' + copy.name;
+              copy.id = 'repo_' + copy.repoKey;
               monsters.push(copy);
             });
           } else {
@@ -2195,7 +2328,7 @@
           console.error('Could not convert monster ' + (e && e.name), err);
         }
       });
-      state.repoMonsters = monsters;
+      state.repoMonsters = monsters.filter(function(m){ return !state.repoOverrides[m.repoKey]; });
       state.repoLibraryStatus = 'loaded';
       render();
     }).catch(function(err){
@@ -2862,6 +2995,13 @@
       m.languages = document.getElementById('f-langs').value;
       m.immunities = document.getElementById('f-immunities').value;
       m.resistances = document.getElementById('f-resistances').value;
+
+      if(isRepoMonster(m)){
+        var repoKey = m.repoKey;
+        m.id = uid();
+        delete m.repoKey;
+        hideRepoOriginal(repoKey);
+      }
 
       var idx = state.monsters.findIndex(function(x){ return x.id === m.id; });
       if(idx === -1) state.monsters.push(m);
