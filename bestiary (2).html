@@ -235,6 +235,63 @@
   .cat-card .cc-meta{font-size:13px;color:var(--forest-dark);font-family:var(--font-body);margin-top:2px;}
   .cat-empty{color:var(--parchment-darker);font-size:14px;padding:14px 4px;line-height:1.5;}
 
+  .cat-folder-tools{display:flex;justify-content:flex-end;margin-bottom:8px;}
+  .cat-folder-add-btn{
+    background:transparent;border:1px solid var(--forest-light);color:var(--parchment);
+    padding:4px 10px;border-radius:3px;font-size:13px;cursor:pointer;font-family:var(--font-body);
+  }
+  .cat-folder-add-btn:hover{background:var(--forest-dark);}
+  .cat-folder-new-row{display:none;margin-bottom:10px;}
+  .cat-folder-new-row.open{display:block;}
+  .cat-folder-new-row input{
+    width:100%;padding:6px 8px;border-radius:3px;border:1px solid var(--gold);
+    background:var(--desk);color:var(--parchment);font-size:14px;font-family:var(--font-body);
+  }
+
+  .folder-section{margin-bottom:10px;}
+  .folder-header{
+    display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:3px;
+    background:var(--card-bg-alt);cursor:pointer;user-select:none;
+    border:1px solid transparent;transition:background .1s,border-color .1s;
+  }
+  .folder-header:hover{background:var(--card-bg-alt-hover);}
+  .folder-header.drag-over{border-color:var(--gold);background:var(--forest-dark);}
+  .folder-chevron{font-size:11px;color:var(--text-light-secondary);width:10px;flex-shrink:0;}
+  .folder-name{
+    flex:1;font-size:14px;font-weight:bold;color:var(--gold-light);font-family:var(--font-display);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .folder-count{font-size:12px;color:var(--text-light-secondary);flex-shrink:0;}
+  .folder-del-btn{
+    background:none;border:none;color:var(--text-light-secondary);font-size:15px;line-height:1;
+    cursor:pointer;padding:0 2px;flex-shrink:0;
+  }
+  .folder-del-btn:hover{color:var(--fumble-color);}
+  .folder-rename-input{
+    width:100%;padding:3px 6px;border-radius:3px;border:1px solid var(--gold);
+    background:var(--desk);color:var(--parchment);font-size:14px;font-family:var(--font-display);
+  }
+  .folder-body{padding:6px 0 2px 14px;}
+  .folder-empty{color:var(--text-light-secondary);font-size:12px;font-style:italic;padding:4px 2px 8px;}
+
+  .cat-card[draggable]{cursor:grab;}
+  .cat-card.dragging{opacity:0.4;}
+
+  .context-menu{
+    position:fixed;z-index:600;display:none;
+    background:var(--desk-light);border:2px solid var(--gold);border-radius:6px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.6);padding:6px;min-width:180px;
+    font-family:var(--font-body);
+  }
+  .context-menu-label{font-size:11px;color:var(--text-light-secondary);padding:4px 8px;text-transform:uppercase;letter-spacing:0.4px;}
+  .context-menu-hint{font-size:12px;color:var(--text-light-secondary);padding:6px 8px;max-width:200px;}
+  .context-menu button{
+    display:block;width:100%;text-align:left;background:transparent;border:none;color:var(--parchment);
+    padding:6px 8px;border-radius:3px;font-size:13px;cursor:pointer;font-family:var(--font-body);
+  }
+  .context-menu button:hover{background:var(--forest-dark);}
+  .context-menu-divider{height:1px;background:var(--forest-light);margin:4px 0;}
+
   .stage{flex:1;overflow-y:auto;padding:24px;display:flex;justify-content:center;position:relative;}
   .stage-inner{max-width:720px;width:100%;position:relative;z-index:1;}
 
@@ -463,10 +520,17 @@
 <div class="drop-overlay" id="dropOverlay">
   <div class="drop-overlay-inner">Drop .md stat block file(s) to import</div>
 </div>
+<div class="context-menu" id="contextMenu" style="display:none;"></div>
 
 <div class="layout">
   <aside class="catalog">
     <input class="cat-search" id="catSearch" placeholder="Search library…">
+    <div class="cat-folder-tools">
+      <button class="cat-folder-add-btn" data-action="toggle-new-folder">+ Folder</button>
+    </div>
+    <div class="cat-folder-new-row" id="catFolderNewRow">
+      <input type="text" id="catFolderNewInput" placeholder="Folder name…" maxlength="40">
+    </div>
     <div id="catList"></div>
   </aside>
 
@@ -518,7 +582,10 @@
     logs: {},
     editing: null,
     theme: 'blue',
-    bgImage: null
+    bgImage: null,
+    folders: [],
+    collapsedFolders: {},
+    renamingFolderId: null
   };
 
   var THEMES = [
@@ -608,7 +675,9 @@
 
   function saveLibrary(){
     try{
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({version:1, monsters: state.monsters}));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        version:1, monsters: state.monsters, folders: state.folders, collapsedFolders: state.collapsedFolders
+      }));
     }catch(err){
       console.error('Could not save library', err);
       alert('Could not save to local storage. Your browser may be blocking it (private/incognito mode can limit this).');
@@ -830,6 +899,8 @@
       if(raw){
         var data = JSON.parse(raw);
         state.monsters = (data && data.monsters) || [];
+        state.folders = (data && data.folders) || [];
+        state.collapsedFolders = (data && data.collapsedFolders) || {};
         return;
       }
     }catch(err){
@@ -843,6 +914,8 @@
     }catch(err){
       console.error('Could not seed markdown statblocks', err);
     }
+    state.folders = [];
+    state.collapsedFolders = {};
   }
 
   function applyTheme(themeId){
@@ -938,21 +1011,116 @@
     return null;
   }
 
+  function getFolder(id){
+    for(var i = 0; i < state.folders.length; i++) if(state.folders[i].id === id) return state.folders[i];
+    return null;
+  }
+
+  function createFolder(name){
+    name = String(name || '').trim();
+    if(!name) return;
+    state.folders.push({id: uid(), name: name});
+    saveLibrary();
+    renderCatalog();
+  }
+
+  function renameFolder(id, newName){
+    newName = String(newName || '').trim();
+    var f = getFolder(id);
+    if(f && newName) f.name = newName;
+    state.renamingFolderId = null;
+    saveLibrary();
+    renderCatalog();
+  }
+
+  function deleteFolder(id){
+    var f = getFolder(id);
+    if(!f) return;
+    showConfirm('Delete folder "' + f.name + '"? Its creatures move to Unsorted, they are not deleted.', function(){
+      state.folders = state.folders.filter(function(x){ return x.id !== id; });
+      state.monsters.forEach(function(m){ if(m.folderId === id) m.folderId = null; });
+      delete state.collapsedFolders[id];
+      saveLibrary();
+      renderCatalog();
+    });
+  }
+
+  function moveMonsterToFolder(monsterId, folderId){
+    var m = getMonster(monsterId);
+    if(!m) return;
+    m.folderId = folderId || null;
+    saveLibrary();
+    renderCatalog();
+  }
+
   function renderCatalog(){
     var list = document.getElementById('catList');
     var q = (document.getElementById('catSearch').value || '').toLowerCase();
-    var filtered = state.monsters.filter(function(m){ return m.name.toLowerCase().indexOf(q) !== -1; });
-    if(!filtered.length){
-      list.innerHTML = '<div class="cat-empty">No monsters yet. Click "+ New monster" to add your first creature.</div>';
-      return;
-    }
-    list.innerHTML = filtered.map(function(m){
+    var matches = function(m){ return m.name.toLowerCase().indexOf(q) !== -1; };
+
+    function cardHtml(m){
       var sel = m.id === state.currentId ? ' selected' : '';
-      return '<div class="cat-card' + sel + '" data-action="select-monster" data-id="' + m.id + '">' +
+      return '<div class="cat-card' + sel + '" draggable="true" data-action="select-monster" data-id="' + m.id + '">' +
         '<div class="cc-name">' + esc(m.name) + '</div>' +
         '<div class="cc-meta">CR ' + esc(m.cr) + ' \u00b7 ' + esc(m.type) + '</div>' +
       '</div>';
-    }).join('');
+    }
+
+    function folderHeaderHtml(folderId, name, count, collapsed){
+      if(state.renamingFolderId === folderId){
+        return '<div class="folder-header" data-folder-id="' + esc(folderId || '') + '">' +
+          '<input type="text" class="folder-rename-input" id="folderRenameInput" value="' + esc(name) + '" maxlength="40">' +
+        '</div>';
+      }
+      var chevron = collapsed ? '\u25b8' : '\u25be';
+      var delBtn = folderId ? '<button class="folder-del-btn" data-action="delete-folder" data-folder-id="' + esc(folderId) + '" title="Delete folder">\u00d7</button>' : '';
+      return '<div class="folder-header" data-action="toggle-folder-collapse" data-folder-id="' + esc(folderId || '') + '">' +
+        '<span class="folder-chevron">' + chevron + '</span>' +
+        '<span class="folder-name">' + esc(name) + '</span>' +
+        '<span class="folder-count">' + count + '</span>' +
+        delBtn +
+      '</div>';
+    }
+
+    var html = '';
+
+    if(state.folders.length){
+      state.folders.forEach(function(f){
+        var inFolder = state.monsters.filter(function(m){ return m.folderId === f.id; });
+        var shown = inFolder.filter(matches);
+        if(q && !shown.length) return;
+        var collapsed = !!state.collapsedFolders[f.id];
+        html += '<div class="folder-section">' + folderHeaderHtml(f.id, f.name, inFolder.length, collapsed);
+        if(!collapsed){
+          html += '<div class="folder-body">' + (shown.length ? shown.map(cardHtml).join('') : '<div class="folder-empty">Drag creatures here</div>') + '</div>';
+        }
+        html += '</div>';
+      });
+
+      var unsortedAll = state.monsters.filter(function(m){ return !m.folderId; });
+      var unsortedShown = unsortedAll.filter(matches);
+      if(!q || unsortedShown.length){
+        var collapsedU = !!state.collapsedFolders[''];
+        html += '<div class="folder-section">' + folderHeaderHtml('', 'Unsorted', unsortedAll.length, collapsedU);
+        if(!collapsedU){
+          html += '<div class="folder-body">' + (unsortedShown.length ? unsortedShown.map(cardHtml).join('') : '<div class="folder-empty">No unsorted creatures</div>') + '</div>';
+        }
+        html += '</div>';
+      }
+    } else {
+      html += state.monsters.filter(matches).map(cardHtml).join('');
+    }
+
+    if(!html){
+      html = '<div class="cat-empty">' + (state.monsters.length ? 'No matches.' : 'No monsters yet. Click "+ New monster" to add your first creature.') + '</div>';
+    }
+
+    list.innerHTML = html;
+
+    if(state.renamingFolderId){
+      var input = document.getElementById('folderRenameInput');
+      if(input){ input.focus(); input.select(); }
+    }
   }
 
   function traitLikeHtml(list){
@@ -1095,6 +1263,28 @@
       panel.classList.toggle('open', willOpen);
       btn.classList.toggle('open', willOpen);
       e.stopPropagation();
+    } else if(action === 'toggle-new-folder'){
+      var row = document.getElementById('catFolderNewRow');
+      var opening = !row.classList.contains('open');
+      row.classList.toggle('open', opening);
+      if(opening){
+        var inp = document.getElementById('catFolderNewInput');
+        inp.value = '';
+        setTimeout(function(){ inp.focus(); }, 0);
+      }
+    } else if(action === 'toggle-folder-collapse'){
+      var fid = t.getAttribute('data-folder-id') || '';
+      state.collapsedFolders[fid] = !state.collapsedFolders[fid];
+      saveLibrary();
+      renderCatalog();
+    } else if(action === 'delete-folder'){
+      deleteFolder(t.getAttribute('data-folder-id'));
+      e.stopPropagation();
+    } else if(action === 'start-rename-folder'){
+      state.renamingFolderId = t.getAttribute('data-folder-id');
+      renderCatalog();
+    } else if(action === 'context-move-to-folder'){
+      moveMonsterToFolder(t.getAttribute('data-monster-id'), t.getAttribute('data-folder-id') || null);
     } else if(action === 'select-theme'){
       applyTheme(t.getAttribute('data-theme'));
     } else if(action === 'upload-bg-image'){
@@ -1171,6 +1361,104 @@
   });
 
   document.getElementById('catSearch').addEventListener('input', renderCatalog);
+
+  document.addEventListener('keydown', function(e){
+    if(e.target && e.target.id === 'folderRenameInput'){
+      if(e.key === 'Enter'){ renameFolder(state.renamingFolderId, e.target.value); }
+      else if(e.key === 'Escape'){ state.renamingFolderId = null; renderCatalog(); }
+    } else if(e.target && e.target.id === 'catFolderNewInput'){
+      if(e.key === 'Enter'){
+        createFolder(e.target.value);
+        document.getElementById('catFolderNewRow').classList.remove('open');
+      } else if(e.key === 'Escape'){
+        document.getElementById('catFolderNewRow').classList.remove('open');
+      }
+    }
+  });
+
+  document.addEventListener('focusout', function(e){
+    if(e.target && e.target.id === 'folderRenameInput' && state.renamingFolderId){
+      renameFolder(state.renamingFolderId, e.target.value);
+    }
+  });
+
+  document.addEventListener('contextmenu', function(e){
+    var card = e.target.closest('.cat-card');
+    var header = e.target.closest('.folder-header');
+    var menu = document.getElementById('contextMenu');
+    if(card){
+      e.preventDefault();
+      var monsterId = card.getAttribute('data-id');
+      var mon = getMonster(monsterId);
+      var html = '';
+      if(state.folders.length){
+        html += '<div class="context-menu-label">Move to folder</div>';
+        state.folders.forEach(function(f){
+          if(mon && mon.folderId === f.id) return;
+          html += '<button data-action="context-move-to-folder" data-monster-id="' + esc(monsterId) + '" data-folder-id="' + esc(f.id) + '">' + esc(f.name) + '</button>';
+        });
+      } else {
+        html += '<div class="context-menu-hint">No folders yet — click + Folder above to create one.</div>';
+      }
+      if(mon && mon.folderId){
+        html += '<div class="context-menu-divider"></div>';
+        html += '<button data-action="context-move-to-folder" data-monster-id="' + esc(monsterId) + '" data-folder-id="">Remove from folder</button>';
+      }
+      menu.innerHTML = html;
+      showContextMenu(menu, e.clientX, e.clientY);
+    } else if(header && header.getAttribute('data-folder-id')){
+      e.preventDefault();
+      var fid2 = header.getAttribute('data-folder-id');
+      menu.innerHTML = '<button data-action="start-rename-folder" data-folder-id="' + esc(fid2) + '">Rename folder</button>';
+      showContextMenu(menu, e.clientX, e.clientY);
+    }
+  });
+
+  function showContextMenu(menu, x, y){
+    menu.style.display = 'block';
+    var maxX = window.innerWidth - menu.offsetWidth - 10;
+    var maxY = window.innerHeight - menu.offsetHeight - 10;
+    menu.style.left = Math.min(x, Math.max(0, maxX)) + 'px';
+    menu.style.top = Math.min(y, Math.max(0, maxY)) + 'px';
+  }
+
+  document.addEventListener('click', function(e){
+    var menu = document.getElementById('contextMenu');
+    if(menu.style.display === 'block') menu.style.display = 'none';
+  });
+
+  document.addEventListener('dragstart', function(e){
+    var card = e.target.closest('.cat-card');
+    if(!card) return;
+    e.dataTransfer.setData('text/plain', card.getAttribute('data-id'));
+    e.dataTransfer.effectAllowed = 'move';
+    card.classList.add('dragging');
+  });
+  document.addEventListener('dragend', function(e){
+    var card = e.target.closest('.cat-card');
+    if(card) card.classList.remove('dragging');
+  });
+  document.addEventListener('dragover', function(e){
+    var header = e.target.closest('.folder-header');
+    if(!header || dragHasFiles(e)) return;
+    e.preventDefault();
+    header.classList.add('drag-over');
+  });
+  document.addEventListener('dragleave', function(e){
+    var header = e.target.closest('.folder-header');
+    if(!header || dragHasFiles(e)) return;
+    header.classList.remove('drag-over');
+  });
+  document.addEventListener('drop', function(e){
+    var header = e.target.closest('.folder-header');
+    if(!header || dragHasFiles(e)) return;
+    e.preventDefault();
+    header.classList.remove('drag-over');
+    var monsterId = e.dataTransfer.getData('text/plain');
+    if(!monsterId) return;
+    var folderId = header.getAttribute('data-folder-id') || null;
+    moveMonsterToFolder(monsterId, folderId);
+  });
 
   document.getElementById('modeToggle').addEventListener('click', function(e){
     var b = e.target.closest('button[data-mode]');
