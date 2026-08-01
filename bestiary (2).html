@@ -132,7 +132,11 @@
   *::-webkit-scrollbar-thumb:hover{background:var(--gold);}
   *::-webkit-scrollbar-corner{background:var(--desk-light);}
   html,body{margin:0;padding:0;height:100vh;overflow:hidden;background:var(--desk);color:var(--ink);font-family:var(--font-body);}
-  body{display:flex;flex-direction:column;}
+  body{
+    display:flex;flex-direction:column;
+    background-image:var(--app-bg-image, none);
+    background-size:cover;background-position:center;background-repeat:no-repeat;
+  }
 
   .toolbar{
     display:flex;align-items:center;gap:10px;flex-wrap:wrap;
@@ -161,7 +165,7 @@
     background:transparent;border:none;color:var(--parchment);padding:7px 12px;font-size:14px;
   }
   .mode-toggle button.active{background:var(--forest);color:#fff;}
-  #fileImportInput,#imageUploadInput,#sideImageInput{display:none;}
+  #fileImportInput,#imageUploadInput,#bgImageInput{display:none;}
 
   .settings-btn{
     background:transparent;border:1px solid var(--forest-light);color:var(--parchment);
@@ -233,38 +237,6 @@
 
   .stage{flex:1;overflow-y:auto;padding:24px;display:flex;justify-content:center;position:relative;}
   .stage-inner{max-width:720px;width:100%;position:relative;z-index:1;}
-
-  .side-bg{
-    display:none;position:absolute;top:0;bottom:0;width:calc(50% - 360px);
-    cursor:pointer;background-size:cover;background-position:center;
-    overflow:hidden;z-index:0;
-  }
-  .side-bg.side-left{left:0;}
-  .side-bg.side-right{right:0;}
-  @media (min-width:1080px){
-    .side-bg{display:flex;align-items:center;justify-content:center;}
-  }
-  .side-bg::after{
-    content:'';position:absolute;inset:0;background:linear-gradient(to right, transparent, var(--desk) 130%);
-    opacity:0.35;pointer-events:none;
-  }
-  .side-bg.side-right::after{background:linear-gradient(to left, transparent, var(--desk) 130%);}
-  .side-bg-label{
-    color:var(--text-light-secondary);font-family:var(--font-display);font-size:12.5px;
-    text-align:center;padding:12px 16px;border:1px dashed var(--forest-light);border-radius:8px;
-    background:rgba(0,0,0,0.35);opacity:0.55;transition:opacity .15s;position:relative;z-index:1;
-    max-width:120px;
-  }
-  .side-bg:hover .side-bg-label{opacity:1;border-color:var(--gold);color:var(--gold-light);}
-  .side-bg.has-image .side-bg-label{display:none;}
-  .side-bg-remove{
-    position:absolute;top:10px;display:none;
-    background:rgba(0,0,0,0.6);border:1px solid var(--gold);color:var(--text-light);
-    border-radius:3px;padding:3px 8px;font-size:11px;cursor:pointer;z-index:2;
-  }
-  .side-bg.side-left .side-bg-remove{right:10px;}
-  .side-bg.side-right .side-bg-remove{left:10px;}
-  .side-bg.has-image:hover .side-bg-remove{display:block;}
 
   .empty-state{
     color:var(--parchment-darker);text-align:center;margin-top:80px;font-family:var(--font-display);
@@ -468,13 +440,13 @@
   <p class="settings-sub">Choose a theme for the bestiary.</p>
   <div class="theme-grid" id="themeGrid"></div>
   <div class="settings-divider"></div>
-  <div class="settings-row-label">Side background images</div>
-  <button class="settings-btn-full" data-action="remove-side-image" data-side="left">Clear left image</button>
-  <button class="settings-btn-full" data-action="remove-side-image" data-side="right">Clear right image</button>
+  <div class="settings-row-label">App background image</div>
+  <button class="settings-btn-full" data-action="upload-bg-image">Upload image</button>
+  <button class="settings-btn-full" data-action="remove-bg-image">Remove image</button>
 </div>
 <input type="file" id="fileImportInput" accept="application/json,.json">
 <input type="file" id="imageUploadInput" accept="image/*">
-<input type="file" id="sideImageInput" accept="image/*">
+<input type="file" id="bgImageInput" accept="image/*">
 
 <div class="layout">
   <aside class="catalog">
@@ -483,15 +455,7 @@
   </aside>
 
   <main class="stage" id="stageMain">
-    <div class="side-bg side-left" id="sideBgLeft" data-action="upload-side-image" data-side="left">
-      <span class="side-bg-label">Click to add a background image</span>
-      <button class="side-bg-remove" data-action="remove-side-image" data-side="left">Remove</button>
-    </div>
     <div class="stage-inner" id="stageInner"></div>
-    <div class="side-bg side-right" id="sideBgRight" data-action="upload-side-image" data-side="right">
-      <span class="side-bg-label">Click to add a background image</span>
-      <button class="side-bg-remove" data-action="remove-side-image" data-side="right">Remove</button>
-    </div>
   </main>
 </div>
 
@@ -530,7 +494,7 @@
 (function(){
   var STORAGE_KEY = 'dndBestiaryLibrary_v1';
   var THEME_STORAGE_KEY = 'dndBestiaryTheme_v1';
-  var SIDEIMG_STORAGE_KEY = 'dndBestiarySideImages_v1';
+  var BGIMG_STORAGE_KEY = 'dndBestiaryBgImage_v1';
   var state = {
     monsters: [],
     currentId: null,
@@ -538,7 +502,7 @@
     logs: {},
     editing: null,
     theme: 'blue',
-    sideImages: {left: null, right: null}
+    bgImage: null
   };
 
   var THEMES = [
@@ -680,37 +644,30 @@
     }).join('');
   }
 
-  function saveSideImages(){
-    try{ localStorage.setItem(SIDEIMG_STORAGE_KEY, JSON.stringify(state.sideImages)); }catch(err){}
-  }
-
-  function loadSideImages(){
+  function saveBgImage(){
     try{
-      var raw = localStorage.getItem(SIDEIMG_STORAGE_KEY);
-      if(raw){
-        var data = JSON.parse(raw);
-        state.sideImages.left = (data && data.left) || null;
-        state.sideImages.right = (data && data.right) || null;
-      }
+      if(state.bgImage) localStorage.setItem(BGIMG_STORAGE_KEY, state.bgImage);
+      else localStorage.removeItem(BGIMG_STORAGE_KEY);
     }catch(err){
-      console.error('Could not load side images', err);
+      console.error('Could not save background image', err);
     }
-    applySideImages();
   }
 
-  function applySideImages(){
-    ['left','right'].forEach(function(side){
-      var el = document.getElementById(side === 'left' ? 'sideBgLeft' : 'sideBgRight');
-      if(!el) return;
-      var img = state.sideImages[side];
-      if(img){
-        el.style.backgroundImage = 'url(' + img + ')';
-        el.classList.add('has-image');
-      } else {
-        el.style.backgroundImage = '';
-        el.classList.remove('has-image');
-      }
-    });
+  function loadBgImage(){
+    try{
+      state.bgImage = localStorage.getItem(BGIMG_STORAGE_KEY) || null;
+    }catch(err){
+      console.error('Could not load background image', err);
+    }
+    applyBgImage();
+  }
+
+  function applyBgImage(){
+    if(state.bgImage){
+      document.documentElement.style.setProperty('--app-bg-image', 'url(' + state.bgImage + ')');
+    } else {
+      document.documentElement.style.removeProperty('--app-bg-image');
+    }
   }
 
   function seedMonster(){
@@ -899,15 +856,12 @@
       e.stopPropagation();
     } else if(action === 'select-theme'){
       applyTheme(t.getAttribute('data-theme'));
-    } else if(action === 'upload-side-image'){
-      pendingSideUpload = t.getAttribute('data-side');
-      document.getElementById('sideImageInput').click();
-    } else if(action === 'remove-side-image'){
-      var side = t.getAttribute('data-side');
-      state.sideImages[side] = null;
-      saveSideImages();
-      applySideImages();
-      e.stopPropagation();
+    } else if(action === 'upload-bg-image'){
+      document.getElementById('bgImageInput').click();
+    } else if(action === 'remove-bg-image'){
+      state.bgImage = null;
+      saveBgImage();
+      applyBgImage();
     } else if(action === 'select-monster'){
       state.currentId = t.getAttribute('data-id');
       render();
@@ -1380,17 +1334,14 @@
     e.target.value = '';
   });
 
-  var pendingSideUpload = null;
-  document.getElementById('sideImageInput').addEventListener('change', function(e){
+  document.getElementById('bgImageInput').addEventListener('change', function(e){
     var file = e.target.files[0];
-    var side = pendingSideUpload;
-    pendingSideUpload = null;
-    if(!file || !side) return;
+    if(!file) return;
     var reader = new FileReader();
     reader.onload = function(){
-      state.sideImages[side] = reader.result;
-      saveSideImages();
-      applySideImages();
+      state.bgImage = reader.result;
+      saveBgImage();
+      applyBgImage();
     };
     reader.readAsDataURL(file);
     e.target.value = '';
@@ -1490,7 +1441,7 @@
   loadLibrary();
   if(state.monsters.length) state.currentId = state.monsters[0].id;
   loadTheme();
-  loadSideImages();
+  loadBgImage();
   render();
   var rolllogPanelEl = document.getElementById('rolllogPanel');
   var spellWindowEl = document.getElementById('spellWindow');
