@@ -1727,7 +1727,7 @@
       return (num >= 0 ? '+' : '') + num;
     });
     s = s.replace(/\{@h\}/g, 'Hit: ');
-    s = s.replace(/\{@dc (\d+)\}/g, 'DC $1');
+    s = s.replace(/\{@dc (\d+)\}/g, '$1');
     s = s.replace(/\{@\w+\s+([^}|]*)(?:\|[^}]*)?\}/g, '$1');
     s = s.replace(/\{@\w+\}/g, '');
     s = s.replace(/[ \t]+/g, ' ').trim();
