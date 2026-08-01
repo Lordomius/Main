@@ -2091,16 +2091,31 @@
   function jsonSpellcastingToTraits(scArr){
     return (scArr || []).map(function(sc){
       var name = sc.name ? stripJsonTags(sc.name) : 'Spellcasting';
+      var hidden = sc.hidden || [];
       var lines = [flattenJsonEntries(sc.headerEntries || [])];
       function spellNames(list){
         return (list || []).map(function(s){ return stripJsonTags(typeof s === 'string' ? s : (s && s.entry) || ''); }).filter(function(x){ return x; }).join(', ');
       }
-      if(sc.will && sc.will.length) lines.push('At will: ' + spellNames(sc.will));
-      if(sc.daily){
-        Object.keys(sc.daily).forEach(function(freq){
-          lines.push(freq.replace(/e$/,'') + '/day: ' + spellNames(sc.daily[freq]));
+      // Object-of-frequencies spellcasting blocks (daily/rest/restLong/charges/
+      // legendary all share this shape: {"1e"/"1": [spell refs]}). `hidden`
+      // lists frequency keys whose spells are already spelled out in
+      // headerEntries prose, so a separate line here would just duplicate it.
+      function freqObjLines(obj, key, labelFn){
+        var out = [];
+        if(!obj || hidden.indexOf(key) !== -1) return out;
+        Object.keys(obj).forEach(function(freq){
+          var list = spellNames(obj[freq]);
+          if(list) out.push(labelFn(freq) + ': ' + list);
         });
+        return out;
       }
+      if(sc.will && sc.will.length && hidden.indexOf('will') === -1) lines.push('At will: ' + spellNames(sc.will));
+      lines = lines.concat(freqObjLines(sc.daily, 'daily', function(f){ return f.replace(/e$/,'') + '/day'; }));
+      lines = lines.concat(freqObjLines(sc.rest, 'rest', function(f){ return f + '/short rest'; }));
+      lines = lines.concat(freqObjLines(sc.restLong, 'restLong', function(f){ return f + '/long rest'; }));
+      lines = lines.concat(freqObjLines(sc.charges, 'charges', function(f){ return f.replace(/e$/,'') + ' charge' + (f.replace(/e$/,'') === '1' ? '' : 's'); }));
+      lines = lines.concat(freqObjLines(sc.legendary, 'legendary', function(f){ return f + '/day (legendary)'; }));
+      if(sc.ritual && sc.ritual.length && hidden.indexOf('ritual') === -1) lines.push('Rituals: ' + spellNames(sc.ritual));
       if(sc.spells){
         var lvlSuffix = {1:'st',2:'nd',3:'rd'};
         Object.keys(sc.spells).sort(function(a,b){ return Number(a)-Number(b); }).forEach(function(lvl){
