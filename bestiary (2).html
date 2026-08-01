@@ -963,6 +963,16 @@
     }).join('');
   }
 
+  function findAllDamages(text){
+    var re = /\(\s*(\d+d\d+(?:\s*[+\-]\s*\d+)?)\s*\)\s*([A-Za-z]+)?\s*damage/gi;
+    var matches = [];
+    var m;
+    while((m = re.exec(String(text || '')))){
+      matches.push({dice: m[1].replace(/\s/g, ''), type: m[2] ? m[2].toLowerCase() : ''});
+    }
+    return matches;
+  }
+
   function renderStage(){
     var el = document.getElementById('stageInner');
     var m = getMonster(state.currentId);
@@ -1010,6 +1020,11 @@
       }
       if(a.damage){
         rolls += '<button class="stamp dmg" data-action="roll-damage" data-dice="' + esc(a.damage) + '" data-typelabel="' + esc(a.damageType||'') + '" data-label="' + esc(m.name) + ' \u2014 ' + esc(a.name) + ' damage">' + esc(a.damage) + (a.damageType ? (' ' + esc(a.damageType)) : '') + '</button>';
+        var extraDamages = findAllDamages(a.text);
+        if(extraDamages.length > 1){
+          var d2 = extraDamages[1];
+          rolls += '<button class="stamp dmg" data-action="roll-damage" data-dice="' + esc(d2.dice) + '" data-typelabel="' + esc(d2.type) + '" data-label="' + esc(m.name) + ' \u2014 ' + esc(a.name) + ' extra damage">' + esc(d2.dice) + (d2.type ? (' ' + esc(d2.type)) : '') + '</button>';
+        }
       }
       return '<div class="action-row"><span class="a-name">' + esc(a.name) + '.</span> ' + highlightSpells(highlightCastingFrequency(highlightNumbers(esc(a.text)))) +
         (rolls ? '<div class="action-rolls">' + rolls + '</div>' : '') + '</div>';
