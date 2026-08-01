@@ -208,6 +208,12 @@
     padding:7px 10px;border-radius:3px;font-size:13px;margin-top:6px;
   }
   .settings-btn-full:hover{background:var(--forest-dark);}
+  .repo-cfg-row{display:flex;align-items:center;gap:8px;margin-top:6px;}
+  .repo-cfg-row label{width:44px;flex-shrink:0;font-size:12px;color:var(--text-light-secondary);}
+  .repo-cfg-row input{
+    flex:1;min-width:0;padding:5px 7px;border-radius:3px;border:1px solid var(--forest-light);
+    background:var(--desk);color:var(--parchment);font-size:12.5px;font-family:var(--font-body);
+  }
 
   .layout{display:flex;flex:1;min-height:0;}
 
@@ -277,9 +283,18 @@
   }
   .folder-body{padding:6px 0 2px 14px;}
   .folder-empty{color:var(--text-light-secondary);font-size:12px;font-style:italic;padding:4px 2px 8px;}
+  .folder-empty.repo-error{color:var(--fumble-color);}
 
   .cat-card[draggable]{cursor:grab;}
   .cat-card.dragging{opacity:0.4;}
+  .cat-card.repo-card{cursor:pointer;}
+  .cat-card.repo-card .cc-name::after{
+    content:'repo';font-size:9px;font-weight:normal;color:var(--text-light-secondary);
+    border:1px solid var(--forest-light);border-radius:3px;padding:0 4px;margin-left:6px;vertical-align:middle;
+  }
+  .repo-library-header{border-color:var(--forest-light);}
+  .repo-refresh-btn{font-size:14px;color:var(--text-light-secondary);}
+  .repo-refresh-btn:hover{color:var(--gold-light);}
 
   .context-menu{
     position:fixed;z-index:600;display:none;
@@ -516,6 +531,14 @@
   <div class="settings-row-label">App background image</div>
   <button class="settings-btn-full" data-action="upload-bg-image">Upload image</button>
   <button class="settings-btn-full" data-action="remove-bg-image">Remove image</button>
+  <div class="settings-divider"></div>
+  <div class="settings-row-label">Repo library source</div>
+  <p class="settings-sub">GitHub folder the catalog's "Repo Library" section loads stat blocks from.</p>
+  <div class="repo-cfg-row"><label>Owner</label><input type="text" id="repoCfgOwner"></div>
+  <div class="repo-cfg-row"><label>Repo</label><input type="text" id="repoCfgRepo"></div>
+  <div class="repo-cfg-row"><label>Branch</label><input type="text" id="repoCfgBranch"></div>
+  <div class="repo-cfg-row"><label>Path</label><input type="text" id="repoCfgPath"></div>
+  <button class="settings-btn-full" data-action="save-repo-config">Save &amp; refresh</button>
 </div>
 <input type="file" id="fileImportInput" accept="application/json,.json">
 <input type="file" id="mdImportInput" accept=".md,text/markdown,text/plain" multiple>
@@ -596,7 +619,12 @@
     folders: [],
     collapsedFolders: {},
     renamingFolderId: null,
-    sortMode: 'name-asc'
+    sortMode: 'name-asc',
+    repoLibraryConfig: {owner:'Lordomius', repo:'Main', branch:'claude/bestiary-file-b1lrxn', path:'statblocks'},
+    repoMonsters: [],
+    repoLibraryStatus: 'idle',
+    repoLibraryError: '',
+    repoLibraryCollapsed: false
   };
 
   var THEMES = [
@@ -688,7 +716,7 @@
     try{
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
         version:1, monsters: state.monsters, folders: state.folders, collapsedFolders: state.collapsedFolders,
-        sortMode: state.sortMode
+        sortMode: state.sortMode, repoLibraryConfig: state.repoLibraryConfig
       }));
     }catch(err){
       console.error('Could not save library', err);
@@ -914,6 +942,7 @@
         state.folders = (data && data.folders) || [];
         state.collapsedFolders = (data && data.collapsedFolders) || {};
         state.sortMode = (data && data.sortMode) || 'name-asc';
+        if(data && data.repoLibraryConfig) state.repoLibraryConfig = data.repoLibraryConfig;
         return;
       }
     }catch(err){
@@ -1021,7 +1050,12 @@
 
   function getMonster(id){
     for(var i=0;i<state.monsters.length;i++) if(state.monsters[i].id === id) return state.monsters[i];
+    for(var j=0;j<state.repoMonsters.length;j++) if(state.repoMonsters[j].id === id) return state.repoMonsters[j];
     return null;
+  }
+
+  function isRepoMonster(m){
+    return !!(m && typeof m.id === 'string' && m.id.indexOf('repo_') === 0);
   }
 
   function getFolder(id){
@@ -1094,6 +1128,14 @@
       '</div>';
     }
 
+    function repoCardHtml(m){
+      var sel = m.id === state.currentId ? ' selected' : '';
+      return '<div class="cat-card repo-card' + sel + '" data-action="select-monster" data-id="' + m.id + '">' +
+        '<div class="cc-name">' + esc(m.name) + '</div>' +
+        '<div class="cc-meta">CR ' + esc(m.cr) + ' \u00b7 ' + esc(m.type) + '</div>' +
+      '</div>';
+    }
+
     function folderHeaderHtml(folderId, name, count, collapsed){
       if(state.renamingFolderId === folderId){
         return '<div class="folder-header" data-folder-id="' + esc(folderId || '') + '">' +
@@ -1141,6 +1183,33 @@
 
     if(!html){
       html = '<div class="cat-empty">' + (state.monsters.length ? 'No matches.' : 'No monsters yet. Click "+ New monster" to add your first creature.') + '</div>';
+    }
+
+    var repoShown = sortMonsters(state.repoMonsters.filter(matches));
+    var repoCollapsed = !!state.repoLibraryCollapsed;
+    var repoChevron = repoCollapsed ? '▸' : '▾';
+    var repoBody = '';
+    if(state.repoLibraryStatus === 'loading'){
+      repoBody = '<div class="folder-empty">Loading…</div>';
+    } else if(state.repoLibraryStatus === 'error'){
+      repoBody = '<div class="folder-empty repo-error">' + esc(state.repoLibraryError || 'Could not load.') + '</div>';
+    } else if(!state.repoMonsters.length){
+      repoBody = '<div class="folder-empty">' + (state.repoLibraryStatus === 'loaded' ? 'No stat block files found in the folder.' : 'Not loaded yet.') + '</div>';
+    } else if(!repoShown.length){
+      repoBody = '<div class="folder-empty">No matches.</div>';
+    } else {
+      repoBody = repoShown.map(repoCardHtml).join('');
+    }
+    if(!q || repoShown.length || state.repoLibraryStatus !== 'loaded'){
+      html += '<div class="folder-section repo-library-section">' +
+        '<div class="folder-header repo-library-header" data-action="toggle-repo-collapse">' +
+          '<span class="folder-chevron">' + repoChevron + '</span>' +
+          '<span class="folder-name">Repo Library</span>' +
+          '<span class="folder-count">' + state.repoMonsters.length + '</span>' +
+          '<button class="folder-del-btn repo-refresh-btn" data-action="refresh-repo-library" title="Refresh from GitHub">⟳</button>' +
+        '</div>' +
+        (repoCollapsed ? '' : '<div class="folder-body">' + repoBody + '</div>') +
+      '</div>';
     }
 
     list.innerHTML = html;
@@ -1243,14 +1312,16 @@
     var dexMod = abilityMod(m.abilities.dex || 10);
     var initBonus = (m.initiative === null || m.initiative === undefined || m.initiative === '') ? dexMod : Number(m.initiative);
 
+    var topbarButtons = isRepoMonster(m) ?
+      '<button data-action="copy-to-library" data-id="' + m.id + '">Copy to my library</button>' +
+      '<button data-action="export-monster" data-id="' + m.id + '">Export</button>' :
+      '<button data-action="duplicate-monster" data-id="' + m.id + '">Duplicate</button>' +
+      '<button data-action="export-monster" data-id="' + m.id + '">Export</button>' +
+      '<button data-action="edit-monster" data-id="' + m.id + '">Edit</button>' +
+      '<button class="danger" data-action="delete-monster" data-id="' + m.id + '">Delete</button>';
     el.innerHTML =
       '<div class="sb-card">' +
-        '<div class="sb-topbar">' +
-          '<button data-action="duplicate-monster" data-id="' + m.id + '">Duplicate</button>' +
-          '<button data-action="export-monster" data-id="' + m.id + '">Export</button>' +
-          '<button data-action="edit-monster" data-id="' + m.id + '">Edit</button>' +
-          '<button class="danger" data-action="delete-monster" data-id="' + m.id + '">Delete</button>' +
-        '</div>' +
+        '<div class="sb-topbar">' + topbarButtons + '</div>' +
         '<div class="sb-head">' +
           (m.image ? '<img class="sb-portrait" src="' + m.image + '">' : '') +
           '<div>' +
@@ -1304,7 +1375,23 @@
       var willOpen = !panel.classList.contains('open');
       panel.classList.toggle('open', willOpen);
       btn.classList.toggle('open', willOpen);
+      if(willOpen){
+        var cfg = state.repoLibraryConfig || {};
+        document.getElementById('repoCfgOwner').value = cfg.owner || '';
+        document.getElementById('repoCfgRepo').value = cfg.repo || '';
+        document.getElementById('repoCfgBranch').value = cfg.branch || '';
+        document.getElementById('repoCfgPath').value = cfg.path || '';
+      }
       e.stopPropagation();
+    } else if(action === 'save-repo-config'){
+      state.repoLibraryConfig = {
+        owner: document.getElementById('repoCfgOwner').value.trim(),
+        repo: document.getElementById('repoCfgRepo').value.trim(),
+        branch: document.getElementById('repoCfgBranch').value.trim(),
+        path: document.getElementById('repoCfgPath').value.trim()
+      };
+      saveLibrary();
+      fetchRepoLibrary();
     } else if(action === 'toggle-new-folder'){
       var row = document.getElementById('catFolderNewRow');
       var opening = !row.classList.contains('open');
@@ -1319,6 +1406,24 @@
       state.collapsedFolders[fid] = !state.collapsedFolders[fid];
       saveLibrary();
       renderCatalog();
+    } else if(action === 'toggle-repo-collapse'){
+      state.repoLibraryCollapsed = !state.repoLibraryCollapsed;
+      renderCatalog();
+    } else if(action === 'refresh-repo-library'){
+      fetchRepoLibrary();
+      e.stopPropagation();
+    } else if(action === 'copy-to-library'){
+      var srcId = t.getAttribute('data-id');
+      var src = getMonster(srcId);
+      if(src){
+        var copy = JSON.parse(JSON.stringify(src));
+        copy.id = uid();
+        copy.folderId = null;
+        state.monsters.push(copy);
+        state.currentId = copy.id;
+        saveLibrary();
+        render();
+      }
     } else if(action === 'delete-folder'){
       deleteFolder(t.getAttribute('data-folder-id'));
       e.stopPropagation();
@@ -1596,6 +1701,326 @@
       }
     }
     return s;
+  }
+
+  // ---- 5etools-style JSON stat block import ----
+  // Converts the JSON schema used by 5etools-format bestiary files
+  // (monster.name/size/type/alignment/ac/hp/speed/save/skill/trait/action/...
+  // with inline {@tag ...} markup) into this app's monster data model.
+
+  var JSON_ATK_LABELS = {
+    'mw': 'Melee Weapon Attack', 'rw': 'Ranged Weapon Attack',
+    'ms': 'Melee Spell Attack', 'rs': 'Ranged Spell Attack',
+    'mw,rw': 'Melee or Ranged Weapon Attack', 'ms,rs': 'Melee or Ranged Spell Attack'
+  };
+  var JSON_SIZE_MAP = {T:'Tiny', S:'Small', M:'Medium', L:'Large', H:'Huge', G:'Gargantuan'};
+  var JSON_ALIGN_MAP = {L:'lawful', N:'neutral', C:'chaotic', G:'good', E:'evil', U:'unaligned', A:'any alignment'};
+
+  function stripJsonTags(text){
+    var s = String(text || '');
+    s = s.replace(/\{@atk ([a-zA-Z,]+)\}/g, function(m, kind){
+      var key = kind.toLowerCase().split(',').sort().join(',');
+      return (JSON_ATK_LABELS[key] || 'Attack') + ':';
+    });
+    s = s.replace(/\{@hit (-?\d+)\}/g, function(m, n){
+      var num = parseInt(n, 10);
+      return (num >= 0 ? '+' : '') + num;
+    });
+    s = s.replace(/\{@h\}/g, 'Hit: ');
+    s = s.replace(/\{@dc (\d+)\}/g, 'DC $1');
+    s = s.replace(/\{@\w+\s+([^}|]*)(?:\|[^}]*)?\}/g, '$1');
+    s = s.replace(/\{@\w+\}/g, '');
+    s = s.replace(/[ \t]+/g, ' ').trim();
+    return s;
+  }
+
+  function flattenJsonEntries(entries){
+    if(!entries) return '';
+    if(typeof entries === 'string') return stripJsonTags(entries);
+    if(!Array.isArray(entries)) return '';
+    var parts = [];
+    entries.forEach(function(e){
+      if(typeof e === 'string'){
+        parts.push(stripJsonTags(e));
+      } else if(e && typeof e === 'object'){
+        var t = e.type;
+        if(t === 'list'){
+          var items = (e.items || []).map(function(it){
+            if(typeof it === 'string') return stripJsonTags(it);
+            if(it && typeof it === 'object'){
+              var name = it.name ? stripJsonTags(it.name) + ': ' : '';
+              return name + flattenJsonEntries(it.entries || (it.entry ? [it.entry] : []));
+            }
+            return '';
+          }).filter(function(x){ return x; });
+          if(items.length) parts.push(items.join(' '));
+        } else if(t === 'table'){
+          // complex tabular data isn't flattened; the surrounding prose usually explains it
+        } else if(e.entries){
+          var sub = flattenJsonEntries(e.entries);
+          parts.push(e.name ? (stripJsonTags(e.name) + '. ' + sub) : sub);
+        } else if(e.entry){
+          parts.push(stripJsonTags(e.entry));
+        }
+      }
+    });
+    return parts.filter(function(x){ return x; }).join(' ');
+  }
+
+  function jsonSizeToText(sizeArr){
+    var code = Array.isArray(sizeArr) ? sizeArr[0] : sizeArr;
+    return JSON_SIZE_MAP[code] || 'Medium';
+  }
+
+  function jsonTypeToText(type){
+    if(!type) return '';
+    if(typeof type === 'string') return type;
+    var base = type.type || '';
+    var tags = (type.tags || []).map(function(tg){
+      return typeof tg === 'string' ? tg : (tg && tg.tag) || '';
+    }).filter(function(x){ return x; });
+    return base + (tags.length ? ' (' + tags.join(', ') + ')' : '');
+  }
+
+  function jsonAlignToText(alignArr){
+    if(!alignArr || !alignArr.length) return 'unaligned';
+    var words = alignArr.map(function(a){
+      return typeof a === 'string' ? (JSON_ALIGN_MAP[a] || a) : '';
+    }).filter(function(x){ return x; });
+    return words.join(' ') || 'unaligned';
+  }
+
+  function jsonAcToParts(ac){
+    if(ac === undefined || ac === null) return {ac:10, note:''};
+    if(typeof ac === 'number') return {ac: ac, note:''};
+    if(Array.isArray(ac) && ac.length){
+      var first = ac[0];
+      if(typeof first === 'number') return {ac: first, note:''};
+      if(first && typeof first === 'object'){
+        var note = (first.from || []).join(', ');
+        if(first.condition) note = (note ? note + ', ' : '') + stripJsonTags(first.condition);
+        return {ac: first.ac || 10, note: note};
+      }
+    }
+    return {ac: 10, note:''};
+  }
+
+  function jsonHpToParts(hp){
+    if(!hp) return {hp:1, dice:''};
+    if(typeof hp === 'number') return {hp: hp, dice:''};
+    return {hp: hp.average || 1, dice: hp.formula || ''};
+  }
+
+  function jsonSpeedToText(speed){
+    if(!speed) return '';
+    if(typeof speed === 'string') return speed;
+    var parts = [];
+    if(speed.walk) parts.push(speed.walk + ' ft.');
+    ['fly','swim','climb','burrow'].forEach(function(k){
+      if(speed[k]) parts.push(k + ' ' + speed[k] + ' ft.' + (k === 'fly' && speed.canHover ? ' (hover)' : ''));
+    });
+    return parts.join(', ');
+  }
+
+  function jsonSaveSkillToArray(obj){
+    if(!obj) return [];
+    var out = [];
+    Object.keys(obj).forEach(function(k){
+      if(k === 'other') return;
+      var bonus = parseInt(String(obj[k]).replace(/[^\-\d]/g, ''), 10);
+      if(isNaN(bonus)) return;
+      out.push({name: k.charAt(0).toUpperCase() + k.slice(1), bonus: bonus});
+    });
+    return out;
+  }
+
+  function jsonDamageListToText(arr){
+    if(!arr || !arr.length) return '';
+    var parts = arr.map(function(x){
+      if(typeof x === 'string') return x;
+      if(x && typeof x === 'object'){
+        if(x.special) return stripJsonTags(x.special);
+        var inner = (x.resist || x.immune || x.vulnerable || []).join(', ');
+        var cond = x.note || x.cond || '';
+        return inner + (cond ? ' (' + stripJsonTags(cond) + ')' : '');
+      }
+      return '';
+    }).filter(function(x){ return x; });
+    return parts.join(', ');
+  }
+
+  function jsonCrToText(cr){
+    if(!cr) return '0';
+    if(typeof cr === 'string') return cr;
+    if(typeof cr === 'object') return cr.cr || '0';
+    return String(cr);
+  }
+
+  function jsonTraitArray(arr){
+    return (arr || []).map(function(t){
+      var name = t.name ? stripJsonTags(t.name) : '';
+      var text = flattenJsonEntries(t.entries || (t.entry ? [t.entry] : []));
+      return {name: name, text: text.trim()};
+    }).filter(function(t){ return t.text; });
+  }
+
+  function jsonActionArray(arr){
+    return (arr || []).map(function(a){
+      var name = a.name ? stripJsonTags(a.name) : '';
+      var text = flattenJsonEntries(a.entries || (a.entry ? [a.entry] : [])).trim();
+      var item = {name: name, text: text, toHit: null, damage: '', damageType: ''};
+      extractAttackRolls(item);
+      return item;
+    }).filter(function(a){ return a.text; });
+  }
+
+  function jsonSpellcastingToTraits(scArr){
+    return (scArr || []).map(function(sc){
+      var name = sc.name ? stripJsonTags(sc.name) : 'Spellcasting';
+      var lines = [flattenJsonEntries(sc.headerEntries || [])];
+      function spellNames(list){
+        return (list || []).map(function(s){ return stripJsonTags(typeof s === 'string' ? s : (s && s.entry) || ''); }).filter(function(x){ return x; }).join(', ');
+      }
+      if(sc.will && sc.will.length) lines.push('At will: ' + spellNames(sc.will));
+      if(sc.daily){
+        Object.keys(sc.daily).forEach(function(freq){
+          lines.push(freq.replace(/e$/,'') + '/day: ' + spellNames(sc.daily[freq]));
+        });
+      }
+      if(sc.spells){
+        var lvlSuffix = {1:'st',2:'nd',3:'rd'};
+        Object.keys(sc.spells).sort(function(a,b){ return Number(a)-Number(b); }).forEach(function(lvl){
+          var lvlData = sc.spells[lvl];
+          var list = spellNames(lvlData.spells);
+          if(!list) return;
+          var label = lvl === '0' ? 'Cantrips (at will)' : (lvl + (lvlSuffix[lvl] || 'th') + ' level' + (lvlData.slots ? ' (' + lvlData.slots + ' slots)' : ''));
+          lines.push(label + ': ' + list);
+        });
+      }
+      var footer = flattenJsonEntries(sc.footerEntries || []);
+      if(footer) lines.push(footer);
+      return {name: name, text: lines.filter(function(x){ return x; }).join(' ')};
+    }).filter(function(t){ return t.text; });
+  }
+
+  function parseJsonMonster(entry){
+    if(!entry || !entry.name) return null;
+    var m = blankMonster();
+    m.id = 'repo_' + uid();
+    m.name = stripJsonTags(entry.name);
+    m.size = jsonSizeToText(entry.size);
+    m.type = jsonTypeToText(entry.type);
+    m.alignment = jsonAlignToText(entry.alignment);
+
+    var acParts = jsonAcToParts(entry.ac);
+    m.ac = acParts.ac; m.acNote = acParts.note;
+
+    var hpParts = jsonHpToParts(entry.hp);
+    m.hp = hpParts.hp; m.hpDice = hpParts.dice;
+
+    m.speed = jsonSpeedToText(entry.speed);
+
+    m.abilities = {
+      str: entry.str || 10, dex: entry.dex || 10, con: entry.con || 10,
+      int: entry.int || 10, wis: entry.wis || 10, cha: entry.cha || 10
+    };
+
+    m.saves = jsonSaveSkillToArray(entry.save);
+    m.skills = jsonSaveSkillToArray(entry.skill);
+
+    var resistParts = [jsonDamageListToText(entry.resist)];
+    if(entry.vulnerable && entry.vulnerable.length) resistParts.push('Vulnerable: ' + jsonDamageListToText(entry.vulnerable));
+    m.resistances = resistParts.filter(function(x){ return x; }).join('; ');
+
+    var immParts = [jsonDamageListToText(entry.immune)];
+    if(entry.conditionImmune && entry.conditionImmune.length) immParts.push(jsonDamageListToText(entry.conditionImmune));
+    m.immunities = immParts.filter(function(x){ return x; }).join('; ');
+
+    var senses = (entry.senses || []).join(', ');
+    m.senses = senses + (entry.passive ? (senses ? ', ' : '') + 'passive Perception ' + entry.passive : '');
+    m.languages = (entry.languages || []).join(', ');
+
+    m.cr = jsonCrToText(entry.cr);
+    m.prof = profFromCR(m.cr);
+
+    m.traits = jsonTraitArray(entry.trait);
+    if(entry.spellcasting) m.traits = m.traits.concat(jsonSpellcastingToTraits(entry.spellcasting));
+    m.actions = jsonActionArray(entry.action);
+    m.bonusActions = jsonTraitArray(entry.bonus);
+    m.reactions = jsonTraitArray(entry.reaction);
+    m.legendary = jsonTraitArray(entry.legendary);
+
+    return m;
+  }
+
+  function parseJsonMonsterLibrary(jsonText){
+    var data;
+    try{ data = JSON.parse(jsonText); }catch(err){ return []; }
+    if(data && Array.isArray(data.monster)){
+      return data.monster.map(parseJsonMonster).filter(function(m){ return m; });
+    }
+    if(data && Array.isArray(data.monsters)){
+      return data.monsters.map(function(m){
+        var copy = JSON.parse(JSON.stringify(m));
+        copy.id = 'repo_' + uid();
+        return copy;
+      });
+    }
+    if(Array.isArray(data)){
+      return data.map(parseJsonMonster).filter(function(m){ return m; });
+    }
+    return [];
+  }
+
+  function fetchRepoLibrary(){
+    var cfg = state.repoLibraryConfig;
+    if(!cfg || !cfg.owner || !cfg.repo || !cfg.path){
+      state.repoLibraryStatus = 'error';
+      state.repoLibraryError = 'No repo library configured.';
+      renderCatalog();
+      return;
+    }
+    state.repoLibraryStatus = 'loading';
+    state.repoLibraryError = '';
+    renderCatalog();
+    var pathSegs = cfg.path.split('/').filter(function(x){ return x; }).map(encodeURIComponent).join('/');
+    var apiUrl = 'https://api.github.com/repos/' + encodeURIComponent(cfg.owner) + '/' + encodeURIComponent(cfg.repo) +
+      '/contents/' + pathSegs + (cfg.branch ? '?ref=' + encodeURIComponent(cfg.branch) : '');
+    fetch(apiUrl, {headers:{'Accept':'application/vnd.github+json'}}).then(function(res){
+      if(!res.ok) throw new Error('GitHub API returned ' + res.status);
+      return res.json();
+    }).then(function(entries){
+      if(!Array.isArray(entries)) throw new Error('That path is not a folder.');
+      var files = entries.filter(function(e){ return e.type === 'file' && /\.(md|json)$/i.test(e.name); });
+      return Promise.all(files.map(function(f){
+        return fetch(f.download_url).then(function(r){
+          if(!r.ok) throw new Error('Could not fetch ' + f.name);
+          return r.text();
+        }).then(function(text){ return {name: f.name, text: text}; });
+      }));
+    }).then(function(fileResults){
+      var monsters = [];
+      fileResults.forEach(function(fr){
+        try{
+          if(/\.md$/i.test(fr.name)){
+            parseMarkdownLibrary(fr.text).forEach(function(m){ m.id = 'repo_' + uid(); monsters.push(m); });
+          } else {
+            monsters = monsters.concat(parseJsonMonsterLibrary(fr.text));
+          }
+        }catch(err){
+          console.error('Could not parse repo file ' + fr.name, err);
+        }
+      });
+      state.repoMonsters = monsters;
+      state.repoLibraryStatus = 'loaded';
+      render();
+    }).catch(function(err){
+      console.error('Could not load repo library', err);
+      state.repoMonsters = [];
+      state.repoLibraryStatus = 'error';
+      state.repoLibraryError = (err && err.message) || String(err);
+      renderCatalog();
+    });
   }
 
   function parseNameBonusList(text){
@@ -2387,6 +2812,7 @@
   loadTheme();
   loadBgImage();
   render();
+  fetchRepoLibrary();
   var rolllogPanelEl = document.getElementById('rolllogPanel');
   var spellWindowEl = document.getElementById('spellWindow');
   makeDraggable(rolllogPanelEl, document.getElementById('rolllogHead'), spellWindowEl);

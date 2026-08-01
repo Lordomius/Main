@@ -1,0 +1,27 @@
+{
+  "monster": [
+    {
+      "name": "Example Bog Stalker",
+      "source": "HOMEBREW",
+      "size": ["M"],
+      "type": {"type": "monstrosity", "tags": ["swamp"]},
+      "alignment": ["U"],
+      "ac": [{"ac": 13, "from": ["natural armor"]}],
+      "hp": {"average": 22, "formula": "4d8+4"},
+      "speed": {"walk": 30, "swim": 30},
+      "str": 14, "dex": 13, "con": 12, "int": 3, "wis": 12, "cha": 6,
+      "skill": {"stealth": "+3", "perception": "+3"},
+      "senses": ["darkvision 60 ft."],
+      "passive": 13,
+      "languages": [],
+      "cr": "1",
+      "trait": [
+        {"name": "Camouflage", "entries": ["The stalker has advantage on Dexterity ({@skill Stealth}) checks made while in marshy or muddy terrain."]}
+      ],
+      "action": [
+        {"name": "Bite", "entries": ["{@atk mw} {@hit 4} to hit, reach 5 ft., one target. {@h}5 ({@damage 1d6+2}) piercing damage."]},
+        {"name": "Tail Slap", "entries": ["{@atk mw} {@hit 4} to hit, reach 10 ft., one target. {@h}6 ({@damage 1d8+2}) bludgeoning damage, and the target must succeed on a DC {@dc 12} Strength saving throw or be knocked {@condition prone}."]}
+      ]
+    }
+  ]
+}
