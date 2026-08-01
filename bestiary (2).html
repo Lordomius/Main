@@ -165,7 +165,7 @@
     background:transparent;border:none;color:var(--parchment);padding:7px 12px;font-size:14px;
   }
   .mode-toggle button.active{background:var(--forest);color:#fff;}
-  #fileImportInput,#imageUploadInput,#bgImageInput{display:none;}
+  #fileImportInput,#mdImportInput,#imageUploadInput,#bgImageInput{display:none;}
 
   .settings-btn{
     background:transparent;border:1px solid var(--forest-light);color:var(--parchment);
@@ -427,6 +427,7 @@
   <h1>Bestiary</h1>
   <button class="tb-btn primary" data-action="new-monster">+ New monster</button>
   <button class="tb-btn" data-action="trigger-import">Import JSON</button>
+  <button class="tb-btn" data-action="trigger-import-md">Import Markdown</button>
   <button class="tb-btn" data-action="export-all">Export library</button>
   <div class="spacer"></div>
   <div class="mode-toggle" id="modeToggle">
@@ -445,6 +446,7 @@
   <button class="settings-btn-full" data-action="remove-bg-image">Remove image</button>
 </div>
 <input type="file" id="fileImportInput" accept="application/json,.json">
+<input type="file" id="mdImportInput" accept=".md,text/markdown,text/plain">
 <input type="file" id="imageUploadInput" accept="image/*">
 <input type="file" id="bgImageInput" accept="image/*">
 
@@ -723,6 +725,14 @@
     }).join('');
   }
 
+  function traitLikeHtml(list){
+    return (list || []).map(function(t){
+      var body = highlightSpells(highlightCastingFrequency(highlightNumbers(esc(t.text))));
+      var label = t.name ? '<b>' + esc(t.name) + '.</b> ' : '';
+      return '<div class="trait">' + label + body + '</div>';
+    }).join('');
+  }
+
   function renderStage(){
     var el = document.getElementById('stageInner');
     var m = getMonster(state.currentId);
@@ -761,9 +771,7 @@
       return '<button class="pill" data-action="roll-skill" data-bonus="' + s.bonus + '" data-label="' + esc(m.name) + ' \u2014 ' + esc(s.name) + '">' + esc(s.name) + ' ' + fmt(s.bonus) + '</button>';
     }).join('');
 
-    var traitsHtml = (m.traits || []).map(function(t){
-      return '<div class="trait"><b>' + esc(t.name) + '.</b> ' + highlightSpells(highlightCastingFrequency(highlightNumbers(esc(t.text)))) + '</div>';
-    }).join('');
+    var traitsHtml = traitLikeHtml(m.traits);
 
     var actionsHtml = (m.actions || []).map(function(a){
       var rolls = '';
@@ -777,17 +785,9 @@
         (rolls ? '<div class="action-rolls">' + rolls + '</div>' : '') + '</div>';
     }).join('');
 
-    var legendaryHtml = (m.legendary || []).map(function(t){
-      return '<div class="trait"><b>' + esc(t.name) + '.</b> ' + highlightSpells(highlightCastingFrequency(highlightNumbers(esc(t.text)))) + '</div>';
-    }).join('');
-
-    var reactionsHtml = (m.reactions || []).map(function(t){
-      return '<div class="trait"><b>' + esc(t.name) + '.</b> ' + highlightSpells(highlightCastingFrequency(highlightNumbers(esc(t.text)))) + '</div>';
-    }).join('');
-
-    var bonusActionsHtml = (m.bonusActions || []).map(function(t){
-      return '<div class="trait"><b>' + esc(t.name) + '.</b> ' + highlightSpells(highlightCastingFrequency(highlightNumbers(esc(t.text)))) + '</div>';
-    }).join('');
+    var legendaryHtml = traitLikeHtml(m.legendary);
+    var reactionsHtml = traitLikeHtml(m.reactions);
+    var bonusActionsHtml = traitLikeHtml(m.bonusActions);
 
     var dexMod = abilityMod(m.abilities.dex || 10);
     var initBonus = (m.initiative === null || m.initiative === undefined || m.initiative === '') ? dexMod : Number(m.initiative);
@@ -906,6 +906,8 @@
       downloadJSON({version:1, monsters: state.monsters}, 'bestiary-export.json');
     } else if(action === 'trigger-import'){
       document.getElementById('fileImportInput').click();
+    } else if(action === 'trigger-import-md'){
+      document.getElementById('mdImportInput').click();
     } else if(action === 'clear-log'){
       var logKey = state.currentId || '__unassigned__';
       state.logs[logKey] = [];
@@ -970,6 +972,287 @@
     };
     reader.readAsText(file);
     e.target.value = '';
+  });
+
+  // ---- Markdown stat block import ----
+  // Understands the common "Homebrewery-style" 5e markdown stat block format
+  // (blockquote-prefixed or plain), and maps each recognized line into the
+  // same fields the rest of the app already knows how to render as clickable
+  // ability/save/skill boxes and rollable attack buttons.
+
+  var SECTION_HEADING_MAP = {
+    'actions': 'actions',
+    'bonus actions': 'bonusActions',
+    'reactions': 'reactions',
+    'legendary actions': 'legendary',
+    'villain actions': 'legendary',
+    'mythic actions': 'legendary'
+  };
+
+  function stripMdEmphasis(s){
+    return String(s || '')
+      .replace(/\*\*\*(.+?)\*\*\*/g, '$1')
+      .replace(/\*\*(.+?)\*\*/g, '$1')
+      .replace(/\*(.+?)\*/g, '$1')
+      .replace(/__(.+?)__/g, '$1')
+      .replace(/_(.+?)_/g, '$1')
+      .replace(/\\([*_])/g, '$1')
+      .trim();
+  }
+
+  function mdLabelValue(line, label){
+    var re = new RegExp('^\\s*[-*]?\\s*\\*{0,3}' + label + '\\*{0,3}:?\\s*(.*)$', 'i');
+    var m = line.match(re);
+    return m ? m[1].trim() : null;
+  }
+
+  function parseNameBonusList(text){
+    return String(text || '').split(',').map(function(part){
+      var m = part.trim().match(/^([A-Za-z][A-Za-z\s]*?)\s*([+\-]\s?\d+)$/);
+      if(!m) return null;
+      return {name: m[1].trim(), bonus: parseInt(m[2].replace(/\s/g, ''), 10)};
+    }).filter(function(x){ return x; });
+  }
+
+  function crToNumber(cr){
+    if(!cr) return 0;
+    cr = String(cr).trim();
+    if(cr.indexOf('/') !== -1){
+      var parts = cr.split('/');
+      return parseFloat(parts[0]) / (parseFloat(parts[1]) || 1);
+    }
+    return parseFloat(cr) || 0;
+  }
+
+  function profFromCR(cr){
+    var n = crToNumber(cr);
+    if(n >= 29) return 9;
+    if(n >= 25) return 8;
+    if(n >= 21) return 7;
+    if(n >= 17) return 6;
+    if(n >= 13) return 5;
+    if(n >= 9) return 4;
+    if(n >= 5) return 3;
+    return 2;
+  }
+
+  function splitMarkdownBlocks(text){
+    var lines = String(text || '').replace(/\r\n/g, '\n').split('\n').map(function(l){
+      return l.replace(/^>+\s?/, '');
+    });
+    var blocks = [];
+    var current = [];
+    var seenHeading = false;
+    lines.forEach(function(line){
+      if(/^#{1,2}\s+\S/.test(line.trim())){
+        if(seenHeading && current.length){
+          blocks.push(current.join('\n'));
+          current = [];
+        }
+        seenHeading = true;
+      }
+      current.push(line);
+    });
+    if(current.length) blocks.push(current.join('\n'));
+    return blocks.filter(function(b){ return /#{1,2}\s+\S/.test(b); });
+  }
+
+  function extractAttackRolls(item){
+    var text = item.text;
+    var hitMatch = text.match(/([+\-]\s?\d+)\s*to hit/i);
+    if(hitMatch) item.toHit = parseInt(hitMatch[1].replace(/\s/g, ''), 10);
+    var dmgMatch = text.match(/\(\s*(\d+d\d+(?:\s*[+\-]\s*\d+)?)\s*\)\s*([A-Za-z]+)?\s*damage/i);
+    if(dmgMatch){
+      item.damage = dmgMatch[1].replace(/\s/g, '');
+      if(dmgMatch[2]) item.damageType = dmgMatch[2].toLowerCase();
+    }
+  }
+
+  function parseMarkdownMonster(block){
+    var rawLines = block.split('\n');
+    var m = blankMonster();
+    var vulnerabilities = '', resistancesRaw = '', damageImmunitiesRaw = '', conditionImmunitiesRaw = '';
+    var gotName = false, gotSubtitle = false, profExplicit = false;
+    var currentSection = 'traits';
+    var currentItem = null;
+    var tableHeaderSeen = false;
+    var abilityTableFound = false;
+
+    function pushItem(section, name, text){
+      var item = {name: name, text: String(text || '').trim()};
+      if(section === 'actions'){ item.toHit = null; item.damage = ''; item.damageType = ''; }
+      m[section].push(item);
+      return item;
+    }
+
+    for(var i = 0; i < rawLines.length; i++){
+      var line = rawLines[i].trim();
+      if(!line) continue;
+      if(/^[_\-*=]{3,}$/.test(line)) continue;
+
+      var headingMatch = line.match(/^#{1,4}\s+(.+)$/);
+      if(headingMatch){
+        var headingText = stripMdEmphasis(headingMatch[1]);
+        if(!gotName){
+          m.name = headingText || m.name;
+          gotName = true;
+        } else {
+          currentSection = SECTION_HEADING_MAP[headingText.toLowerCase().trim()] || 'traits';
+          currentItem = null;
+        }
+        continue;
+      }
+
+      if(gotName && !gotSubtitle){
+        gotSubtitle = true;
+        var subMatch = line.match(/^\*([^*].*[^*])\*$/);
+        if(subMatch){
+          var subParts = subMatch[1].trim().match(/^([\w\-]+)\s+(.+?),\s*(.+)$/);
+          if(subParts){
+            m.size = subParts[1];
+            m.type = subParts[2];
+            m.alignment = subParts[3];
+          }
+          continue;
+        }
+      }
+
+      if(/^\|?\s*str\s*\|\s*dex\s*\|\s*con\s*\|\s*int\s*\|\s*wis\s*\|\s*cha\s*\|?\s*$/i.test(line)){
+        tableHeaderSeen = true;
+        continue;
+      }
+      if(tableHeaderSeen && /^\|?[\s:\-|]+\|?$/.test(line)){
+        continue;
+      }
+      if(tableHeaderSeen){
+        var cells = line.split('|').map(function(c){ return c.trim(); }).filter(function(c){ return c.length; });
+        if(cells.length >= 6){
+          ['str','dex','con','int','wis','cha'].forEach(function(ab, idx){
+            var numMatch = cells[idx].match(/-?\d+/);
+            if(numMatch){ m.abilities[ab] = parseInt(numMatch[0], 10); abilityTableFound = true; }
+          });
+        }
+        tableHeaderSeen = false;
+        continue;
+      }
+
+      if(/\bstr\b/i.test(line) && /\bdex\b/i.test(line) && /\bcon\b/i.test(line)){
+        var inlineFound = false;
+        ['str','dex','con','int','wis','cha'].forEach(function(ab){
+          var abRe = new RegExp('\\b' + ab + '\\b\\s*\\**\\s*(-?\\d{1,2})', 'i');
+          var abMatch = line.match(abRe);
+          if(abMatch){ m.abilities[ab] = parseInt(abMatch[1], 10); inlineFound = true; }
+        });
+        if(inlineFound){ abilityTableFound = true; continue; }
+      }
+
+      var val;
+      if((val = mdLabelValue(line, 'Armor Class')) !== null){
+        var acMatch = val.match(/(\d+)\s*(?:\(([^)]+)\))?/);
+        if(acMatch){ m.ac = parseInt(acMatch[1], 10); m.acNote = acMatch[2] || ''; }
+        continue;
+      }
+      if((val = mdLabelValue(line, 'Hit Points')) !== null){
+        var hpMatch = val.match(/(\d+)\s*(?:\(([^)]+)\))?/);
+        if(hpMatch){ m.hp = parseInt(hpMatch[1], 10); m.hpDice = hpMatch[2] || ''; }
+        continue;
+      }
+      if((val = mdLabelValue(line, 'Speed')) !== null){ m.speed = stripMdEmphasis(val); continue; }
+      if((val = mdLabelValue(line, 'Initiative')) !== null){
+        var initMatch = val.match(/([+\-]?\d+)/);
+        if(initMatch) m.initiative = parseInt(initMatch[1], 10);
+        continue;
+      }
+      if((val = mdLabelValue(line, 'Proficiency Bonus')) !== null){
+        var profMatch = val.match(/([+\-]?\d+)/);
+        if(profMatch){ m.prof = parseInt(profMatch[1], 10); profExplicit = true; }
+        continue;
+      }
+      if((val = mdLabelValue(line, 'Saving Throws')) !== null){ m.saves = parseNameBonusList(val); continue; }
+      if((val = mdLabelValue(line, 'Skills')) !== null){ m.skills = parseNameBonusList(val); continue; }
+      if((val = mdLabelValue(line, 'Damage Vulnerabilities')) !== null){ vulnerabilities = stripMdEmphasis(val); continue; }
+      if((val = mdLabelValue(line, 'Damage Resistances')) !== null){ resistancesRaw = stripMdEmphasis(val); continue; }
+      if((val = mdLabelValue(line, 'Damage Immunities')) !== null){ damageImmunitiesRaw = stripMdEmphasis(val); continue; }
+      if((val = mdLabelValue(line, 'Condition Immunities')) !== null){ conditionImmunitiesRaw = stripMdEmphasis(val); continue; }
+      if((val = mdLabelValue(line, 'Senses')) !== null){ m.senses = stripMdEmphasis(val); continue; }
+      if((val = mdLabelValue(line, 'Languages')) !== null){ m.languages = stripMdEmphasis(val); continue; }
+      if((val = mdLabelValue(line, 'Challenge')) !== null){
+        var crMatch = val.match(/^([\d/]+)/);
+        if(crMatch) m.cr = crMatch[1];
+        continue;
+      }
+
+      var nameMatch = line.match(/^[-*]?\s*\*{2,3}([^*]+?)\.?\*{2,3}\.?\s*(.*)$/);
+      if(nameMatch){
+        var itemName = stripMdEmphasis(nameMatch[1]).replace(/\.$/, '').trim();
+        var itemText = stripMdEmphasis(nameMatch[2]);
+        currentItem = pushItem(currentSection, itemName, itemText);
+        if(currentSection === 'actions') extractAttackRolls(currentItem);
+        continue;
+      }
+
+      var plainText = stripMdEmphasis(line.replace(/^[-*]\s*/, ''));
+      if(!plainText) continue;
+      if(currentItem){
+        currentItem.text = (currentItem.text + ' ' + plainText).trim();
+        if(currentSection === 'actions') extractAttackRolls(currentItem);
+      } else {
+        currentItem = pushItem(currentSection, '', plainText);
+      }
+    }
+
+    if(!abilityTableFound){
+      ['str','dex','con','int','wis','cha'].forEach(function(ab){
+        var re = new RegExp('\\b' + ab + '\\b\\s*\\**\\s*(\\d{1,2})', 'i');
+        var mt = block.match(re);
+        if(mt) m.abilities[ab] = parseInt(mt[1], 10);
+      });
+    }
+
+    var resParts = [];
+    if(resistancesRaw) resParts.push(resistancesRaw);
+    if(vulnerabilities) resParts.push('Vulnerable: ' + vulnerabilities);
+    m.resistances = resParts.join('; ');
+
+    var immParts = [];
+    if(damageImmunitiesRaw) immParts.push(damageImmunitiesRaw);
+    if(conditionImmunitiesRaw) immParts.push(conditionImmunitiesRaw);
+    m.immunities = immParts.join('; ');
+
+    if(!profExplicit) m.prof = profFromCR(m.cr);
+
+    return gotName ? m : null;
+  }
+
+  function parseMarkdownLibrary(text){
+    return splitMarkdownBlocks(text).map(parseMarkdownMonster).filter(function(m){ return m; });
+  }
+
+  document.getElementById('mdImportInput').addEventListener('change', function(e){
+    var file = e.target.files[0];
+    if(!file) return;
+    var reader = new FileReader();
+    reader.onload = function(){
+      var imported;
+      try{
+        imported = parseMarkdownLibrary(reader.result);
+      }catch(err){
+        console.error('Markdown import failed', err);
+        imported = [];
+      }
+      if(!imported.length){
+        alert('Could not find a recognizable stat block in that file. Expected a 5e-style markdown stat block (name heading, "Armor Class", "Hit Points", ability score table, etc.).');
+        e.target.value = '';
+        return;
+      }
+      imported.forEach(function(m){ state.monsters.push(m); });
+      state.currentId = imported[imported.length - 1].id;
+      saveLibrary();
+      render();
+      alert('Imported ' + imported.length + ' creature' + (imported.length === 1 ? '' : 's') + ' from Markdown: ' + imported.map(function(m){ return m.name; }).join(', ') + '.\n\nReview the stat block and use Edit to fix anything the parser missed.');
+      e.target.value = '';
+    };
+    reader.readAsText(file);
   });
 
   var ABILITY_LABELS = {str:'Strength', dex:'Dexterity', con:'Constitution', int:'Intelligence', wis:'Wisdom', cha:'Charisma'};
