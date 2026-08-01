@@ -2867,11 +2867,23 @@
   if(SPELLS['druidcraft']) ADDED_SPELLS['shamancraft'] = Object.assign({}, SPELLS['druidcraft'], {name:'Shamancraft'});
   Object.assign(SPELLS, ADDED_SPELLS);
 
+  // highlightSpells() runs on text that's already been through esc() (it has
+  // to - the surrounding prose is untrusted stat block content), so by the
+  // time it sees the text, an apostrophe is already "&#39;" etc. Matching
+  // against raw spell-name keys here would silently never match any
+  // possessive-named spell (Tasha's, Melf's, Mordenkainen's, Jim's...) -
+  // so the lookup names are HTML-escaped the same way first.
   var SPELL_REGEX = (function(){
     var names = Object.keys(SPELLS).sort(function(a, b){ return b.length - a.length; });
-    var escaped = names.map(function(n){ return n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); });
+    var escaped = names.map(function(n){ return esc(n).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); });
     return new RegExp('\\b(' + escaped.join('|') + ')\\b', 'gi');
   })();
+
+  function unescapeHtml(s){
+    return String(s).replace(/&amp;|&lt;|&gt;|&quot;|&#39;/g, function(e){
+      return ({'&amp;':'&', '&lt;':'<', '&gt;':'>', '&quot;':'"', '&#39;':"'"})[e];
+    });
+  }
 
   function highlightNumbers(text){
     var re = /\bDC\s*(\d+)\b|\b(\d{1,3}(?:,\d{3})*(?:\/\d+)?)-?\s?(?:foot|feet|ft\.?)\b/gi;
@@ -2895,9 +2907,9 @@
 
   function highlightSpells(text){
     return text.replace(SPELL_REGEX, function(match){
-      var key = match.toLowerCase();
+      var key = unescapeHtml(match).toLowerCase();
       if(!SPELLS[key]) return match;
-      return '<span class="spell-link" data-action="open-spell" data-spell="' + key + '">' + match + '</span>';
+      return '<span class="spell-link" data-action="open-spell" data-spell="' + esc(key) + '">' + match + '</span>';
     });
   }
 
