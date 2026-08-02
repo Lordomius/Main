@@ -749,6 +749,10 @@
         <div class="cat-filter-chips" id="filterTypeChips"></div>
       </div>
       <div class="cat-filter-group">
+        <div class="cat-filter-group-label">Features</div>
+        <div class="cat-filter-chips" id="filterFeatureChips"></div>
+      </div>
+      <div class="cat-filter-group">
         <div class="cat-filter-group-label">Challenge rating: <span id="crRangeLabel">0 – 30</span></div>
         <div class="cr-slider">
           <input type="range" id="crMinSlider" min="0" max="33" step="1" value="0">
@@ -872,6 +876,7 @@
     repoOverrides: {},
     filterSizes: [],
     filterTypes: [],
+    filterFeatures: [],
     filterCrMinIdx: 0,
     filterCrMaxIdx: CR_SCALE.length - 1,
     filtersOpen: false,
@@ -903,6 +908,35 @@
   function monsterTypeTokens(m){
     var text = String((m && m.type) || '').toLowerCase();
     return CREATURE_TYPES.filter(function(t){ return new RegExp('\\b' + t + '\\b').test(text); });
+  }
+
+  var CREATURE_FEATURES = [
+    {id:'bonusActions', label:'Bonus action'},
+    {id:'reactions', label:'Reaction'},
+    {id:'legendary', label:'Legendary action'},
+    {id:'lairActions', label:'Lair action'},
+    {id:'regionalEffects', label:'Regional effect'},
+    {id:'spellcasting', label:'Spellcasting'}
+  ];
+
+  // Lair actions/regional effects fall back to m.hasLegendaryGroup for
+  // repo-JSON monsters, which only carry a reference to those sections (see
+  // parseJsonMonster) rather than their actual text - an approximation, but
+  // the best signal available without fetching a separate data file.
+  function monsterFeatureTokens(m){
+    var tokens = [];
+    if(m.bonusActions && m.bonusActions.length) tokens.push('bonusActions');
+    if(m.reactions && m.reactions.length) tokens.push('reactions');
+    if(m.legendary && m.legendary.length) tokens.push('legendary');
+    if((m.lairActions && m.lairActions.length) || m.hasLegendaryGroup) tokens.push('lairActions');
+    if((m.regionalEffects && m.regionalEffects.length) || m.hasLegendaryGroup) tokens.push('regionalEffects');
+    // 5etools JSON always places spellcasting among traits, but hand-written
+    // markdown stat blocks commonly list it as the first item under Actions
+    // instead - check both so either source is detected.
+    var hasSpellcasting = (m.traits && m.traits.some(function(t){ return /spellcasting/i.test(t.name || ''); })) ||
+      (m.actions && m.actions.some(function(a){ return /spellcasting/i.test(a.name || ''); }));
+    if(hasSpellcasting) tokens.push('spellcasting');
+    return tokens;
   }
 
   var THEMES = [
@@ -1002,7 +1036,7 @@
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
         version:1, monsters: state.monsters, folders: state.folders, collapsedFolders: state.collapsedFolders,
         sortMode: state.sortMode, repoLibraryConfig: state.repoLibraryConfig, repoOverrides: state.repoOverrides,
-        filterSizes: state.filterSizes, filterTypes: state.filterTypes,
+        filterSizes: state.filterSizes, filterTypes: state.filterTypes, filterFeatures: state.filterFeatures,
         filterCrMinIdx: state.filterCrMinIdx, filterCrMaxIdx: state.filterCrMaxIdx,
         catalogWidth: state.catalogWidth, encounters: state.encounters, activeEncounterId: state.activeEncounterId
       }));
@@ -1234,6 +1268,7 @@
         state.repoOverrides = (data && data.repoOverrides) || {};
         state.filterSizes = (data && data.filterSizes) || [];
         state.filterTypes = (data && data.filterTypes) || [];
+        state.filterFeatures = (data && data.filterFeatures) || [];
         state.filterCrMinIdx = (data && typeof data.filterCrMinIdx === 'number') ? data.filterCrMinIdx : 0;
         state.filterCrMaxIdx = (data && typeof data.filterCrMaxIdx === 'number') ? data.filterCrMaxIdx : CR_SCALE.length - 1;
         state.catalogWidth = (data && typeof data.catalogWidth === 'number') ? data.catalogWidth : 230;
@@ -1676,13 +1711,17 @@
         var types = monsterTypeTokens(m);
         if(!state.filterTypes.some(function(t){ return types.indexOf(t) !== -1; })) return false;
       }
+      if(state.filterFeatures.length){
+        var features = monsterFeatureTokens(m);
+        if(!state.filterFeatures.some(function(f){ return features.indexOf(f) !== -1; })) return false;
+      }
       if(crRangeActive){
         var crNum = crToNumber(m.cr);
         if(crNum < CR_SCALE[state.filterCrMinIdx] || crNum > CR_SCALE[state.filterCrMaxIdx]) return false;
       }
       return true;
     };
-    var filtersActive = !!(q || state.filterSizes.length || state.filterTypes.length || crRangeActive);
+    var filtersActive = !!(q || state.filterSizes.length || state.filterTypes.length || state.filterFeatures.length || crRangeActive);
 
     function sortMonsters(arr){
       var mode = state.sortMode || 'name-asc';
@@ -1791,14 +1830,16 @@
   function renderFilterPanel(){
     var sizeEl = document.getElementById('filterSizeChips');
     var typeEl = document.getElementById('filterTypeChips');
+    var featureEl = document.getElementById('filterFeatureChips');
     if(!sizeEl || !typeEl) return;
-    function chipHtml(action, value, activeList){
+    function chipHtml(action, value, activeList, labelOverride){
       var active = activeList.indexOf(value) !== -1;
-      var label = value.charAt(0).toUpperCase() + value.slice(1);
+      var label = labelOverride || (value.charAt(0).toUpperCase() + value.slice(1));
       return '<button type="button" class="filter-chip' + (active ? ' active' : '') + '" data-action="' + action + '" data-value="' + value + '">' + label + '</button>';
     }
     sizeEl.innerHTML = CREATURE_SIZES.map(function(s){ return chipHtml('toggle-filter-size', s, state.filterSizes); }).join('');
     typeEl.innerHTML = CREATURE_TYPES.map(function(t){ return chipHtml('toggle-filter-type', t, state.filterTypes); }).join('');
+    if(featureEl) featureEl.innerHTML = CREATURE_FEATURES.map(function(f){ return chipHtml('toggle-filter-feature', f.id, state.filterFeatures, f.label); }).join('');
 
     var crMinEl = document.getElementById('crMinSlider');
     var crMaxEl = document.getElementById('crMaxSlider');
@@ -1808,7 +1849,7 @@
     if(crLabel) crLabel.textContent = crLabelForIndex(state.filterCrMinIdx) + ' – ' + crLabelForIndex(state.filterCrMaxIdx);
     var crRangeActive = state.filterCrMinIdx > 0 || state.filterCrMaxIdx < CR_SCALE.length - 1;
 
-    var count = state.filterSizes.length + state.filterTypes.length + (crRangeActive ? 1 : 0);
+    var count = state.filterSizes.length + state.filterTypes.length + state.filterFeatures.length + (crRangeActive ? 1 : 0);
     var badge = document.getElementById('filterBadge');
     if(badge){
       badge.textContent = count;
@@ -2059,6 +2100,8 @@
     var legendaryHtml = traitLikeHtml(m.legendary, label);
     var reactionsHtml = traitLikeHtml(m.reactions, label);
     var bonusActionsHtml = traitLikeHtml(m.bonusActions, label);
+    var lairActionsHtml = traitLikeHtml(m.lairActions, label);
+    var regionalEffectsHtml = traitLikeHtml(m.regionalEffects, label);
     return (skillsHtml ? '<div class="pillrow">' + skillsHtml + '</div>' : '') +
       (m.resistances ? '<div class="sb-line"><b>Resistances</b> ' + esc(m.resistances) + '</div>' : '') +
       (m.immunities ? '<div class="sb-line"><b>Immunities</b> ' + esc(m.immunities) + '</div>' : '') +
@@ -2069,7 +2112,9 @@
       (actionsHtml ? '<div class="section-title">Actions</div>' + actionsHtml : '') +
       (bonusActionsHtml ? '<div class="section-title">Bonus actions</div>' + bonusActionsHtml : '') +
       (reactionsHtml ? '<div class="section-title">Reactions</div>' + reactionsHtml : '') +
-      (legendaryHtml ? '<div class="section-title">Legendary actions</div>' + legendaryHtml : '');
+      (legendaryHtml ? '<div class="section-title">Legendary actions</div>' + legendaryHtml : '') +
+      (lairActionsHtml ? '<div class="section-title">Lair actions</div>' + lairActionsHtml : '') +
+      (regionalEffectsHtml ? '<div class="section-title">Regional effects</div>' + regionalEffectsHtml : '');
   }
 
   // Every instance renders as its own self-contained card directly in the
@@ -2298,9 +2343,16 @@
       if(typeIdx === -1) state.filterTypes.push(typeVal); else state.filterTypes.splice(typeIdx, 1);
       saveLibrary();
       renderCatalog();
+    } else if(action === 'toggle-filter-feature'){
+      var featureVal = t.getAttribute('data-value');
+      var featureIdx = state.filterFeatures.indexOf(featureVal);
+      if(featureIdx === -1) state.filterFeatures.push(featureVal); else state.filterFeatures.splice(featureIdx, 1);
+      saveLibrary();
+      renderCatalog();
     } else if(action === 'clear-filters'){
       state.filterSizes = [];
       state.filterTypes = [];
+      state.filterFeatures = [];
       state.filterCrMinIdx = 0;
       state.filterCrMaxIdx = CR_SCALE.length - 1;
       saveLibrary();
@@ -2665,7 +2717,9 @@
     'reactions': 'reactions',
     'legendary actions': 'legendary',
     'villain actions': 'legendary',
-    'mythic actions': 'legendary'
+    'mythic actions': 'legendary',
+    'lair actions': 'lairActions',
+    'regional effects': 'regionalEffects'
   };
 
   function stripMdEmphasis(s){
@@ -2967,6 +3021,12 @@
     m.bonusActions = jsonTraitArray(entry.bonus);
     m.reactions = jsonTraitArray(entry.reaction);
     m.legendary = jsonTraitArray(entry.legendary);
+    // 5etools monster entries only carry a {name,source} reference to a
+    // separate legendarygroups.json for lair actions/regional effects text,
+    // which this app doesn't fetch - so there's no text to show, but the
+    // reference itself is a reliable signal the creature has one or both,
+    // used by the "Lair action"/"Regional effect" search filters below.
+    m.hasLegendaryGroup = !!entry.legendaryGroup;
 
     return m;
   }
@@ -3659,7 +3719,8 @@
       initiative:null,
       abilities:{str:10,dex:10,con:10,int:10,wis:10,cha:10},
       saves:[], skills:[], senses:'', languages:'', immunities:'', resistances:'',
-      traits:[], actions:[], reactions:[], bonusActions:[], legendary:[]
+      traits:[], actions:[], reactions:[], bonusActions:[], legendary:[],
+      lairActions:[], regionalEffects:[], hasLegendaryGroup:false
     };
   }
 
