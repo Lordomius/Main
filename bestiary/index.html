@@ -137,8 +137,6 @@
   html,body{margin:0;padding:0;height:100vh;overflow:hidden;background:var(--desk);color:var(--ink);font-family:var(--font-body);}
   body{
     display:flex;flex-direction:column;
-    background-image:var(--app-bg-image, none);
-    background-size:cover;background-position:center;background-repeat:no-repeat;
   }
 
   .toolbar{
@@ -610,6 +608,36 @@
   .log-entry.fumble .hl{color:var(--fumble-color);font-weight:bold;}
   .log-empty{color:#4d6478;font-style:italic;}
 
+  .bg-images-display{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none;}
+  .bg-images-display img{position:absolute;object-fit:cover;border-radius:2px;}
+
+  .bg-edit-overlay{
+    position:fixed;inset:0;z-index:500;background:var(--desk);
+    display:flex;flex-direction:column;
+  }
+  .bg-edit-topbar{
+    display:flex;align-items:center;gap:14px;padding:12px 18px;flex-shrink:0;
+    background:var(--desk-light);border-bottom:2px solid var(--gold);
+  }
+  .bg-edit-topbar h1{font-family:var(--font-display);font-weight:normal;font-size:20px;color:var(--gold-light);margin:0;letter-spacing:0.3px;}
+  .bg-edit-topbar .spacer{flex:1;}
+  .bg-edit-count{color:var(--text-light-secondary);font-size:13px;}
+  .bg-edit-canvas{flex:1;position:relative;overflow:hidden;background:var(--desk);}
+  .bg-image-item{
+    position:absolute;border:2px solid var(--gold);border-radius:4px;overflow:hidden;
+    box-shadow:0 6px 20px rgba(0,0,0,0.5);cursor:move;touch-action:none;
+  }
+  .bg-image-item img{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none;user-select:none;}
+  .bg-image-remove{
+    position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:3px;padding:0;
+    border:1px solid var(--forest-light);background:var(--desk-light);color:var(--parchment);
+    cursor:pointer;font-size:14px;line-height:1;
+  }
+  .bg-image-resize{
+    position:absolute;right:0;bottom:0;width:20px;height:20px;cursor:nwse-resize;touch-action:none;
+    background:linear-gradient(135deg, transparent 0 50%, var(--gold) 50% 58%, transparent 58% 66%, var(--gold) 66% 74%, transparent 74% 82%, var(--gold) 82% 90%, transparent 90% 100%);
+  }
+
   .modal-overlay{
     position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;
     z-index:50;padding:20px;
@@ -684,9 +712,9 @@
   <p class="settings-sub">Choose a theme for the bestiary.</p>
   <div class="theme-grid" id="themeGrid"></div>
   <div class="settings-divider"></div>
-  <div class="settings-row-label">App background image</div>
-  <button class="settings-btn-full" data-action="upload-bg-image">Upload image</button>
-  <button class="settings-btn-full" data-action="remove-bg-image">Remove image</button>
+  <div class="settings-row-label">App background images</div>
+  <p class="settings-sub" id="bgImagesSummary">0 / 10 images</p>
+  <button class="settings-btn-full" data-action="open-bg-editor">Edit background images</button>
   <div class="settings-divider"></div>
   <div class="settings-row-label">Statblock source</div>
   <p class="settings-sub">GitHub folder your library automatically pulls stat blocks from and merges into the catalog below.</p>
@@ -804,11 +832,25 @@
   <div class="rolllog-resize" id="instanceWindowResize" title="Drag to resize"></div>
 </div>
 
+<div class="bg-images-display" id="bgImagesDisplay"></div>
+
+<div class="bg-edit-overlay" id="bgEditOverlay" style="display:none;">
+  <div class="bg-edit-topbar">
+    <h1>Arrange background images</h1>
+    <span class="bg-edit-count" id="bgEditCount">0 / 10</span>
+    <div class="spacer"></div>
+    <button class="tb-btn primary" data-action="add-bg-image" id="addBgImageBtn">+ Add image</button>
+    <button class="tb-btn" data-action="close-bg-editor">Done</button>
+  </div>
+  <div class="bg-edit-canvas" id="bgEditCanvas"></div>
+</div>
+
 <script>
 (function(){
   var STORAGE_KEY = 'dndBestiaryLibrary_v1';
   var THEME_STORAGE_KEY = 'dndBestiaryTheme_v1';
-  var BGIMG_STORAGE_KEY = 'dndBestiaryBgImage_v1';
+  var BGIMG_STORAGE_KEY = 'dndBestiaryBgImages_v2';
+  var BG_IMAGE_MAX = 10;
 
   // Every valid CR value in ascending order, used as slider steps: the
   // sub-1 fractions first, then whole numbers 1-30.
@@ -822,7 +864,8 @@
     logs: {},
     editing: null,
     theme: 'blue',
-    bgImage: null,
+    bgImages: [],
+    bgEditMode: false,
     folders: [],
     collapsedFolders: {},
     renamingFolderId: null,
@@ -1264,30 +1307,163 @@
     }).join('');
   }
 
-  function saveBgImage(){
+  function saveBgImages(){
     try{
-      if(state.bgImage) localStorage.setItem(BGIMG_STORAGE_KEY, state.bgImage);
+      if(state.bgImages.length) localStorage.setItem(BGIMG_STORAGE_KEY, JSON.stringify(state.bgImages));
       else localStorage.removeItem(BGIMG_STORAGE_KEY);
     }catch(err){
-      console.error('Could not save background image', err);
+      console.error('Could not save background images', err);
+      alert('Could not save background images to local storage - they may be too large. Try removing one or adding smaller images.');
     }
   }
 
-  function loadBgImage(){
+  function loadBgImages(){
     try{
-      state.bgImage = localStorage.getItem(BGIMG_STORAGE_KEY) || null;
+      var raw = localStorage.getItem(BGIMG_STORAGE_KEY);
+      state.bgImages = raw ? JSON.parse(raw) : [];
     }catch(err){
-      console.error('Could not load background image', err);
+      console.error('Could not load background images', err);
+      state.bgImages = [];
     }
-    applyBgImage();
+    applyBgImages();
   }
 
-  function applyBgImage(){
-    if(state.bgImage){
-      document.documentElement.style.setProperty('--app-bg-image', 'url(' + state.bgImage + ')');
-    } else {
-      document.documentElement.style.removeProperty('--app-bg-image');
+  // Renders the composed, non-interactive background behind the whole app
+  // (visible through the transparent margins around the stage) to match
+  // exactly what was arranged in the full-screen editor - both use the same
+  // position:fixed;inset:0 coordinate space so nothing shifts between them.
+  function applyBgImages(){
+    var el = document.getElementById('bgImagesDisplay');
+    el.innerHTML = state.bgImages.map(function(img){
+      return '<img src="' + esc(img.src) + '" style="left:' + img.x + 'px;top:' + img.y + 'px;width:' + img.w + 'px;height:' + img.h + 'px;">';
+    }).join('');
+    var summary = document.getElementById('bgImagesSummary');
+    if(summary) summary.textContent = state.bgImages.length + ' / ' + BG_IMAGE_MAX + ' images';
+  }
+
+  // Downscales huge phone-camera photos before they ever hit localStorage -
+  // up to 10 uncompressed images would blow the ~5-10MB storage quota fast.
+  function downscaleImage(dataUrl, maxDim, callback){
+    var img = new Image();
+    img.onload = function(){
+      var w = img.width, h = img.height;
+      if(w <= maxDim && h <= maxDim){ callback(dataUrl); return; }
+      var scale = Math.min(maxDim / w, maxDim / h);
+      var canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(w * scale));
+      canvas.height = Math.max(1, Math.round(h * scale));
+      var ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      callback(canvas.toDataURL('image/jpeg', 0.85));
+    };
+    img.onerror = function(){ callback(dataUrl); };
+    img.src = dataUrl;
+  }
+
+  var bgHiddenPanels = [];
+  function openBgEditor(){
+    state.bgEditMode = true;
+    document.getElementById('settingsPanel').classList.remove('open');
+    document.getElementById('settingsBtn').classList.remove('open');
+    bgHiddenPanels = [];
+    ['rolllogPanel', 'spellWindow', 'instanceWindowPanel'].forEach(function(id){
+      var p = document.getElementById(id);
+      if(p && p.style.display !== 'none'){
+        bgHiddenPanels.push(id);
+        p.style.display = 'none';
+      }
+    });
+    document.getElementById('bgEditOverlay').style.display = 'flex';
+    renderBgEditCanvas();
+  }
+
+  function closeBgEditor(){
+    state.bgEditMode = false;
+    document.getElementById('bgEditOverlay').style.display = 'none';
+    bgHiddenPanels.forEach(function(id){ document.getElementById(id).style.display = 'flex'; });
+    bgHiddenPanels = [];
+  }
+
+  var bgEditTopZ = 1;
+  function renderBgEditCanvas(){
+    var canvas = document.getElementById('bgEditCanvas');
+    canvas.innerHTML = state.bgImages.map(function(img, i){
+      return '<div class="bg-image-item" id="bgimg_' + esc(img.id) + '" style="left:' + img.x + 'px;top:' + img.y + 'px;width:' + img.w + 'px;height:' + img.h + 'px;z-index:' + (i + 1) + ';">' +
+        '<img src="' + esc(img.src) + '" draggable="false">' +
+        '<button class="bg-image-remove" data-action="remove-bg-image" data-bg-id="' + esc(img.id) + '" title="Remove">×</button>' +
+        '<div class="bg-image-resize" title="Drag to resize"></div>' +
+      '</div>';
+    }).join('');
+    bgEditTopZ = state.bgImages.length + 1;
+    document.getElementById('bgEditCount').textContent = state.bgImages.length + ' / ' + BG_IMAGE_MAX;
+    var addBtn = document.getElementById('addBgImageBtn');
+    if(addBtn) addBtn.disabled = state.bgImages.length >= BG_IMAGE_MAX;
+    state.bgImages.forEach(function(img){
+      var el = document.getElementById('bgimg_' + img.id);
+      if(el) wireBgImageItem(el, img);
+    });
+  }
+
+  function wireBgImageItem(el, imgData){
+    var dragging = false, offsetX = 0, offsetY = 0;
+    el.addEventListener('pointerdown', function(e){
+      if(e.target.closest('.bg-image-remove') || e.target.closest('.bg-image-resize')) return;
+      dragging = true;
+      var rect = el.getBoundingClientRect();
+      offsetX = e.clientX - rect.left;
+      offsetY = e.clientY - rect.top;
+      bgEditTopZ += 1;
+      el.style.zIndex = bgEditTopZ;
+      el.setPointerCapture(e.pointerId);
+    });
+    el.addEventListener('pointermove', function(e){
+      if(!dragging) return;
+      var canvasRect = document.getElementById('bgEditCanvas').getBoundingClientRect();
+      var x = Math.max(0, Math.min(e.clientX - canvasRect.left - offsetX, canvasRect.width - el.offsetWidth));
+      var y = Math.max(0, Math.min(e.clientY - canvasRect.top - offsetY, canvasRect.height - el.offsetHeight));
+      el.style.left = x + 'px';
+      el.style.top = y + 'px';
+      imgData.x = Math.round(x);
+      imgData.y = Math.round(y);
+    });
+    function endDrag(){
+      if(!dragging) return;
+      dragging = false;
+      saveBgImages();
+      applyBgImages();
     }
+    el.addEventListener('pointerup', endDrag);
+    el.addEventListener('pointercancel', endDrag);
+
+    var resizeHandle = el.querySelector('.bg-image-resize');
+    var resizing = false, startX = 0, startY = 0, startW = 0, startH = 0;
+    resizeHandle.addEventListener('pointerdown', function(e){
+      resizing = true;
+      startX = e.clientX; startY = e.clientY;
+      startW = el.offsetWidth; startH = el.offsetHeight;
+      resizeHandle.setPointerCapture(e.pointerId);
+      e.stopPropagation();
+    });
+    resizeHandle.addEventListener('pointermove', function(e){
+      if(!resizing) return;
+      var canvasRect = document.getElementById('bgEditCanvas').getBoundingClientRect();
+      var maxW = canvasRect.width - el.offsetLeft;
+      var maxH = canvasRect.height - el.offsetTop;
+      var w = Math.max(60, Math.min(startW + (e.clientX - startX), maxW));
+      var h = Math.max(60, Math.min(startH + (e.clientY - startY), maxH));
+      el.style.width = w + 'px';
+      el.style.height = h + 'px';
+      imgData.w = Math.round(w);
+      imgData.h = Math.round(h);
+    });
+    function endResize(){
+      if(!resizing) return;
+      resizing = false;
+      saveBgImages();
+      applyBgImages();
+    }
+    resizeHandle.addEventListener('pointerup', endResize);
+    resizeHandle.addEventListener('pointercancel', endResize);
   }
 
   function seedMonster(){
@@ -2105,12 +2281,18 @@
       moveMonsterToFolder(t.getAttribute('data-monster-id'), t.getAttribute('data-folder-id') || null);
     } else if(action === 'select-theme'){
       applyTheme(t.getAttribute('data-theme'));
-    } else if(action === 'upload-bg-image'){
-      document.getElementById('bgImageInput').click();
+    } else if(action === 'open-bg-editor'){
+      openBgEditor();
+    } else if(action === 'close-bg-editor'){
+      closeBgEditor();
+    } else if(action === 'add-bg-image'){
+      if(state.bgImages.length < BG_IMAGE_MAX) document.getElementById('bgImageInput').click();
     } else if(action === 'remove-bg-image'){
-      state.bgImage = null;
-      saveBgImage();
-      applyBgImage();
+      var rmBgId = t.getAttribute('data-bg-id');
+      state.bgImages = state.bgImages.filter(function(x){ return x.id !== rmBgId; });
+      saveBgImages();
+      applyBgImages();
+      renderBgEditCanvas();
     } else if(action === 'select-monster'){
       state.currentId = t.getAttribute('data-id');
       render();
@@ -3624,12 +3806,16 @@
 
   document.getElementById('bgImageInput').addEventListener('change', function(e){
     var file = e.target.files[0];
-    if(!file) return;
+    if(!file || state.bgImages.length >= BG_IMAGE_MAX) return;
     var reader = new FileReader();
     reader.onload = function(){
-      state.bgImage = reader.result;
-      saveBgImage();
-      applyBgImage();
+      downscaleImage(reader.result, 1600, function(src){
+        var cascade = (state.bgImages.length % 6) * 30;
+        state.bgImages.push({id: uid(), src: src, x: 40 + cascade, y: 40 + cascade, w: 260, h: 200});
+        saveBgImages();
+        applyBgImages();
+        if(state.bgEditMode) renderBgEditCanvas();
+      });
     };
     reader.readAsDataURL(file);
     e.target.value = '';
@@ -3761,7 +3947,7 @@
   loadLibrary();
   if(state.monsters.length) state.currentId = state.monsters[0].id;
   loadTheme();
-  loadBgImage();
+  loadBgImages();
   if(window.innerWidth > 700) document.getElementById('catalogPanel').style.width = state.catalogWidth + 'px';
   render();
   fetchRepoLibrary();
