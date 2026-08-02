@@ -1555,11 +1555,12 @@
     if(panel) panel.style.display = state.filtersOpen ? '' : 'none';
   }
 
-  function traitLikeHtml(list){
+  function traitLikeHtml(list, creatureLabel){
     return (list || []).map(function(t){
       var body = highlightSpells(highlightCastingFrequency(highlightNumbers(esc(t.text))));
-      var label = t.name ? '<b>' + esc(t.name) + '.</b> ' : '';
-      return '<div class="trait">' + label + body + '</div>';
+      var nameHtml = t.name ? '<b>' + esc(t.name) + '.</b> ' : '';
+      var rolls = actionRollButtonsHtml(t, creatureLabel, t.name);
+      return '<div class="trait">' + nameHtml + body + (rolls ? '<div class="action-rolls">' + rolls + '</div>' : '') + '</div>';
     }).join('');
   }
 
@@ -1589,7 +1590,7 @@
 
     var topbarButtons =
       '<button data-action="duplicate-monster" data-id="' + esc(m.id) + '">Duplicate</button>' +
-      '<button data-action="export-monster" data-id="' + esc(m.id) + '">Export</button>' +
+      '<button data-action="lookup-monster-online" data-id="' + esc(m.id) + '">Look up online</button>' +
       '<button data-action="edit-monster" data-id="' + esc(m.id) + '">Edit</button>' +
       '<button class="danger" data-action="delete-monster" data-id="' + esc(m.id) + '">Delete</button>';
     el.innerHTML =
@@ -1756,23 +1757,28 @@
     }).join('');
   }
 
+  function actionRollButtonsHtml(item, label, itemName){
+    var rolls = '';
+    if(item.toHit !== null && item.toHit !== undefined && item.toHit !== ''){
+      rolls += '<button class="stamp" data-action="roll-attack" data-bonus="' + item.toHit + '" data-label="' + esc(label) + ' — ' + esc(itemName) + ' to hit">' + fmt(Number(item.toHit)) + ' to hit</button>';
+    }
+    if(item.damage){
+      rolls += '<button class="stamp dmg" data-action="roll-damage" data-dice="' + esc(item.damage) + '" data-typelabel="' + esc(item.damageType||'') + '" data-label="' + esc(label) + ' — ' + esc(itemName) + ' damage">' + esc(item.damage) + (item.damageType ? (' ' + esc(item.damageType)) : '') + '</button>';
+      var bonusDmg = findBonusDamage(item.text);
+      if(bonusDmg && (bonusDmg.dice !== item.damage || bonusDmg.type !== item.damageType)){
+        rolls += '<button class="stamp dmg" data-action="roll-damage" data-dice="' + esc(bonusDmg.dice) + '" data-typelabel="' + esc(bonusDmg.type) + '" data-label="' + esc(label) + ' — ' + esc(itemName) + ' extra damage">' + esc(bonusDmg.dice) + (bonusDmg.type ? (' ' + esc(bonusDmg.type)) : '') + '</button>';
+      }
+      var altDmg = findAlternateDamage(item.text);
+      if(altDmg && (altDmg.dice !== item.damage || altDmg.type !== item.damageType) && (!bonusDmg || altDmg.dice !== bonusDmg.dice || altDmg.type !== bonusDmg.type)){
+        rolls += '<button class="stamp dmg" data-action="roll-damage" data-dice="' + esc(altDmg.dice) + '" data-typelabel="' + esc(altDmg.type) + '" data-label="' + esc(label) + ' — ' + esc(itemName) + ' alternate damage">' + esc(altDmg.dice) + (altDmg.type ? (' ' + esc(altDmg.type)) : '') + ' (alt)</button>';
+      }
+    }
+    return rolls;
+  }
+
   function monsterActionsHtml(m, label){
     return (m.actions || []).map(function(a){
-      var rolls = '';
-      if(a.toHit !== null && a.toHit !== undefined && a.toHit !== ''){
-        rolls += '<button class="stamp" data-action="roll-attack" data-bonus="' + a.toHit + '" data-label="' + esc(label) + ' — ' + esc(a.name) + ' to hit">' + fmt(Number(a.toHit)) + ' to hit</button>';
-      }
-      if(a.damage){
-        rolls += '<button class="stamp dmg" data-action="roll-damage" data-dice="' + esc(a.damage) + '" data-typelabel="' + esc(a.damageType||'') + '" data-label="' + esc(label) + ' — ' + esc(a.name) + ' damage">' + esc(a.damage) + (a.damageType ? (' ' + esc(a.damageType)) : '') + '</button>';
-        var bonusDmg = findBonusDamage(a.text);
-        if(bonusDmg && (bonusDmg.dice !== a.damage || bonusDmg.type !== a.damageType)){
-          rolls += '<button class="stamp dmg" data-action="roll-damage" data-dice="' + esc(bonusDmg.dice) + '" data-typelabel="' + esc(bonusDmg.type) + '" data-label="' + esc(label) + ' — ' + esc(a.name) + ' extra damage">' + esc(bonusDmg.dice) + (bonusDmg.type ? (' ' + esc(bonusDmg.type)) : '') + '</button>';
-        }
-        var altDmg = findAlternateDamage(a.text);
-        if(altDmg && (altDmg.dice !== a.damage || altDmg.type !== a.damageType) && (!bonusDmg || altDmg.dice !== bonusDmg.dice || altDmg.type !== bonusDmg.type)){
-          rolls += '<button class="stamp dmg" data-action="roll-damage" data-dice="' + esc(altDmg.dice) + '" data-typelabel="' + esc(altDmg.type) + '" data-label="' + esc(label) + ' — ' + esc(a.name) + ' alternate damage">' + esc(altDmg.dice) + (altDmg.type ? (' ' + esc(altDmg.type)) : '') + ' (alt)</button>';
-        }
-      }
+      var rolls = actionRollButtonsHtml(a, label, a.name);
       return '<div class="action-row"><span class="a-name">' + esc(a.name) + '.</span> ' + highlightSpells(highlightCastingFrequency(highlightNumbers(esc(a.text)))) +
         (rolls ? '<div class="action-rolls">' + rolls + '</div>' : '') + '</div>';
     }).join('');
@@ -1782,11 +1788,11 @@
   // the ability/save grids.
   function monsterDetailHtml(m, label){
     var skillsHtml = monsterSkillsHtml(m, label);
-    var traitsHtml = traitLikeHtml(m.traits);
+    var traitsHtml = traitLikeHtml(m.traits, label);
     var actionsHtml = monsterActionsHtml(m, label);
-    var legendaryHtml = traitLikeHtml(m.legendary);
-    var reactionsHtml = traitLikeHtml(m.reactions);
-    var bonusActionsHtml = traitLikeHtml(m.bonusActions);
+    var legendaryHtml = traitLikeHtml(m.legendary, label);
+    var reactionsHtml = traitLikeHtml(m.reactions, label);
+    var bonusActionsHtml = traitLikeHtml(m.bonusActions, label);
     return (skillsHtml ? '<div class="pillrow">' + skillsHtml + '</div>' : '') +
       (m.resistances ? '<div class="sb-line"><b>Resistances</b> ' + esc(m.resistances) + '</div>' : '') +
       (m.immunities ? '<div class="sb-line"><b>Immunities</b> ' + esc(m.immunities) + '</div>' : '') +
@@ -2149,9 +2155,11 @@
     } else if(action === 'confirm-no'){
       document.getElementById('confirmOverlay').style.display = 'none';
       pendingConfirmCallback = null;
-    } else if(action === 'export-monster'){
-      var m = getMonster(t.getAttribute('data-id'));
-      if(m) downloadJSON({version:1, monsters:[m]}, (m.name.replace(/[^a-z0-9]+/gi,'_').toLowerCase() || 'monster') + '.json');
+    } else if(action === 'lookup-monster-online'){
+      var lookupStageMon = getMonster(t.getAttribute('data-id'));
+      if(lookupStageMon){
+        window.open('https://www.google.com/search?q=' + encodeURIComponent(lookupStageMon.name + ' D&D 5e monster'), '_blank', 'noopener,noreferrer');
+      }
     } else if(action === 'clear-log'){
       state.logs[currentLogKey()] = [];
       renderLog();
@@ -2373,15 +2381,6 @@
     });
   });
 
-  function downloadJSON(obj, filename){
-    var blob = new Blob([JSON.stringify(obj, null, 2)], {type:'application/json'});
-    var url = URL.createObjectURL(blob);
-    var a = document.createElement('a');
-    a.href = url; a.download = filename;
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }
-
   // ---- Markdown stat block import ----
   // Understands the common "Homebrewery-style" 5e markdown stat block format
   // (blockquote-prefixed or plain), and maps each recognized line into the
@@ -2589,7 +2588,9 @@
     return (arr || []).map(function(t){
       var name = t.name ? stripJsonTags(t.name) : '';
       var text = flattenJsonEntries(t.entries || (t.entry ? [t.entry] : []));
-      return {name: name, text: text.trim()};
+      var item = {name: name, text: text.trim(), toHit: null, damage: '', damageType: ''};
+      extractAttackRolls(item);
+      return item;
     }).filter(function(t){ return t.text; });
   }
 
@@ -3030,8 +3031,7 @@
     var abilityTableFound = false;
 
     function pushItem(section, name, text){
-      var item = {name: name, text: String(text || '').trim()};
-      if(section === 'actions'){ item.toHit = null; item.damage = ''; item.damageType = ''; }
+      var item = {name: name, text: String(text || '').trim(), toHit: null, damage: '', damageType: ''};
       m[section].push(item);
       return item;
     }
@@ -3149,7 +3149,7 @@
         var itemName = stripMdEmphasis(nameMatch[1]).replace(/\.$/, '').trim();
         var itemText = stripMdEmphasis(nameMatch[2]);
         currentItem = pushItem(currentSection, itemName, itemText);
-        if(currentSection === 'actions') extractAttackRolls(currentItem);
+        extractAttackRolls(currentItem);
         continue;
       }
 
@@ -3157,7 +3157,7 @@
       if(!plainText) continue;
       if(currentItem){
         currentItem.text = (currentItem.text + ' ' + plainText).trim();
-        if(currentSection === 'actions') extractAttackRolls(currentItem);
+        extractAttackRolls(currentItem);
       } else {
         currentItem = pushItem(currentSection, '', plainText);
       }
