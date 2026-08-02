@@ -608,9 +608,6 @@
   .log-entry.fumble .hl{color:var(--fumble-color);font-weight:bold;}
   .log-empty{color:#4d6478;font-style:italic;}
 
-  .bg-images-display{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none;}
-  .bg-images-display img{position:absolute;object-fit:cover;border-radius:2px;}
-
   .bg-edit-overlay{
     position:fixed;inset:0;z-index:500;background:var(--desk);
     display:flex;flex-direction:column;
@@ -831,8 +828,6 @@
   <div class="instance-window-body" id="instanceWindowBody"></div>
   <div class="rolllog-resize" id="instanceWindowResize" title="Drag to resize"></div>
 </div>
-
-<div class="bg-images-display" id="bgImagesDisplay"></div>
 
 <div class="bg-edit-overlay" id="bgEditOverlay" style="display:none;">
   <div class="bg-edit-topbar">
@@ -1328,15 +1323,29 @@
     applyBgImages();
   }
 
-  // Renders the composed, non-interactive background behind the whole app
-  // (visible through the transparent margins around the stage) to match
-  // exactly what was arranged in the full-screen editor - both use the same
-  // position:fixed;inset:0 coordinate space so nothing shifts between them.
+  // Applied as a real CSS background (not a stacked/positioned element) so it
+  // always paints behind the stage/encounter view's own content with no
+  // z-index games - a positioned sibling with a negative z-index gets fully
+  // swallowed here because body/.layout are flex containers, which promotes
+  // their children to a stacking level that fully occludes negative-z
+  // siblings in this browser, transparent or not. background-attachment:fixed
+  // makes background-position relative to the viewport, matching the editor's
+  // own position:fixed;inset:0 coordinate space 1:1 with zero offset math.
   function applyBgImages(){
-    var el = document.getElementById('bgImagesDisplay');
-    el.innerHTML = state.bgImages.map(function(img){
-      return '<img src="' + esc(img.src) + '" style="left:' + img.x + 'px;top:' + img.y + 'px;width:' + img.w + 'px;height:' + img.h + 'px;">';
-    }).join('');
+    var layers = state.bgImages.slice().reverse(); // CSS lists topmost layer first; array order is back-to-front
+    var bgImage = layers.length ? layers.map(function(img){ return 'url("' + img.src + '")'; }).join(', ') : 'none';
+    var bgPosition = layers.map(function(img){ return img.x + 'px ' + img.y + 'px'; }).join(', ');
+    var bgSize = layers.map(function(img){ return img.w + 'px ' + img.h + 'px'; }).join(', ');
+    var bgRepeat = layers.map(function(){ return 'no-repeat'; }).join(', ');
+    var bgAttachment = layers.map(function(){ return 'fixed'; }).join(', ');
+    ['stageMain', 'encounterView'].forEach(function(id){
+      var el = document.getElementById(id);
+      el.style.backgroundImage = bgImage;
+      el.style.backgroundPosition = bgPosition;
+      el.style.backgroundSize = bgSize;
+      el.style.backgroundRepeat = bgRepeat;
+      el.style.backgroundAttachment = bgAttachment;
+    });
     var summary = document.getElementById('bgImagesSummary');
     if(summary) summary.textContent = state.bgImages.length + ' / ' + BG_IMAGE_MAX + ' images';
   }
@@ -1404,6 +1413,16 @@
     });
   }
 
+  function bringBgImageToFront(el, imgData){
+    bgEditTopZ += 1;
+    el.style.zIndex = bgEditTopZ;
+    var idx = state.bgImages.indexOf(imgData);
+    if(idx !== -1 && idx !== state.bgImages.length - 1){
+      state.bgImages.splice(idx, 1);
+      state.bgImages.push(imgData);
+    }
+  }
+
   function wireBgImageItem(el, imgData){
     var dragging = false, offsetX = 0, offsetY = 0;
     el.addEventListener('pointerdown', function(e){
@@ -1412,8 +1431,7 @@
       var rect = el.getBoundingClientRect();
       offsetX = e.clientX - rect.left;
       offsetY = e.clientY - rect.top;
-      bgEditTopZ += 1;
-      el.style.zIndex = bgEditTopZ;
+      bringBgImageToFront(el, imgData);
       el.setPointerCapture(e.pointerId);
     });
     el.addEventListener('pointermove', function(e){
@@ -1441,6 +1459,7 @@
       resizing = true;
       startX = e.clientX; startY = e.clientY;
       startW = el.offsetWidth; startH = el.offsetHeight;
+      bringBgImageToFront(el, imgData);
       resizeHandle.setPointerCapture(e.pointerId);
       e.stopPropagation();
     });
