@@ -1323,6 +1323,43 @@
     applyBgImages();
   }
 
+  // CSS background-size with two lengths stretches to fit, ignoring aspect
+  // ratio - but the editor's <img> uses object-fit:cover (crop-to-fill,
+  // aspect preserved), so a source whose ratio doesn't match its box looked
+  // fine in the editor and distorted once applied. Pre-crop each image to
+  // its exact box via canvas (same math as object-fit:cover) so the applied
+  // background-size:WxH is just displaying an already-correctly-shaped
+  // image, not stretching a mismatched one. Cached by id+size so dragging
+  // (which doesn't change size) never re-crops.
+  var bgCropCache = {};
+  function cropImageCover(src, targetW, targetH, callback){
+    var img = new Image();
+    img.onload = function(){
+      var srcW = img.width, srcH = img.height;
+      var targetRatio = targetW / targetH;
+      var cropW, cropH, cropX, cropY;
+      if(srcW / srcH > targetRatio){
+        cropH = srcH;
+        cropW = srcH * targetRatio;
+        cropX = (srcW - cropW) / 2;
+        cropY = 0;
+      } else {
+        cropW = srcW;
+        cropH = srcW / targetRatio;
+        cropX = 0;
+        cropY = (srcH - cropH) / 2;
+      }
+      var canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(targetW));
+      canvas.height = Math.max(1, Math.round(targetH));
+      var ctx = canvas.getContext('2d');
+      ctx.drawImage(img, cropX, cropY, cropW, cropH, 0, 0, canvas.width, canvas.height);
+      callback(canvas.toDataURL('image/jpeg', 0.9));
+    };
+    img.onerror = function(){ callback(src); };
+    img.src = src;
+  }
+
   // Applied as a real CSS background (not a stacked/positioned element) so it
   // always paints behind the stage/encounter view's own content with no
   // z-index games - a positioned sibling with a negative z-index gets fully
@@ -1333,21 +1370,44 @@
   // own position:fixed;inset:0 coordinate space 1:1 with zero offset math.
   function applyBgImages(){
     var layers = state.bgImages.slice().reverse(); // CSS lists topmost layer first; array order is back-to-front
-    var bgImage = layers.length ? layers.map(function(img){ return 'url("' + img.src + '")'; }).join(', ') : 'none';
-    var bgPosition = layers.map(function(img){ return img.x + 'px ' + img.y + 'px'; }).join(', ');
-    var bgSize = layers.map(function(img){ return img.w + 'px ' + img.h + 'px'; }).join(', ');
-    var bgRepeat = layers.map(function(){ return 'no-repeat'; }).join(', ');
-    var bgAttachment = layers.map(function(){ return 'fixed'; }).join(', ');
-    ['stageMain', 'encounterView'].forEach(function(id){
-      var el = document.getElementById(id);
-      el.style.backgroundImage = bgImage;
-      el.style.backgroundPosition = bgPosition;
-      el.style.backgroundSize = bgSize;
-      el.style.backgroundRepeat = bgRepeat;
-      el.style.backgroundAttachment = bgAttachment;
-    });
     var summary = document.getElementById('bgImagesSummary');
     if(summary) summary.textContent = state.bgImages.length + ' / ' + BG_IMAGE_MAX + ' images';
+    if(!layers.length){
+      ['stageMain', 'encounterView'].forEach(function(id){ document.getElementById(id).style.backgroundImage = 'none'; });
+      return;
+    }
+    var croppedSrcs = new Array(layers.length);
+    var remaining = layers.length;
+    function onOneReady(){
+      remaining -= 1;
+      if(remaining > 0) return;
+      var bgImage = croppedSrcs.map(function(src){ return 'url("' + src + '")'; }).join(', ');
+      var bgPosition = layers.map(function(img){ return img.x + 'px ' + img.y + 'px'; }).join(', ');
+      var bgSize = layers.map(function(img){ return img.w + 'px ' + img.h + 'px'; }).join(', ');
+      var bgRepeat = layers.map(function(){ return 'no-repeat'; }).join(', ');
+      var bgAttachment = layers.map(function(){ return 'fixed'; }).join(', ');
+      ['stageMain', 'encounterView'].forEach(function(id){
+        var el = document.getElementById(id);
+        el.style.backgroundImage = bgImage;
+        el.style.backgroundPosition = bgPosition;
+        el.style.backgroundSize = bgSize;
+        el.style.backgroundRepeat = bgRepeat;
+        el.style.backgroundAttachment = bgAttachment;
+      });
+    }
+    layers.forEach(function(img, i){
+      var key = img.id + '_' + img.w + 'x' + img.h;
+      if(bgCropCache[key]){
+        croppedSrcs[i] = bgCropCache[key];
+        onOneReady();
+        return;
+      }
+      cropImageCover(img.src, img.w, img.h, function(croppedSrc){
+        bgCropCache[key] = croppedSrc;
+        croppedSrcs[i] = croppedSrc;
+        onOneReady();
+      });
+    });
   }
 
   // Downscales huge phone-camera photos before they ever hit localStorage -
