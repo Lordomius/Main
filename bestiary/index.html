@@ -293,7 +293,7 @@
   .enc-init-box{
     background:var(--card-bg-alt);border:1px solid var(--forest-light);border-radius:3px;
     padding:3px 8px;font-size:11px;color:var(--text-light);cursor:pointer;font-family:var(--font-body);
-    transition:border-color .1s;
+    transition:border-color .1s;margin-left:auto;
   }
   .enc-init-box:hover{border-color:var(--gold);}
   .enc-hp-max{color:var(--parchment);font-size:12px;}
@@ -755,7 +755,7 @@
         <option value="cr-desc">CR 30→0</option>
       </select>
       <button class="cat-filter-btn" id="catFilterBtn" data-action="toggle-filters" title="Filter by creature type &amp; size">Filters<span class="filter-badge" id="filterBadge" style="display:none;">0</span></button>
-      <button class="cat-refresh-btn" data-action="refresh-repo-library" title="Refresh statblocks from repo">⟳</button>
+      <button class="cat-refresh-btn" data-action="refresh-search" title="Reset search &amp; filters">⟳</button>
       <button class="cat-folder-add-btn" data-action="toggle-new-folder">+ Folder</button>
     </div>
     <div class="cat-filter-panel" id="catFilterPanel" style="display:none;">
@@ -2207,9 +2207,9 @@
         '<button class="enc-card-remove" data-action="encounter-remove-instance" data-instance-id="' + esc(inst.id) + '" title="Remove">×</button>' +
       '</div>' +
       '<div class="enc-card-stats">' +
-        '<button type="button" class="enc-init-box" data-action="roll-initiative" data-bonus="' + initBonus + '" data-label="' + esc(inst.label) + ' — initiative" title="Roll initiative">Init ' + fmt(initBonus) + '</button>' +
         '<label>AC <input type="number" class="iw-stat-input" data-stat="ac" data-instance-id="' + esc(inst.id) + '" value="' + esc(ac) + '"></label>' +
         '<label>HP <input type="number" class="iw-stat-input" data-stat="hp" data-instance-id="' + esc(inst.id) + '" value="' + esc(hp) + '">/<span class="enc-hp-max">' + esc(maxHp) + '</span></label>' +
+        '<button type="button" class="enc-init-box" data-action="roll-initiative" data-bonus="' + initBonus + '" data-label="' + esc(inst.label) + ' — initiative" title="Roll initiative">Init ' + fmt(initBonus) + '</button>' +
       '</div>' +
       '<div class="ability-grid">' + encAbilityBoxesHtml(m, inst.label) + '</div>' +
       '<div class="ability-grid save-grid">' + encSaveBoxesHtml(m, inst.label) + '</div>' +
@@ -2384,8 +2384,16 @@
       state.collapsedFolders[fid] = !state.collapsedFolders[fid];
       saveLibrary();
       renderCatalog();
-    } else if(action === 'refresh-repo-library'){
-      fetchRepoLibrary();
+    } else if(action === 'refresh-search'){
+      document.getElementById('catSearch').value = '';
+      state.filterSizes = [];
+      state.filterTypes = [];
+      state.filterFeatures = [];
+      state.filterCrMinIdx = 0;
+      state.filterCrMaxIdx = CR_SCALE.length - 1;
+      state.filtersOpen = false;
+      saveLibrary();
+      renderCatalog();
       e.stopPropagation();
     } else if(action === 'toggle-filters'){
       state.filtersOpen = !state.filtersOpen;
