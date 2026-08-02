@@ -608,6 +608,15 @@
   .num-highlight{color:var(--gold-light);font-weight:bold;background:var(--accent-glow);border-radius:3px;padding:0 3px;}
   .spell-link:hover{color:#fff;}
   .cast-freq{display:inline-block;margin-top:6px;}
+  .condition-link{color:var(--gold-light);cursor:pointer;font-weight:bold;text-decoration:underline dotted;}
+  .condition-link:hover{color:#fff;}
+  #conditionWindow{left:20px;top:auto;bottom:20px;z-index:215;}
+  .condition-sub-title{font-weight:bold;color:var(--gold-light);margin:4px 0 6px;font-size:15px;}
+  .condition-divider{height:1px;background:var(--forest-light);margin:12px 0;}
+  .condition-table{width:100%;border-collapse:collapse;margin:8px 0;font-size:14px;}
+  .condition-table th,.condition-table td{border:1px solid var(--forest-light);padding:4px 8px;text-align:left;}
+  .condition-table th{color:var(--gold-light);}
+  #conditionWindow .spellwin-body p{margin:0 0 8px;line-height:1.5;}
   .rolllog-head{
     display:flex;justify-content:space-between;align-items:center;color:var(--gold-light);
     padding:8px 12px;background:var(--card-bg-alt);border-bottom:1px solid var(--forest-light);
@@ -872,6 +881,15 @@
   </div>
   <div class="spellwin-body" id="spellWindowBody"></div>
   <div class="rolllog-resize" id="spellWindowResize" title="Drag to resize"></div>
+</div>
+
+<div class="spellwin" id="conditionWindow" style="display:none;">
+  <div class="spellwin-head" id="conditionWindowHead">
+    <span>⋮⋮ <span id="conditionWindowTitle">Condition</span></span>
+    <button data-action="close-condition-window">✕</button>
+  </div>
+  <div class="spellwin-body" id="conditionWindowBody"></div>
+  <div class="rolllog-resize" id="conditionWindowResize" title="Drag to resize"></div>
 </div>
 
 <div class="confirm-overlay" id="confirmOverlay" style="display:none;">
@@ -1552,7 +1570,7 @@
     document.getElementById('settingsPanel').classList.remove('open');
     document.getElementById('settingsBtn').classList.remove('open');
     bgHiddenPanels = [];
-    ['rolllogPanel', 'spellWindow', 'instanceWindowPanel'].forEach(function(id){
+    ['rolllogPanel', 'spellWindow', 'instanceWindowPanel', 'conditionWindow'].forEach(function(id){
       var p = document.getElementById(id);
       if(p && p.style.display !== 'none'){
         bgHiddenPanels.push(id);
@@ -1950,7 +1968,7 @@
 
   function traitLikeHtml(list, creatureLabel){
     return (list || []).map(function(t){
-      var body = highlightSpells(highlightCastingFrequency(highlightNumbers(esc(t.text))));
+      var body = highlightConditions(highlightSpells(highlightCastingFrequency(highlightNumbers(esc(t.text)))));
       var nameHtml = t.name ? '<b>' + esc(t.name) + '.</b> ' : '';
       var rolls = actionRollButtonsHtml(t, creatureLabel, t.name);
       return '<div class="trait">' + nameHtml + body + (rolls ? '<div class="action-rolls">' + rolls + '</div>' : '') + '</div>';
@@ -2177,7 +2195,7 @@
   function monsterActionsHtml(m, label){
     return (m.actions || []).map(function(a){
       var rolls = actionRollButtonsHtml(a, label, a.name);
-      return '<div class="action-row"><span class="a-name">' + esc(a.name) + '.</span> ' + highlightSpells(highlightCastingFrequency(highlightNumbers(esc(a.text)))) +
+      return '<div class="action-row"><span class="a-name">' + esc(a.name) + '.</span> ' + highlightConditions(highlightSpells(highlightCastingFrequency(highlightNumbers(esc(a.text))))) +
         (rolls ? '<div class="action-rolls">' + rolls + '</div>' : '') + '</div>';
     }).join('');
   }
@@ -2758,6 +2776,10 @@
       openSpellWindow(t.getAttribute('data-spell'));
     } else if(action === 'close-spell'){
       document.getElementById('spellWindow').style.display = 'none';
+    } else if(action === 'open-condition'){
+      openConditionWindow(t.getAttribute('data-condition'));
+    } else if(action === 'close-condition-window'){
+      closeConditionWindow();
     } else if(action === 'roll-ability'){
       rollD20(parseInt(t.getAttribute('data-mod'), 10), t.getAttribute('data-label'));
     } else if(action === 'roll-save' || action === 'roll-skill' || action === 'roll-attack' || action === 'roll-initiative'){
@@ -3918,6 +3940,163 @@
   if(SPELLS['druidcraft']) ADDED_SPELLS['shamancraft'] = Object.assign({}, SPELLS['druidcraft'], {name:'Shamancraft'});
   Object.assign(SPELLS, ADDED_SPELLS);
 
+  var CONDITIONS = {
+    blinded: {name:'Blinded', entries:[
+      "A blinded creature can't see and automatically fails any ability check that requires sight.",
+      "Attack rolls against the creature have advantage, and the creature's attack rolls have disadvantage."
+    ]},
+    charmed: {name:'Charmed', entries:[
+      "A charmed creature can't attack the charmer or target the charmer with harmful abilities or magical effects.",
+      "The charmer has advantage on any ability check to interact socially with the creature."
+    ]},
+    deafened: {name:'Deafened', entries:[
+      "A deafened creature can't hear and automatically fails any ability check that requires hearing."
+    ]},
+    exhaustion: {name:'Exhaustion', entries:[
+      "Some special abilities and environmental hazards, such as starvation and the long-term effects of freezing or scorching temperatures, can lead to a special condition called exhaustion. Exhaustion is measured in six levels. An effect can give a creature one or more levels of exhaustion, as specified in the effect's description."
+    ], table:[
+      ['Level', 'Effect'],
+      ['1', 'Disadvantage on ability checks'],
+      ['2', 'Speed halved'],
+      ['3', 'Disadvantage on attack rolls and saving throws'],
+      ['4', 'Hit point maximum halved'],
+      ['5', 'Speed reduced to 0'],
+      ['6', 'Death']
+    ], entriesAfter:[
+      "If an already exhausted creature suffers another effect that causes exhaustion, its current level of exhaustion increases by the amount specified in the effect's description.",
+      "A creature suffers the effect of its current level of exhaustion as well as all lower levels. For example, a creature suffering level 2 exhaustion has its speed halved and has disadvantage on ability checks.",
+      "An effect that removes exhaustion reduces its level as specified in the effect's description, with all exhaustion effects ending if a creature's exhaustion level is reduced below 1.",
+      "Finishing a long rest reduces a creature's exhaustion level by 1, provided that the creature has also ingested some food and drink. Also, being raised from the dead reduces a creature's exhaustion level by 1."
+    ]},
+    frightened: {name:'Frightened', entries:[
+      "A frightened creature has disadvantage on ability checks and attack rolls while the source of its fear is within line of sight.",
+      "The creature can't willingly move closer to the source of its fear."
+    ]},
+    grappled: {name:'Grappled', entries:[
+      "A grappled creature's speed becomes 0, and it can't benefit from any bonus to its speed.",
+      "The condition ends if the grappler is incapacitated (see the condition).",
+      "The condition also ends if an effect removes the grappled creature from the reach of the grappler or grappling effect, such as when a creature is hurled away by the thunderwave spell."
+    ]},
+    incapacitated: {name:'Incapacitated', entries:[
+      "An incapacitated creature can't take actions or reactions."
+    ]},
+    invisible: {name:'Invisible', entries:[
+      "An invisible creature is impossible to see without the aid of magic or a special sense. For the purpose of hiding, the creature is heavily obscured. The creature's location can be detected by any noise it makes or any tracks it leaves.",
+      "Attack rolls against the creature have disadvantage, and the creature's attack rolls have advantage."
+    ]},
+    paralyzed: {name:'Paralyzed', entries:[
+      "A paralyzed creature is incapacitated (see the condition) and can't move or speak.",
+      "The creature automatically fails Strength and Dexterity saving throws.",
+      "Attack rolls against the creature have advantage.",
+      "Any attack that hits the creature is a critical hit if the attacker is within 5 feet of the creature."
+    ]},
+    petrified: {name:'Petrified', entries:[
+      "A petrified creature is transformed, along with any nonmagical object it is wearing or carrying, into a solid inanimate substance (usually stone). Its weight increases by a factor of ten, and it ceases aging.",
+      "The creature is incapacitated (see the condition), can't move or speak, and is unaware of its surroundings.",
+      "Attack rolls against the creature have advantage.",
+      "The creature automatically fails Strength and Dexterity saving throws.",
+      "The creature has resistance to all damage.",
+      "The creature is immune to poison and disease, although a poison or disease already in its system is suspended, not neutralized."
+    ]},
+    poisoned: {name:'Poisoned', entries:[
+      "A poisoned creature has disadvantage on attack rolls and ability checks."
+    ]},
+    prone: {name:'Prone', entries:[
+      "A prone creature's only movement option is to crawl, unless it stands up and thereby ends the condition.",
+      "The creature has disadvantage on attack rolls.",
+      "An attack roll against the creature has advantage if the attacker is within 5 feet of the creature. Otherwise, the attack roll has disadvantage."
+    ]},
+    restrained: {name:'Restrained', entries:[
+      "A restrained creature's speed becomes 0, and it can't benefit from any bonus to its speed.",
+      "Attack rolls against the creature have advantage, and the creature's attack rolls have disadvantage.",
+      "The creature has disadvantage on Dexterity saving throws."
+    ]},
+    stunned: {name:'Stunned', entries:[
+      "A stunned creature is incapacitated (see the condition), can't move, and can speak only falteringly.",
+      "The creature automatically fails Strength and Dexterity saving throws.",
+      "Attack rolls against the creature have advantage."
+    ]},
+    unconscious: {name:'Unconscious', entries:[
+      "An unconscious creature is incapacitated (see the condition), can't move or speak, and is unaware of its surroundings.",
+      "The creature drops whatever it's holding and falls prone.",
+      "The creature automatically fails Strength and Dexterity saving throws.",
+      "Attack rolls against the creature have advantage.",
+      "Any attack that hits the creature is a critical hit if the attacker is within 5 feet of the creature."
+    ]}
+  };
+
+  function conditionEntriesHtml(cond){
+    var html = cond.entries.map(function(p){ return '<p>' + highlightNumbers(esc(p)) + '</p>'; }).join('');
+    if(cond.table){
+      html += '<table class="condition-table"><thead><tr><th>' + esc(cond.table[0][0]) + '</th><th>' + esc(cond.table[0][1]) + '</th></tr></thead><tbody>' +
+        cond.table.slice(1).map(function(row){ return '<tr><td>' + esc(row[0]) + '</td><td>' + esc(row[1]) + '</td></tr>'; }).join('') +
+        '</tbody></table>';
+    }
+    if(cond.entriesAfter){
+      html += cond.entriesAfter.map(function(p){ return '<p>' + highlightNumbers(esc(p)) + '</p>'; }).join('');
+    }
+    return html;
+  }
+
+  // Finds other conditions mentioned by name within this condition's own
+  // rules text (e.g. Grappled says "the grappler is incapacitated", Unconscious
+  // says a creature "falls prone") so opening one auto-includes the others
+  // instead of making the user hunt down and click each reference in turn.
+  function conditionReferencedKeys(key, visited){
+    var cond = CONDITIONS[key];
+    var text = (cond.entries.join(' ') + (cond.entriesAfter ? ' ' + cond.entriesAfter.join(' ') : '')).toLowerCase();
+    return Object.keys(CONDITIONS).filter(function(otherKey){
+      if(otherKey === key || visited[otherKey]) return false;
+      return new RegExp('\\b' + otherKey + '\\b').test(text);
+    });
+  }
+
+  function openConditionWindow(key){
+    var cond = CONDITIONS[key];
+    if(!cond) return;
+    document.getElementById('conditionWindowTitle').textContent = cond.name;
+    var visited = {};
+    visited[key] = true;
+    var sectionsHtml = conditionEntriesHtml(cond);
+    var queue = conditionReferencedKeys(key, visited);
+    while(queue.length){
+      var refKey = queue.shift();
+      if(visited[refKey]) continue;
+      visited[refKey] = true;
+      var refCond = CONDITIONS[refKey];
+      if(!refCond) continue;
+      sectionsHtml += '<div class="condition-divider"></div><div class="condition-sub-title">Also: ' + esc(refCond.name) + '</div>' + conditionEntriesHtml(refCond);
+      conditionReferencedKeys(refKey, visited).forEach(function(k){ if(!visited[k]) queue.push(k); });
+    }
+    document.getElementById('conditionWindowBody').innerHTML = sectionsHtml;
+    var panel = document.getElementById('conditionWindow');
+    panel.style.display = 'flex';
+    bringPanelToFront(panel);
+  }
+
+  function closeConditionWindow(){
+    document.getElementById('conditionWindow').style.display = 'none';
+  }
+
+  // Applied outermost (after highlightSpells, same as highlightSpells is
+  // already applied after highlightNumbers/highlightCastingFrequency) -
+  // condition names have no special characters so the escaping hazard
+  // highlightSpells() deals with below doesn't apply, but matching the same
+  // esc()-the-lookup-keys pattern costs nothing and stays consistent.
+  var CONDITION_REGEX = (function(){
+    var names = Object.keys(CONDITIONS).sort(function(a, b){ return b.length - a.length; });
+    var escaped = names.map(function(n){ return esc(n).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); });
+    return new RegExp('\\b(' + escaped.join('|') + ')\\b', 'gi');
+  })();
+
+  function highlightConditions(text){
+    return text.replace(CONDITION_REGEX, function(match){
+      var key = unescapeHtml(match).toLowerCase();
+      if(!CONDITIONS[key]) return match;
+      return '<span class="condition-link" data-action="open-condition" data-condition="' + esc(key) + '">' + match + '</span>';
+    });
+  }
+
   // highlightSpells() runs on text that's already been through esc() (it has
   // to - the surrounding prose is untrusted stat block content), so by the
   // time it sees the text, an apostrophe is already "&#39;" etc. Matching
@@ -4042,7 +4221,7 @@
         '<div class="ss-label">Duration</div><div class="ss-val">' + esc(s.duration) + '</div>' +
       '</div>' +
       (s.save ? '<div class="spell-save">' + esc(s.save.ability) + ' saving throw' + (typeof s.save.dc === 'number' ? ', DC ' + s.save.dc : '') + '</div>' : '') +
-      '<p class="spell-desc">' + highlightNumbers(esc(s.desc)) + '</p>' +
+      '<p class="spell-desc">' + highlightConditions(highlightNumbers(esc(s.desc))) + '</p>' +
       (rolls ? '<div class="action-rolls">' + rolls + '</div>' : '');
     var spellPanel = document.getElementById('spellWindow');
     spellPanel.style.display = 'flex';
@@ -4455,8 +4634,11 @@
   var instanceWindowEl = document.getElementById('instanceWindowPanel');
   makeDraggable(instanceWindowEl, document.getElementById('instanceWindowHead'), null);
   makeResizable(instanceWindowEl, document.getElementById('instanceWindowResize'), 340, 260, 900, 800, null);
+  var conditionWindowEl = document.getElementById('conditionWindow');
+  makeDraggable(conditionWindowEl, document.getElementById('conditionWindowHead'), null);
+  makeResizable(conditionWindowEl, document.getElementById('conditionWindowResize'), 260, 200, 640, 640, null);
 
-  [rolllogPanelEl, spellWindowEl, instanceWindowEl].forEach(function(panel){
+  [rolllogPanelEl, spellWindowEl, instanceWindowEl, conditionWindowEl].forEach(function(panel){
     panel.addEventListener('pointerdown', function(){ bringPanelToFront(panel); }, true);
   });
 })();
