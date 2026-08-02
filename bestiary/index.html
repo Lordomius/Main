@@ -439,6 +439,18 @@
   }
   .cat-filter-clear:hover{color:var(--gold-light);}
 
+  .spell-list-toolbar{display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-shrink:0;}
+  .spell-list-toolbar .cat-search{flex:1;margin-bottom:0;}
+  .spell-list-grid{display:grid;grid-template-columns:repeat(auto-fill, minmax(220px, 1fr));gap:10px;align-content:start;}
+  .spell-card{
+    background:var(--card-bg);border:1px solid var(--forest-light);border-radius:6px;
+    padding:10px 12px;cursor:pointer;transition:border-color .1s,background .1s;
+  }
+  .spell-card:hover{border-color:var(--gold);background:var(--card-bg-alt);}
+  .spell-card .sc-name{font-family:var(--font-display);font-size:15px;color:var(--gold-light);}
+  .spell-card .sc-meta{font-size:12px;color:var(--text-light-secondary);margin-top:3px;}
+  .spell-card .sc-comp{font-size:11px;color:var(--text-light-secondary);margin-top:3px;}
+
   .cr-slider{position:relative;height:22px;margin-top:6px;}
   .cr-slider input[type=range]{
     position:absolute;left:0;right:0;top:0;width:100%;height:22px;margin:0;
@@ -697,6 +709,7 @@
   <button class="tb-btn primary" data-action="new-monster">+ New monster</button>
   <button class="tb-btn" id="bestiaryNavBtn" data-action="show-bestiary">Bestiary</button>
   <button class="tb-btn" id="encounterToggleBtn" data-action="show-encounter">Encounter Builder</button>
+  <button class="tb-btn" id="spellListNavBtn" data-action="show-spells">Spell List</button>
   <div class="spacer"></div>
   <div class="mode-toggle" id="modeToggle">
     <button data-mode="normal" class="active">Normal</button>
@@ -785,6 +798,29 @@
     <span class="enc-count-note" id="encCountNote"></span>
   </div>
   <div id="encList"></div>
+</div>
+
+<div class="encounter-view" id="spellListView" style="display:none;">
+  <div class="spell-list-toolbar">
+    <input type="text" class="cat-search" id="spellSearch" placeholder="Search spells…">
+    <button class="cat-filter-btn" id="spellFilterBtn" data-action="toggle-spell-filters" title="Filter by level, school, components">Filters<span class="filter-badge" id="spellFilterBadge" style="display:none;">0</span></button>
+  </div>
+  <div class="cat-filter-panel" id="spellFilterPanel" style="display:none;">
+    <div class="cat-filter-group">
+      <div class="cat-filter-group-label">Level</div>
+      <div class="cat-filter-chips" id="spellFilterLevelChips"></div>
+    </div>
+    <div class="cat-filter-group">
+      <div class="cat-filter-group-label">School</div>
+      <div class="cat-filter-chips" id="spellFilterSchoolChips"></div>
+    </div>
+    <div class="cat-filter-group">
+      <div class="cat-filter-group-label">Components</div>
+      <div class="cat-filter-chips" id="spellFilterComponentChips"></div>
+    </div>
+    <button type="button" class="cat-filter-clear" data-action="clear-spell-filters">Clear filters</button>
+  </div>
+  <div class="spell-list-grid" id="spellListGrid"></div>
 </div>
 
 <div class="rolllog" id="rolllogPanel">
@@ -886,11 +922,18 @@
     renamingEncounterId: null,
     renamingInstanceId: null,
     instanceWindowId: null,
-    encounterOpen: false
+    view: 'bestiary',
+    spellFilterLevels: [],
+    spellFilterSchools: [],
+    spellFilterComponents: [],
+    spellFiltersOpen: false
   };
 
   var CREATURE_SIZES = ['tiny','small','medium','large','huge','gargantuan'];
   var CREATURE_TYPES = ['aberration','beast','celestial','construct','dragon','elemental','fey','fiend','giant','humanoid','monstrosity','ooze','plant','undead'];
+  var SPELL_LEVELS = ['Cantrip','1st level','2nd level','3rd level','4th level','5th level','6th level','7th level','8th level','9th level'];
+  var SPELL_SCHOOLS = ['Abjuration','Conjuration','Divination','Enchantment','Evocation','Illusion','Necromancy','Transmutation'];
+  var SPELL_COMPONENTS = [{id:'V', label:'Verbal'}, {id:'S', label:'Somatic'}, {id:'M', label:'Material'}];
 
   function crLabelForIndex(idx){
     var v = CR_SCALE[idx];
@@ -999,7 +1042,7 @@
   }
 
   function currentLogKey(){
-    return state.encounterOpen ? ('__encounter_' + (state.activeEncounterId || 'none') + '__') : (state.currentId || '__unassigned__');
+    return state.view === 'encounter' ? ('__encounter_' + (state.activeEncounterId || 'none') + '__') : (state.currentId || '__unassigned__');
   }
 
   function addLog(label, detail, total, isCrit, isFumble, suffix){
@@ -1408,7 +1451,7 @@
     var summary = document.getElementById('bgImagesSummary');
     if(summary) summary.textContent = state.bgImages.length + ' / ' + BG_IMAGE_MAX + ' images';
     if(!layers.length){
-      ['stageMain', 'encounterView'].forEach(function(id){ document.getElementById(id).style.backgroundImage = 'none'; });
+      ['stageMain', 'encounterView', 'spellListView'].forEach(function(id){ document.getElementById(id).style.backgroundImage = 'none'; });
       return;
     }
     var croppedSrcs = new Array(layers.length);
@@ -1421,7 +1464,7 @@
       var bgSize = layers.map(function(img){ return img.w + 'px ' + img.h + 'px'; }).join(', ');
       var bgRepeat = layers.map(function(){ return 'no-repeat'; }).join(', ');
       var bgAttachment = layers.map(function(){ return 'fixed'; }).join(', ');
-      ['stageMain', 'encounterView'].forEach(function(id){
+      ['stageMain', 'encounterView', 'spellListView'].forEach(function(id){
         var el = document.getElementById(id);
         el.style.backgroundImage = bgImage;
         el.style.backgroundPosition = bgPosition;
@@ -1930,14 +1973,19 @@
   }
 
   function render(){
-    document.getElementById('mainLayout').style.display = state.encounterOpen ? 'none' : 'flex';
-    document.getElementById('encounterView').style.display = state.encounterOpen ? 'flex' : 'none';
-    var encBtn = document.getElementById('encounterToggleBtn');
-    if(encBtn) encBtn.classList.toggle('active', state.encounterOpen);
+    document.getElementById('mainLayout').style.display = state.view === 'bestiary' ? 'flex' : 'none';
+    document.getElementById('encounterView').style.display = state.view === 'encounter' ? 'flex' : 'none';
+    document.getElementById('spellListView').style.display = state.view === 'spells' ? 'flex' : 'none';
     var bestBtn = document.getElementById('bestiaryNavBtn');
-    if(bestBtn) bestBtn.classList.toggle('active', !state.encounterOpen);
-    if(state.encounterOpen){
+    if(bestBtn) bestBtn.classList.toggle('active', state.view === 'bestiary');
+    var encBtn = document.getElementById('encounterToggleBtn');
+    if(encBtn) encBtn.classList.toggle('active', state.view === 'encounter');
+    var spellBtn = document.getElementById('spellListNavBtn');
+    if(spellBtn) spellBtn.classList.toggle('active', state.view === 'spells');
+    if(state.view === 'encounter'){
       renderEncounter();
+    } else if(state.view === 'spells'){
+      renderSpellList();
     } else {
       renderCatalog();
       renderStage();
@@ -2358,11 +2406,38 @@
       saveLibrary();
       renderCatalog();
     } else if(action === 'show-bestiary'){
-      state.encounterOpen = false;
+      state.view = 'bestiary';
       render();
     } else if(action === 'show-encounter'){
-      state.encounterOpen = true;
+      state.view = 'encounter';
       render();
+    } else if(action === 'show-spells'){
+      state.view = 'spells';
+      render();
+    } else if(action === 'toggle-spell-filters'){
+      state.spellFiltersOpen = !state.spellFiltersOpen;
+      renderSpellFilterPanel();
+      e.stopPropagation();
+    } else if(action === 'toggle-filter-spell-level'){
+      var levelVal = t.getAttribute('data-value');
+      var levelIdx = state.spellFilterLevels.indexOf(levelVal);
+      if(levelIdx === -1) state.spellFilterLevels.push(levelVal); else state.spellFilterLevels.splice(levelIdx, 1);
+      renderSpellList();
+    } else if(action === 'toggle-filter-spell-school'){
+      var schoolVal = t.getAttribute('data-value');
+      var schoolIdx = state.spellFilterSchools.indexOf(schoolVal);
+      if(schoolIdx === -1) state.spellFilterSchools.push(schoolVal); else state.spellFilterSchools.splice(schoolIdx, 1);
+      renderSpellList();
+    } else if(action === 'toggle-filter-spell-component'){
+      var compVal = t.getAttribute('data-value');
+      var compIdx = state.spellFilterComponents.indexOf(compVal);
+      if(compIdx === -1) state.spellFilterComponents.push(compVal); else state.spellFilterComponents.splice(compIdx, 1);
+      renderSpellList();
+    } else if(action === 'clear-spell-filters'){
+      state.spellFilterLevels = [];
+      state.spellFilterSchools = [];
+      state.spellFilterComponents = [];
+      renderSpellList();
     } else if(action === 'encounter-pick'){
       addToEncounter(t.getAttribute('data-monster-id'));
       document.getElementById('encPickerInput').value = '';
@@ -2505,6 +2580,7 @@
   });
 
   document.getElementById('catSearch').addEventListener('input', renderCatalog);
+  document.getElementById('spellSearch').addEventListener('input', renderSpellList);
 
   // Delegated: instance cards (and how many of them exist) change on every
   // render, so their AC/HP inputs can't hold their own listeners directly.
@@ -3682,6 +3758,63 @@
       if(!SPELLS[key]) return match;
       return '<span class="spell-link" data-action="open-spell" data-spell="' + esc(key) + '">' + match + '</span>';
     });
+  }
+
+  function renderSpellList(){
+    var grid = document.getElementById('spellListGrid');
+    if(!grid) return;
+    var q = (document.getElementById('spellSearch').value || '').toLowerCase();
+    var keys = Object.keys(SPELLS).filter(function(key){
+      var s = SPELLS[key];
+      if(q && s.name.toLowerCase().indexOf(q) === -1) return false;
+      if(state.spellFilterLevels.length && state.spellFilterLevels.indexOf(s.level) === -1) return false;
+      if(state.spellFilterSchools.length && state.spellFilterSchools.indexOf(s.school) === -1) return false;
+      if(state.spellFilterComponents.length){
+        var comps = String(s.components || '').split(',').map(function(c){ return c.trim(); });
+        if(!state.spellFilterComponents.some(function(c){ return comps.indexOf(c) !== -1; })) return false;
+      }
+      return true;
+    });
+    keys.sort(function(a, b){ return SPELLS[a].name.localeCompare(SPELLS[b].name); });
+    if(!keys.length){
+      grid.innerHTML = '<div class="cat-empty">No spells match your search/filters.</div>';
+    } else {
+      grid.innerHTML = keys.map(function(key){
+        var s = SPELLS[key];
+        return '<div class="spell-card" data-action="open-spell" data-spell="' + esc(key) + '">' +
+          '<div class="sc-name">' + esc(s.name) + '</div>' +
+          '<div class="sc-meta">' + esc(s.level) + (s.school ? ' · ' + esc(s.school) : '') + '</div>' +
+          '<div class="sc-comp">' + esc(s.components || '') + '</div>' +
+        '</div>';
+      }).join('');
+    }
+    renderSpellFilterPanel();
+  }
+
+  function renderSpellFilterPanel(){
+    var levelEl = document.getElementById('spellFilterLevelChips');
+    var schoolEl = document.getElementById('spellFilterSchoolChips');
+    var compEl = document.getElementById('spellFilterComponentChips');
+    if(!levelEl || !schoolEl || !compEl) return;
+    function chip(action, value, activeList, label){
+      var active = activeList.indexOf(value) !== -1;
+      return '<button type="button" class="filter-chip' + (active ? ' active' : '') + '" data-action="' + action + '" data-value="' + esc(value) + '">' + esc(label) + '</button>';
+    }
+    levelEl.innerHTML = SPELL_LEVELS.map(function(l){ return chip('toggle-filter-spell-level', l, state.spellFilterLevels, l); }).join('');
+    schoolEl.innerHTML = SPELL_SCHOOLS.map(function(s){ return chip('toggle-filter-spell-school', s, state.spellFilterSchools, s); }).join('');
+    compEl.innerHTML = SPELL_COMPONENTS.map(function(c){ return chip('toggle-filter-spell-component', c.id, state.spellFilterComponents, c.label); }).join('');
+
+    var count = state.spellFilterLevels.length + state.spellFilterSchools.length + state.spellFilterComponents.length;
+    var badge = document.getElementById('spellFilterBadge');
+    if(badge){
+      badge.textContent = count;
+      badge.style.display = count ? '' : 'none';
+    }
+    var filterBtn = document.getElementById('spellFilterBtn');
+    if(filterBtn) filterBtn.classList.toggle('active', count > 0);
+
+    var panel = document.getElementById('spellFilterPanel');
+    if(panel) panel.style.display = state.spellFiltersOpen ? '' : 'none';
   }
 
   function openSpellWindow(key){
