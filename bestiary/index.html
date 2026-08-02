@@ -937,7 +937,10 @@
     if(state.logs[key].length > 60) state.logs[key].pop();
     renderLog();
     var panel = document.getElementById('rolllogPanel');
-    if(panel.style.display === 'none') panel.style.display = 'flex';
+    if(panel.style.display === 'none'){
+      panel.style.display = 'flex';
+      bringPanelToFront(panel);
+    }
   }
 
   function renderLog(){
@@ -1863,6 +1866,7 @@
   function openInstanceWindow(instanceId){
     state.instanceWindowId = instanceId;
     renderInstanceWindow();
+    bringPanelToFront(document.getElementById('instanceWindowPanel'));
   }
 
   function closeInstanceWindow(){
@@ -3371,7 +3375,9 @@
       (s.save ? '<div class="spell-save">' + esc(s.save.ability) + ' saving throw' + (typeof s.save.dc === 'number' ? ', DC ' + s.save.dc : '') + '</div>' : '') +
       '<p class="spell-desc">' + highlightNumbers(esc(s.desc)) + '</p>' +
       (rolls ? '<div class="action-rolls">' + rolls + '</div>' : '');
-    document.getElementById('spellWindow').style.display = 'flex';
+    var spellPanel = document.getElementById('spellWindow');
+    spellPanel.style.display = 'flex';
+    bringPanelToFront(spellPanel);
   }
 
   function blankMonster(){
@@ -3638,6 +3644,12 @@
     btn.classList.remove('open');
   });
 
+  var topPanelZ = 220;
+  function bringPanelToFront(panel){
+    topPanelZ += 1;
+    panel.style.zIndex = topPanelZ;
+  }
+
   function rectsOverlap(a, b){
     return !(a.right <= b.left || a.left >= b.right || a.bottom <= b.top || a.top >= b.bottom);
   }
@@ -3768,6 +3780,10 @@
   var instanceWindowEl = document.getElementById('instanceWindowPanel');
   makeDraggable(instanceWindowEl, document.getElementById('instanceWindowHead'), null);
   makeResizable(instanceWindowEl, document.getElementById('instanceWindowResize'), 340, 260, 900, 800, null);
+
+  [rolllogPanelEl, spellWindowEl, instanceWindowEl].forEach(function(panel){
+    panel.addEventListener('pointerdown', function(){ bringPanelToFront(panel); }, true);
+  });
 })();
 </script>
 <script>
