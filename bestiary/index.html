@@ -277,8 +277,8 @@
     overflow-wrap:break-word;min-width:0;
   }
   .enc-card-name:hover{text-decoration:underline;}
-  .enc-bloodied-dot{color:var(--crimson-bright);font-size:10px;flex-shrink:0;align-self:center;}
-  .enc-card-scroll{background:none;border:none;font-size:15px;line-height:1;cursor:pointer;padding:0;flex-shrink:0;}
+  .enc-bloodied-dot{color:#ff1a1a;font-size:19px;flex-shrink:0;align-self:center;}
+  .enc-card-rename-icon{background:none;border:none;font-size:15px;line-height:1;cursor:pointer;padding:0;flex-shrink:0;color:inherit;}
   .enc-card-spacer{flex:1;min-width:6px;}
   .enc-card-add{
     width:20px;height:20px;border-radius:3px;border:1px solid var(--forest-light);background:transparent;
@@ -1820,9 +1820,9 @@
       '<button class="enc-card-add" data-action="encounter-add-instance" data-monster-id="' + esc(groupMonsterId) + '" title="Add another instance of ' + esc(m.name) + '">+</button>' : '';
     return '<div class="enc-instance-card">' +
       '<div class="enc-card-head">' +
-        '<span class="enc-card-name" data-action="start-rename-instance" data-instance-id="' + esc(inst.id) + '" title="Click to rename">' + esc(inst.label) + '</span>' +
+        '<span class="enc-card-name" data-action="open-instance-window" data-instance-id="' + esc(inst.id) + '" title="Full stat block">' + esc(inst.label) + '</span>' +
         bloodiedDot +
-        '<button class="enc-card-scroll" data-action="open-instance-window" data-instance-id="' + esc(inst.id) + '" title="Full stat block">📜</button>' +
+        '<button class="enc-card-rename-icon" data-action="start-rename-instance" data-instance-id="' + esc(inst.id) + '" title="Click to rename">✎</button>' +
         '<span class="enc-card-spacer"></span>' +
         addBtn +
         '<button class="enc-card-remove" data-action="encounter-remove-instance" data-instance-id="' + esc(inst.id) + '" title="Remove">×</button>' +
