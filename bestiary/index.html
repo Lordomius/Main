@@ -3024,6 +3024,15 @@
     'ms': 'Melee Spell Attack', 'rs': 'Ranged Spell Attack',
     'mw,rw': 'Melee or Ranged Weapon Attack', 'ms,rs': 'Melee or Ranged Spell Attack'
   };
+  // 2024 ("XPHB") sourcebooks dropped the older {@atk mw/rw/ms/rs} + literal
+  // "to hit"/"DC N Ability saving throw" prose in favor of terser tags that
+  // expect the renderer to reconstruct that wording: {@atkr m/r/m,r} for the
+  // attack-roll type, and {@actSave ability}{@dc N} for saves. Left
+  // unhandled, those creatures' actions rendered as garbled fragments (e.g.
+  // "m +18" instead of "Melee Attack Roll: +18") and - the actual reported
+  // bug - extractAttackRolls() below never found literal "to hit" text, so
+  // no rollable to-hit button ever appeared even though damage did.
+  var JSON_ATKR_LABELS = {'m': 'Melee Attack Roll', 'r': 'Ranged Attack Roll', 'm,r': 'Melee or Ranged Attack Roll'};
   var JSON_SIZE_MAP = {T:'Tiny', S:'Small', M:'Medium', L:'Large', H:'Huge', G:'Gargantuan'};
   var JSON_ALIGN_MAP = {L:'lawful', N:'neutral', C:'chaotic', G:'good', E:'evil', U:'unaligned', A:'any alignment'};
 
@@ -3033,10 +3042,21 @@
       var key = kind.toLowerCase().split(',').sort().join(',');
       return (JSON_ATK_LABELS[key] || 'Attack') + ':';
     });
+    s = s.replace(/\{@atkr ([a-zA-Z,]+)\}/g, function(m, kind){
+      var key = kind.toLowerCase().split(',').sort().join(',');
+      return (JSON_ATKR_LABELS[key] || 'Attack Roll') + ':';
+    });
     s = s.replace(/\{@hit (-?\d+)\}/g, function(m, n){
       var num = parseInt(n, 10);
       return (num >= 0 ? '+' : '') + num;
     });
+    s = s.replace(/\{@actSave (\w+)\}\s*\{@dc (\d+)\}/g, function(m, ability, dc){
+      return 'DC ' + dc + ' ' + (ABILITY_LABELS[ability.toLowerCase()] || ability) + ' saving throw';
+    });
+    s = s.replace(/\{@actSaveSuccessOrFail\}/g, 'Failure or Success: ');
+    s = s.replace(/\{@actSaveFailBy \d+\}/g, 'Failure: ');
+    s = s.replace(/\{@actSaveFail\}/g, 'Failure: ');
+    s = s.replace(/\{@actSaveSuccess\}/g, 'Success: ');
     s = s.replace(/\{@h\}/g, 'Hit: ');
     s = s.replace(/\{@dc (\d+)\}/g, '$1');
     s = s.replace(/\{@\w+\s+([^}|]*)(?:\|[^}]*)?\}/g, '$1');
