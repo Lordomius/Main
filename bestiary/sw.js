@@ -4,7 +4,13 @@
 // changes on its next open. Falls back to the last cached copy when
 // offline. Bump CACHE_NAME when the app-shell file list changes so old
 // caches get cleaned up on activate.
-var CACHE_NAME = 'bestiary-shell-v1';
+//
+// {cache: 'no-store'} on the fetch below is load-bearing: without it,
+// "network-first" still isn't a freshness guarantee - a plain fetch()
+// happily answers from the browser's own HTTP cache (governed by GitHub
+// Pages' Cache-Control headers) without ever making a real request, which
+// is how this quietly stopped updating.
+var CACHE_NAME = 'bestiary-shell-v2';
 var APP_SHELL = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', function(event){
@@ -26,7 +32,7 @@ self.addEventListener('fetch', function(event){
   if(url.origin !== self.location.origin) return; // let cross-origin (GitHub API/raw) requests pass through untouched
 
   event.respondWith(
-    fetch(event.request).then(function(response){
+    fetch(event.request, {cache: 'no-store'}).then(function(response){
       var copy = response.clone();
       caches.open(CACHE_NAME).then(function(cache){ cache.put(event.request, copy); });
       return response;
