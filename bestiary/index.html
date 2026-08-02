@@ -222,6 +222,26 @@
   .layout{display:flex;flex:1;min-height:0;}
 
   .encounter-view{flex:1;min-height:0;display:flex;flex-direction:column;overflow-y:auto;padding:16px 24px;}
+  .enc-tabs{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:12px;flex-shrink:0;}
+  .enc-tab{
+    display:flex;align-items:center;gap:8px;background:transparent;border:1px solid var(--forest-light);
+    border-radius:4px 4px 0 0;padding:6px 10px;cursor:pointer;font-family:var(--font-body);font-size:13.5px;color:var(--text-light-secondary);
+  }
+  .enc-tab:hover{background:var(--forest-dark);}
+  .enc-tab.active{border-color:var(--gold);color:var(--gold-light);background:var(--card-bg-alt);border-bottom:2px solid var(--gold);}
+  .enc-tab-close{color:var(--text-light-secondary);font-size:14px;line-height:1;}
+  .enc-tab-close:hover{color:var(--fumble-color);}
+  .enc-tab-add{
+    background:transparent;border:1px dashed var(--forest-light);border-radius:4px;color:var(--text-light-secondary);
+    padding:6px 12px;cursor:pointer;font-size:15px;line-height:1;
+  }
+  .enc-tab-add:hover{border-color:var(--gold);color:var(--gold-light);}
+  .enc-tab-rename-input, .enc-instance-rename-input{
+    padding:3px 6px;border-radius:3px;border:1px solid var(--gold);
+    background:var(--desk);color:var(--parchment);font-size:13.5px;font-family:var(--font-body);
+  }
+  .enc-instance-rename-input{width:60%;}
+
   .enc-toolbar{display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-shrink:0;}
   .enc-picker{position:relative;flex:1;max-width:420px;}
   .enc-picker input{
@@ -263,9 +283,12 @@
     background:var(--card-bg);border:1px solid var(--gold);border-radius:4px;padding:10px 12px;
     width:290px;flex-shrink:0;font-size:13px;
   }
-  .enc-instance-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;}
-  .enc-instance-name{font-family:var(--font-display);color:var(--crimson-bright);font-size:15px;}
-  .enc-instance-meta{color:var(--text-light-secondary);font-size:11.5px;}
+  .enc-instance-head{display:flex;align-items:baseline;gap:6px;margin-bottom:6px;}
+  .enc-instance-name{font-family:var(--font-display);color:var(--crimson-bright);font-size:15px;cursor:pointer;flex-shrink:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .enc-instance-name:hover{text-decoration:underline;}
+  .enc-instance-meta{color:var(--text-light-secondary);font-size:11.5px;margin-left:auto;flex-shrink:0;}
+  .enc-instance-remove{background:none;border:none;color:var(--text-light-secondary);font-size:15px;line-height:1;cursor:pointer;padding:0 0 0 2px;flex-shrink:0;}
+  .enc-instance-remove:hover{color:var(--fumble-color);}
   .enc-instance .ability-grid{grid-template-columns:repeat(6,1fr);gap:3px;margin-bottom:6px;}
   .enc-instance .ability-box{padding:4px 2px;font-size:11px;}
   .enc-instance .ab-score{font-size:13px;}
@@ -691,6 +714,7 @@
 </div>
 
 <div class="encounter-view" id="encounterView" style="display:none;">
+  <div class="enc-tabs" id="encTabs"></div>
   <div class="enc-toolbar">
     <div class="enc-picker">
       <input type="text" id="encPickerInput" placeholder="Add a creature to the encounter…" autocomplete="off">
@@ -766,7 +790,10 @@
     filterCrMaxIdx: CR_SCALE.length - 1,
     filtersOpen: false,
     catalogWidth: 230,
-    encounter: [],
+    encounters: [],
+    activeEncounterId: null,
+    renamingEncounterId: null,
+    renamingInstanceId: null,
     encounterOpen: false
   };
 
@@ -851,7 +878,7 @@
   }
 
   function currentLogKey(){
-    return state.encounterOpen ? '__encounter__' : (state.currentId || '__unassigned__');
+    return state.encounterOpen ? ('__encounter_' + (state.activeEncounterId || 'none') + '__') : (state.currentId || '__unassigned__');
   }
 
   function addLog(label, detail, total, isCrit, isFumble, suffix){
@@ -887,7 +914,7 @@
         sortMode: state.sortMode, repoLibraryConfig: state.repoLibraryConfig, repoOverrides: state.repoOverrides,
         filterSizes: state.filterSizes, filterTypes: state.filterTypes,
         filterCrMinIdx: state.filterCrMinIdx, filterCrMaxIdx: state.filterCrMaxIdx,
-        catalogWidth: state.catalogWidth, encounter: state.encounter
+        catalogWidth: state.catalogWidth, encounters: state.encounters, activeEncounterId: state.activeEncounterId
       }));
     }catch(err){
       console.error('Could not save library', err);
@@ -1120,7 +1147,23 @@
         state.filterCrMinIdx = (data && typeof data.filterCrMinIdx === 'number') ? data.filterCrMinIdx : 0;
         state.filterCrMaxIdx = (data && typeof data.filterCrMaxIdx === 'number') ? data.filterCrMaxIdx : CR_SCALE.length - 1;
         state.catalogWidth = (data && typeof data.catalogWidth === 'number') ? data.catalogWidth : 230;
-        state.encounter = Array.isArray(data && data.encounter) ? data.encounter : [];
+        if(Array.isArray(data && data.encounters)){
+          state.encounters = data.encounters;
+        } else if(Array.isArray(data && data.encounter) && data.encounter.length){
+          // one-time migration from the single-roster shape this feature launched with
+          var legacyGroups = data.encounter.map(function(e){
+            var mon = null;
+            for(var gi = 0; gi < state.monsters.length; gi++){ if(state.monsters[gi].id === e.monsterId) mon = state.monsters[gi]; }
+            var baseName = (mon && mon.name) || 'Creature';
+            var instances = [];
+            for(var i = 0; i < (e.count || 1); i++) instances.push({id: uid(), label: i === 0 ? baseName : (baseName + ' #' + (i + 1))});
+            return {monsterId: e.monsterId, instances: instances};
+          });
+          state.encounters = [{id: uid(), name: 'Encounter 1', groups: legacyGroups}];
+        } else {
+          state.encounters = [];
+        }
+        state.activeEncounterId = (data && data.activeEncounterId) || (state.encounters[0] && state.encounters[0].id) || null;
         return;
       }
     }catch(err){
@@ -1608,17 +1651,80 @@
   }
 
   // --- Encounter view --------------------------------------------------
-  // A lighter-weight companion to the normal single-monster stage: pick up
-  // to 10 different creatures, each with 1-5 instances, and get every
-  // instance's rollable ability/save/skill/attack buttons on screen at
-  // once so a multi-monster fight doesn't mean re-selecting a monster in
-  // the catalog between every roll. No HP/turn tracking by design - it's a
-  // roster, not a full initiative tracker.
+  // A lighter-weight companion to the normal single-monster stage: up to 5
+  // separate named encounters, each holding up to 10 different creatures
+  // with up to 5 individually renameable instances, all with rollable
+  // ability/save/skill/attack buttons on screen at once so a multi-monster
+  // fight doesn't mean re-selecting a monster in the catalog between every
+  // roll. No HP/turn tracking by design - it's a roster, not a full
+  // initiative tracker.
+  var ENCOUNTER_MAX_ENCOUNTERS = 5;
   var ENCOUNTER_MAX_GROUPS = 10;
-  var ENCOUNTER_MAX_COUNT = 5;
+  var ENCOUNTER_MAX_INSTANCES = 5;
 
   function allKnownMonsters(){
     return state.monsters.concat(state.repoMonsters);
+  }
+
+  function ensureActiveEncounter(){
+    if(!state.encounters.length){
+      state.encounters.push({id: uid(), name: 'Encounter 1', groups: []});
+      state.activeEncounterId = state.encounters[0].id;
+      saveLibrary();
+    } else if(!state.activeEncounterId || !state.encounters.some(function(x){ return x.id === state.activeEncounterId; })){
+      state.activeEncounterId = state.encounters[0].id;
+    }
+  }
+
+  function getEncounter(id){
+    for(var i = 0; i < state.encounters.length; i++) if(state.encounters[i].id === id) return state.encounters[i];
+    return null;
+  }
+
+  function getActiveEncounter(){
+    return getEncounter(state.activeEncounterId);
+  }
+
+  function createEncounter(){
+    if(state.encounters.length >= ENCOUNTER_MAX_ENCOUNTERS) return;
+    var enc = {id: uid(), name: 'Encounter ' + (state.encounters.length + 1), groups: []};
+    state.encounters.push(enc);
+    state.activeEncounterId = enc.id;
+    saveLibrary();
+    renderEncounter();
+  }
+
+  function deleteEncounter(id){
+    var enc = getEncounter(id);
+    if(!enc) return;
+    showConfirm('Delete "' + enc.name + '"? This cannot be undone.', function(){
+      state.encounters = state.encounters.filter(function(x){ return x.id !== id; });
+      if(state.activeEncounterId === id) state.activeEncounterId = null;
+      saveLibrary();
+      renderEncounter();
+    });
+  }
+
+  function renameEncounter(id, newName){
+    newName = String(newName || '').trim();
+    var enc = getEncounter(id);
+    if(enc && newName) enc.name = newName;
+    state.renamingEncounterId = null;
+    saveLibrary();
+    renderEncounter();
+  }
+
+  function renameInstance(instanceId, newLabel){
+    newLabel = String(newLabel || '').trim();
+    state.renamingInstanceId = null;
+    var enc = getActiveEncounter();
+    if(enc && newLabel){
+      enc.groups.forEach(function(g){
+        g.instances.forEach(function(inst){ if(inst.id === instanceId) inst.label = newLabel; });
+      });
+    }
+    saveLibrary();
+    renderEncounter();
   }
 
   function encAbilityBoxesHtml(m, label){
@@ -1673,12 +1779,17 @@
     }).join('');
   }
 
-  function encInstanceHtml(m, index){
-    var label = m.name + ' #' + (index + 1);
+  function encInstanceHtml(m, inst){
+    var label = inst.label;
+    var renaming = state.renamingInstanceId === inst.id;
+    var nameHtml = renaming ?
+      '<input type="text" class="enc-instance-rename-input" id="encInstanceRenameInput" value="' + esc(label) + '" maxlength="40">' :
+      '<span class="enc-instance-name" data-action="start-rename-instance" data-instance-id="' + esc(inst.id) + '" title="Click to rename">' + esc(label) + '</span>';
     return '<div class="enc-instance">' +
       '<div class="enc-instance-head">' +
-        '<span class="enc-instance-name">' + esc(label) + '</span>' +
+        nameHtml +
         '<span class="enc-instance-meta">AC ' + esc(m.ac) + ' · HP ' + esc(m.hp) + '</span>' +
+        '<button class="enc-instance-remove" data-action="encounter-remove-instance" data-instance-id="' + esc(inst.id) + '" title="Remove this instance">×</button>' +
       '</div>' +
       '<div class="ability-grid">' + encAbilityBoxesHtml(m, label) + '</div>' +
       '<div class="ability-grid save-grid">' + encSaveBoxesHtml(m, label) + '</div>' +
@@ -1687,41 +1798,69 @@
     '</div>';
   }
 
-  function encGroupHtml(entry){
-    var m = getMonster(entry.monsterId);
+  function encGroupHtml(group){
+    var m = getMonster(group.monsterId);
     if(!m) return '';
-    var instances = '';
-    for(var i = 0; i < entry.count; i++) instances += encInstanceHtml(m, i);
+    var instances = group.instances.map(function(inst){ return encInstanceHtml(m, inst); }).join('');
     return '<div class="enc-group">' +
       '<div class="enc-group-head">' +
         '<span class="enc-group-name">' + esc(m.name) + '</span>' +
         '<span class="enc-group-meta">CR ' + esc(m.cr) + ' · ' + esc(m.type) + '</span>' +
         '<div class="enc-count-controls">' +
-          '<button class="enc-count-btn" data-action="encounter-count-dec" data-monster-id="' + esc(entry.monsterId) + '" title="Fewer instances">−</button>' +
-          '<span class="enc-count-val">×' + entry.count + '</span>' +
-          '<button class="enc-count-btn" data-action="encounter-count-inc" data-monster-id="' + esc(entry.monsterId) + '" title="More instances (max ' + ENCOUNTER_MAX_COUNT + ')">+</button>' +
+          '<button class="enc-count-btn" data-action="encounter-add-instance" data-monster-id="' + esc(group.monsterId) + '" title="Add another instance (max ' + ENCOUNTER_MAX_INSTANCES + ')">+</button>' +
+          '<span class="enc-count-val">×' + group.instances.length + '</span>' +
         '</div>' +
-        '<button class="enc-remove-btn" data-action="encounter-remove" data-monster-id="' + esc(entry.monsterId) + '" title="Remove from encounter">×</button>' +
+        '<button class="enc-remove-btn" data-action="encounter-remove-group" data-monster-id="' + esc(group.monsterId) + '" title="Remove all instances of this creature">×</button>' +
       '</div>' +
       '<div class="enc-instances">' + instances + '</div>' +
     '</div>';
   }
 
+  function encTabsHtml(){
+    return state.encounters.map(function(enc){
+      var active = enc.id === state.activeEncounterId ? ' active' : '';
+      if(state.renamingEncounterId === enc.id){
+        return '<span class="enc-tab' + active + '"><input type="text" class="enc-tab-rename-input" id="encTabRenameInput" value="' + esc(enc.name) + '" maxlength="30"></span>';
+      }
+      return '<button class="enc-tab' + active + '" data-action="select-encounter" data-encounter-id="' + esc(enc.id) + '" title="Right-click to rename">' +
+        '<span class="enc-tab-name">' + esc(enc.name) + '</span>' +
+        '<span class="enc-tab-close" data-action="delete-encounter" data-encounter-id="' + esc(enc.id) + '" title="Delete encounter">×</span>' +
+      '</button>';
+    }).join('') + (state.encounters.length < ENCOUNTER_MAX_ENCOUNTERS ? '<button class="enc-tab-add" data-action="new-encounter" title="New encounter (max ' + ENCOUNTER_MAX_ENCOUNTERS + ')">+</button>' : '');
+  }
+
   function renderEncounter(){
+    ensureActiveEncounter();
+    document.getElementById('encTabs').innerHTML = encTabsHtml();
+
+    var enc = getActiveEncounter();
     var list = document.getElementById('encList');
-    if(!state.encounter.length){
-      list.innerHTML = '<div class="enc-empty">No creatures in the encounter yet. Search above to add up to ' + ENCOUNTER_MAX_GROUPS + ' different creatures (up to ' + ENCOUNTER_MAX_COUNT + ' instances each).</div>';
+    if(!enc || !enc.groups.length){
+      list.innerHTML = '<div class="enc-empty">No creatures in this encounter yet. Search above to add up to ' + ENCOUNTER_MAX_GROUPS + ' different creatures (up to ' + ENCOUNTER_MAX_INSTANCES + ' instances each).</div>';
     } else {
-      list.innerHTML = state.encounter.map(encGroupHtml).join('');
+      list.innerHTML = enc.groups.map(encGroupHtml).join('');
     }
     var note = document.getElementById('encCountNote');
-    if(note) note.textContent = state.encounter.length + ' / ' + ENCOUNTER_MAX_GROUPS + ' creatures';
+    if(note) note.textContent = enc ? (enc.groups.length + ' / ' + ENCOUNTER_MAX_GROUPS + ' creatures') : '';
+
+    if(state.renamingEncounterId){
+      var tabInput = document.getElementById('encTabRenameInput');
+      if(tabInput){ tabInput.focus(); tabInput.select(); }
+    }
+    if(state.renamingInstanceId){
+      var instInput = document.getElementById('encInstanceRenameInput');
+      if(instInput){ instInput.focus(); instInput.select(); }
+    }
   }
 
   function addToEncounter(monsterId){
-    if(state.encounter.some(function(e){ return e.monsterId === monsterId; })) return;
-    if(state.encounter.length >= ENCOUNTER_MAX_GROUPS) return;
-    state.encounter.push({monsterId: monsterId, count: 1});
+    var enc = getActiveEncounter();
+    if(!enc) return;
+    if(enc.groups.some(function(g){ return g.monsterId === monsterId; })) return;
+    if(enc.groups.length >= ENCOUNTER_MAX_GROUPS) return;
+    var m = getMonster(monsterId);
+    if(!m) return;
+    enc.groups.push({monsterId: monsterId, instances: [{id: uid(), label: m.name}]});
     saveLibrary();
     renderEncounter();
   }
@@ -1801,19 +1940,51 @@
       addToEncounter(t.getAttribute('data-monster-id'));
       document.getElementById('encPickerInput').value = '';
       document.getElementById('encPickerResults').style.display = 'none';
-    } else if(action === 'encounter-count-inc'){
-      var incId = t.getAttribute('data-monster-id');
-      var incEntry = state.encounter.find(function(x){ return x.monsterId === incId; });
-      if(incEntry && incEntry.count < ENCOUNTER_MAX_COUNT){ incEntry.count++; saveLibrary(); renderEncounter(); }
-    } else if(action === 'encounter-count-dec'){
-      var decId = t.getAttribute('data-monster-id');
-      var decEntry = state.encounter.find(function(x){ return x.monsterId === decId; });
-      if(decEntry && decEntry.count > 1){ decEntry.count--; saveLibrary(); renderEncounter(); }
-    } else if(action === 'encounter-remove'){
-      var remId = t.getAttribute('data-monster-id');
-      state.encounter = state.encounter.filter(function(x){ return x.monsterId !== remId; });
+    } else if(action === 'new-encounter'){
+      createEncounter();
+    } else if(action === 'select-encounter'){
+      state.activeEncounterId = t.getAttribute('data-encounter-id');
       saveLibrary();
       renderEncounter();
+    } else if(action === 'delete-encounter'){
+      deleteEncounter(t.getAttribute('data-encounter-id'));
+      e.stopPropagation();
+    } else if(action === 'start-rename-encounter'){
+      state.renamingEncounterId = t.getAttribute('data-encounter-id');
+      renderEncounter();
+      e.stopPropagation();
+    } else if(action === 'start-rename-instance'){
+      state.renamingInstanceId = t.getAttribute('data-instance-id');
+      renderEncounter();
+    } else if(action === 'encounter-add-instance'){
+      var addGroupEnc = getActiveEncounter();
+      var addGroup = addGroupEnc && addGroupEnc.groups.find(function(g){ return g.monsterId === t.getAttribute('data-monster-id'); });
+      if(addGroup && addGroup.instances.length < ENCOUNTER_MAX_INSTANCES){
+        var addMon = getMonster(addGroup.monsterId);
+        var n = addGroup.instances.length + 1;
+        addGroup.instances.push({id: uid(), label: (addMon ? addMon.name : 'Creature') + ' #' + n});
+        saveLibrary();
+        renderEncounter();
+      }
+    } else if(action === 'encounter-remove-instance'){
+      var remInstEnc = getActiveEncounter();
+      if(remInstEnc){
+        var remInstId = t.getAttribute('data-instance-id');
+        remInstEnc.groups.forEach(function(g){
+          g.instances = g.instances.filter(function(inst){ return inst.id !== remInstId; });
+        });
+        remInstEnc.groups = remInstEnc.groups.filter(function(g){ return g.instances.length > 0; });
+        saveLibrary();
+        renderEncounter();
+      }
+    } else if(action === 'encounter-remove-group'){
+      var remGroupEnc = getActiveEncounter();
+      if(remGroupEnc){
+        var remGroupId = t.getAttribute('data-monster-id');
+        remGroupEnc.groups = remGroupEnc.groups.filter(function(g){ return g.monsterId !== remGroupId; });
+        saveLibrary();
+        renderEncounter();
+      }
     } else if(action === 'delete-folder'){
       deleteFolder(t.getAttribute('data-folder-id'));
       e.stopPropagation();
@@ -1903,13 +2074,15 @@
     var resultsEl = document.getElementById('encPickerResults');
     var q = e.target.value.trim().toLowerCase();
     if(!q){ resultsEl.style.display = 'none'; resultsEl.innerHTML = ''; return; }
-    if(state.encounter.length >= ENCOUNTER_MAX_GROUPS){
-      resultsEl.innerHTML = '<div class="enc-picker-empty">Encounter is full (' + ENCOUNTER_MAX_GROUPS + ' creatures max). Remove one to add another.</div>';
+    var activeEnc = getActiveEncounter();
+    var groups = (activeEnc && activeEnc.groups) || [];
+    if(groups.length >= ENCOUNTER_MAX_GROUPS){
+      resultsEl.innerHTML = '<div class="enc-picker-empty">This encounter is full (' + ENCOUNTER_MAX_GROUPS + ' creatures max). Remove one to add another.</div>';
       resultsEl.style.display = 'block';
       return;
     }
     var alreadyIn = {};
-    state.encounter.forEach(function(x){ alreadyIn[x.monsterId] = true; });
+    groups.forEach(function(x){ alreadyIn[x.monsterId] = true; });
     var matches = allKnownMonsters().filter(function(m){
       return !alreadyIn[m.id] && m.name.toLowerCase().indexOf(q) !== -1;
     }).slice(0, 20);
@@ -1969,12 +2142,22 @@
       } else if(e.key === 'Escape'){
         document.getElementById('catFolderNewRow').classList.remove('open');
       }
+    } else if(e.target && e.target.id === 'encTabRenameInput'){
+      if(e.key === 'Enter'){ renameEncounter(state.renamingEncounterId, e.target.value); }
+      else if(e.key === 'Escape'){ state.renamingEncounterId = null; renderEncounter(); }
+    } else if(e.target && e.target.id === 'encInstanceRenameInput'){
+      if(e.key === 'Enter'){ renameInstance(state.renamingInstanceId, e.target.value); }
+      else if(e.key === 'Escape'){ state.renamingInstanceId = null; renderEncounter(); }
     }
   });
 
   document.addEventListener('focusout', function(e){
     if(e.target && e.target.id === 'folderRenameInput' && state.renamingFolderId){
       renameFolder(state.renamingFolderId, e.target.value);
+    } else if(e.target && e.target.id === 'encTabRenameInput' && state.renamingEncounterId){
+      renameEncounter(state.renamingEncounterId, e.target.value);
+    } else if(e.target && e.target.id === 'encInstanceRenameInput' && state.renamingInstanceId){
+      renameInstance(state.renamingInstanceId, e.target.value);
     }
   });
 
@@ -2006,6 +2189,16 @@
       e.preventDefault();
       var fid2 = header.getAttribute('data-folder-id');
       menu.innerHTML = '<button data-action="start-rename-folder" data-folder-id="' + esc(fid2) + '">Rename folder</button>';
+      showContextMenu(menu, e.clientX, e.clientY);
+    } else if(e.target.closest('.enc-tab')){
+      e.preventDefault();
+      var encId = e.target.closest('.enc-tab').getAttribute('data-encounter-id');
+      menu.innerHTML = '<button data-action="start-rename-encounter" data-encounter-id="' + esc(encId) + '">Rename encounter</button>';
+      showContextMenu(menu, e.clientX, e.clientY);
+    } else if(e.target.closest('.enc-instance-name')){
+      e.preventDefault();
+      var instId = e.target.closest('.enc-instance-name').getAttribute('data-instance-id');
+      menu.innerHTML = '<button data-action="start-rename-instance" data-instance-id="' + esc(instId) + '">Rename creature</button>';
       showContextMenu(menu, e.clientX, e.clientY);
     }
   });
