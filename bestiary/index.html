@@ -268,14 +268,15 @@
     width:270px;flex-shrink:0;font-size:13px;
   }
   .enc-instance-card.renaming{display:flex;align-items:center;}
-  .enc-card-head{display:flex;align-items:center;gap:6px;margin-bottom:8px;}
+  .enc-card-head{display:flex;align-items:flex-start;flex-wrap:wrap;gap:6px;margin-bottom:8px;}
   .enc-card-name{
     font-family:var(--font-display);color:var(--crimson-bright);font-size:15px;cursor:pointer;
-    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    overflow-wrap:break-word;min-width:0;
   }
   .enc-card-name:hover{text-decoration:underline;}
+  .enc-bloodied-dot{color:var(--crimson-bright);font-size:10px;flex-shrink:0;align-self:center;}
   .enc-card-scroll{background:none;border:none;font-size:15px;line-height:1;cursor:pointer;padding:0;flex-shrink:0;}
-  .enc-card-spacer{flex:1;}
+  .enc-card-spacer{flex:1;min-width:6px;}
   .enc-card-add{
     width:20px;height:20px;border-radius:3px;border:1px solid var(--forest-light);background:transparent;
     color:var(--parchment);cursor:pointer;font-size:13px;line-height:1;padding:0;flex-shrink:0;
@@ -288,6 +289,7 @@
   .enc-card-remove:hover{color:var(--fumble-color);}
   .enc-card-stats{display:flex;gap:10px;margin-bottom:8px;}
   .enc-card-stats label{font-size:11px;color:var(--text-light-secondary);display:flex;align-items:center;gap:4px;}
+  .enc-hp-max{color:var(--parchment);font-size:12px;}
   .iw-stat-input{
     width:48px;padding:3px 5px;border-radius:3px;border:1px solid var(--forest-light);
     background:var(--desk);color:var(--parchment);font-size:13px;text-align:center;font-family:var(--font-body);
@@ -296,29 +298,34 @@
   .enc-instance-card .ability-box{padding:4px 2px;font-size:11px;}
   .enc-instance-card .ab-score{font-size:13px;}
 
-  .instance-window-overlay{
-    position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;
-    z-index:250;padding:20px;
-  }
+  /* Floating, draggable, resizable panel (same pattern as the roll log /
+     spell window) instead of a modal - only ever opened from the Encounter
+     Builder, and a dark full-screen backdrop there was hiding the roll log
+     underneath it. */
   .instance-window{
-    background:var(--card-bg);border:3px solid var(--gold);border-radius:5px;
-    max-width:680px;width:100%;max-height:85vh;overflow-y:auto;box-shadow:0 10px 30px rgba(0,0,0,0.6);
+    position:fixed;right:20px;top:80px;width:520px;height:480px;
+    background:var(--card-bg);border:2px solid var(--gold);border-radius:8px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.6);
+    display:flex;flex-direction:column;overflow:hidden;z-index:220;
   }
-  .instance-window-head{padding:16px 20px 12px;border-bottom:2px solid var(--crimson);}
+  .instance-window-head{
+    display:flex;justify-content:space-between;align-items:flex-start;gap:10px;
+    padding:10px 14px;background:var(--card-bg-alt);border-bottom:1px solid var(--forest-light);
+    cursor:move;user-select:none;flex-shrink:0;touch-action:none;
+  }
   .instance-window-titlewrap{min-width:0;}
   .instance-window-title{
-    font-family:var(--font-name);font-variant:small-caps;font-size:24px;color:var(--crimson-bright);margin:0;
+    font-family:var(--font-name);font-variant:small-caps;font-size:22px;color:var(--crimson-bright);margin:0;
     overflow-wrap:break-word;
   }
-  .instance-window-sub{font-style:italic;font-size:13.5px;color:var(--text-light-secondary);margin:2px 0 0;}
-  .instance-window-actions{display:flex;align-items:center;gap:8px;flex-shrink:0;padding:10px 20px 0;}
-  .instance-window-spacer{flex:1;}
-  .instance-window-actions button{
-    background:transparent;border:1px solid var(--forest-light);color:var(--text-light-secondary);
-    padding:5px 10px;border-radius:3px;font-size:13px;cursor:pointer;
+  .instance-window-sub{font-style:italic;font-size:13px;color:var(--text-light-secondary);margin:2px 0 0;}
+  .instance-window-head-actions{display:flex;gap:6px;flex-shrink:0;}
+  .instance-window-head-actions button{
+    background:none;border:1px solid var(--forest-light);color:var(--parchment);
+    border-radius:3px;padding:2px 8px;font-size:13px;cursor:pointer;
   }
-  .instance-window-actions button:hover{background:var(--forest);color:#fff;}
-  .instance-window-body{padding:14px 20px 20px;}
+  .instance-window-head-actions button:hover{background:var(--forest);color:#fff;}
+  .instance-window-body{padding:12px 16px 16px;overflow-y:auto;flex:1;}
   .instance-window-body .sb-core{margin-bottom:10px;}
 
   .catalog{
@@ -660,7 +667,7 @@
   <button class="settings-btn" id="settingsBtn" data-action="toggle-settings" title="Settings">⚙</button>
   <h1>Bestiary</h1>
   <button class="tb-btn primary" data-action="new-monster">+ New monster</button>
-  <button class="tb-btn" id="bestiaryNavBtn" data-action="show-bestiary">📖 Bestiary</button>
+  <button class="tb-btn" id="bestiaryNavBtn" data-action="show-bestiary">Bestiary</button>
   <button class="tb-btn" id="encounterToggleBtn" data-action="show-encounter">Encounter Builder</button>
   <div class="spacer"></div>
   <div class="mode-toggle" id="modeToggle">
@@ -779,21 +786,19 @@
   </div>
 </div>
 
-<div class="instance-window-overlay" id="instanceWindowOverlay" style="display:none;">
-  <div class="instance-window" id="instanceWindowPanel">
-    <div class="instance-window-head">
-      <div class="instance-window-titlewrap">
-        <p class="instance-window-title" id="instanceWindowTitle"></p>
-        <p class="instance-window-sub" id="instanceWindowSub"></p>
-      </div>
+<div class="instance-window" id="instanceWindowPanel" style="display:none;">
+  <div class="instance-window-head" id="instanceWindowHead">
+    <div class="instance-window-titlewrap">
+      <p class="instance-window-title" id="instanceWindowTitle"></p>
+      <p class="instance-window-sub" id="instanceWindowSub"></p>
     </div>
-    <div class="instance-window-actions">
-      <span class="instance-window-spacer"></span>
+    <div class="instance-window-head-actions">
       <button data-action="lookup-instance-online">Look up online</button>
       <button data-action="close-instance-window">✕</button>
     </div>
-    <div class="instance-window-body" id="instanceWindowBody"></div>
   </div>
+  <div class="instance-window-body" id="instanceWindowBody"></div>
+  <div class="rolllog-resize" id="instanceWindowResize" title="Drag to resize"></div>
 </div>
 
 <script>
@@ -1795,17 +1800,25 @@
   // required; the scroll icon is the only thing that opens a window, and
   // that window always jumps straight to the full stat block (traits,
   // actions, etc.) rather than an intermediate small view.
+  // 5e's bloodied condition: at or below half of max HP.
+  function isBloodied(hp, maxHp){
+    return typeof hp === 'number' && typeof maxHp === 'number' && maxHp > 0 && hp <= Math.floor(maxHp / 2);
+  }
+
   function encInstanceCardHtml(m, inst, groupMonsterId, groupCount){
     if(state.renamingInstanceId === inst.id){
       return '<div class="enc-instance-card renaming"><input type="text" class="enc-instance-rename-input" id="encInstanceRenameInput" value="' + esc(inst.label) + '" maxlength="30"></div>';
     }
+    var maxHp = m.hp;
     var ac = (inst.ac === undefined || inst.ac === null || inst.ac === '') ? m.ac : inst.ac;
-    var hp = (inst.hp === undefined || inst.hp === null || inst.hp === '') ? m.hp : inst.hp;
+    var hp = (inst.hp === undefined || inst.hp === null || inst.hp === '') ? maxHp : inst.hp;
+    var bloodiedDot = isBloodied(hp, maxHp) ? '<span class="enc-bloodied-dot" title="Bloodied (at or below half HP)">●</span>' : '';
     var addBtn = groupCount < ENCOUNTER_MAX_INSTANCES ?
       '<button class="enc-card-add" data-action="encounter-add-instance" data-monster-id="' + esc(groupMonsterId) + '" title="Add another instance of ' + esc(m.name) + '">+</button>' : '';
     return '<div class="enc-instance-card">' +
       '<div class="enc-card-head">' +
         '<span class="enc-card-name" data-action="start-rename-instance" data-instance-id="' + esc(inst.id) + '" title="Click to rename">' + esc(inst.label) + '</span>' +
+        bloodiedDot +
         '<button class="enc-card-scroll" data-action="open-instance-window" data-instance-id="' + esc(inst.id) + '" title="Full stat block">📜</button>' +
         '<span class="enc-card-spacer"></span>' +
         addBtn +
@@ -1813,7 +1826,7 @@
       '</div>' +
       '<div class="enc-card-stats">' +
         '<label>AC <input type="number" class="iw-stat-input" data-stat="ac" data-instance-id="' + esc(inst.id) + '" value="' + esc(ac) + '"></label>' +
-        '<label>HP <input type="number" class="iw-stat-input" data-stat="hp" data-instance-id="' + esc(inst.id) + '" value="' + esc(hp) + '"></label>' +
+        '<label>HP <span class="enc-hp-max">' + esc(maxHp) + '</span>/<input type="number" class="iw-stat-input" data-stat="hp" data-instance-id="' + esc(inst.id) + '" value="' + esc(hp) + '"></label>' +
       '</div>' +
       '<div class="ability-grid">' + encAbilityBoxesHtml(m, inst.label) + '</div>' +
       '<div class="ability-grid save-grid">' + encSaveBoxesHtml(m, inst.label) + '</div>' +
@@ -1851,19 +1864,22 @@
 
   function closeInstanceWindow(){
     state.instanceWindowId = null;
-    document.getElementById('instanceWindowOverlay').style.display = 'none';
+    document.getElementById('instanceWindowPanel').style.display = 'none';
   }
 
   // The popup only ever shows the full stat block now - checks/saves/AC/HP
   // already live directly on the instance's card in the roster, so there's
-  // no smaller intermediate view to toggle to/from here.
+  // no smaller intermediate view to toggle to/from here. It's a floating,
+  // draggable/resizable panel (see makeDraggable/makeResizable wiring at
+  // the bottom of the file) rather than a modal, so it never dims or
+  // blocks the roll log the way an overlay backdrop would.
   function renderInstanceWindow(){
-    var overlay = document.getElementById('instanceWindowOverlay');
+    var panel = document.getElementById('instanceWindowPanel');
     var found = state.instanceWindowId ? findEncounterInstance(state.instanceWindowId) : null;
     var m = found ? getMonster(found.group.monsterId) : null;
     if(!m){
       state.instanceWindowId = null;
-      overlay.style.display = 'none';
+      panel.style.display = 'none';
       return;
     }
     var inst = found.instance;
@@ -1872,7 +1888,7 @@
     var hp = (inst.hp === undefined || inst.hp === null || inst.hp === '') ? m.hp : inst.hp;
 
     document.getElementById('instanceWindowTitle').textContent = label;
-    document.getElementById('instanceWindowSub').textContent = m.size + ' ' + m.type + ' · CR ' + m.cr + ' · AC ' + ac + ' · HP ' + hp;
+    document.getElementById('instanceWindowSub').textContent = m.size + ' ' + m.type + ' · CR ' + m.cr + ' · AC ' + ac + ' · HP ' + hp + '/' + m.hp + (isBloodied(hp, m.hp) ? ' · Bloodied' : '');
 
     document.getElementById('instanceWindowBody').innerHTML =
       '<div class="sb-core">' +
@@ -1884,7 +1900,7 @@
       '<div class="section-title">Saving throws</div>' +
       '<div class="ability-grid save-grid">' + encSaveBoxesHtml(m, label) + '</div>' +
       monsterDetailHtml(m, label);
-    overlay.style.display = 'flex';
+    panel.style.display = 'flex';
   }
 
   function encTabsHtml(){
@@ -2150,10 +2166,6 @@
 
   document.getElementById('catSearch').addEventListener('input', renderCatalog);
 
-  document.getElementById('instanceWindowOverlay').addEventListener('click', function(e){
-    if(e.target === e.currentTarget) closeInstanceWindow();
-  });
-
   // Delegated: instance cards (and how many of them exist) change on every
   // render, so their AC/HP inputs can't hold their own listeners directly.
   document.addEventListener('change', function(e){
@@ -2164,6 +2176,7 @@
     if(isNaN(v)) return;
     found.instance[e.target.getAttribute('data-stat')] = v;
     saveLibrary();
+    renderEncounter(); // refreshes the bloodied dot / HP display on the card
     if(state.instanceWindowId === found.instance.id) renderInstanceWindow();
   });
 
@@ -3748,6 +3761,9 @@
   makeResizable(rolllogPanelEl, document.getElementById('rolllogResize'), 240, 140, 640, 620, spellWindowEl);
   makeDraggable(spellWindowEl, document.getElementById('spellWindowHead'), rolllogPanelEl);
   makeResizable(spellWindowEl, document.getElementById('spellWindowResize'), 260, 200, 640, 640, rolllogPanelEl);
+  var instanceWindowEl = document.getElementById('instanceWindowPanel');
+  makeDraggable(instanceWindowEl, document.getElementById('instanceWindowHead'), null);
+  makeResizable(instanceWindowEl, document.getElementById('instanceWindowResize'), 340, 260, 900, 800, null);
 })();
 </script>
 <script>
