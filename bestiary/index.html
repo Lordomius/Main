@@ -286,7 +286,7 @@
   .enc-instance-chip.renaming{border-radius:4px;padding:2px;}
   .enc-instance-chip-name{
     background:none;border:none;color:var(--crimson-bright);font-family:var(--font-display);
-    font-size:14px;padding:6px 6px 6px 14px;cursor:pointer;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+    font-size:14px;padding:6px 6px 6px 14px;cursor:pointer;white-space:nowrap;
   }
   .enc-instance-chip-name:hover{text-decoration:underline;}
   .enc-instance-chip-remove{
@@ -303,20 +303,35 @@
   .instance-window{
     background:var(--card-bg);border:3px solid var(--gold);border-radius:5px;
     max-width:420px;width:100%;max-height:85vh;overflow-y:auto;box-shadow:0 10px 30px rgba(0,0,0,0.6);
+    transition:max-width .15s;
   }
+  .instance-window.expanded{max-width:680px;}
   .instance-window-head{
     display:flex;justify-content:space-between;align-items:flex-start;gap:10px;
     padding:16px 20px 12px;border-bottom:2px solid var(--crimson);
   }
-  .instance-window-title{font-family:var(--font-name);font-variant:small-caps;font-size:24px;color:var(--crimson-bright);margin:0;}
+  .instance-window-titlewrap{min-width:0;}
+  .instance-window-title{
+    font-family:var(--font-name);font-variant:small-caps;font-size:24px;color:var(--crimson-bright);margin:0;
+    overflow-wrap:break-word;
+  }
   .instance-window-sub{font-style:italic;font-size:13.5px;color:var(--text-light-secondary);margin:2px 0 0;}
-  .instance-window-actions{display:flex;gap:8px;flex-shrink:0;}
+  .instance-window-stats{display:flex;gap:10px;flex-shrink:0;}
+  .instance-window-stats label{font-size:12px;color:var(--text-light-secondary);display:flex;flex-direction:column;gap:2px;align-items:center;}
+  .iw-stat-input{
+    width:52px;padding:4px 5px;border-radius:3px;border:1px solid var(--forest-light);
+    background:var(--desk);color:var(--parchment);font-size:14px;text-align:center;font-family:var(--font-body);
+  }
+  .instance-window-actions{display:flex;align-items:center;gap:8px;flex-shrink:0;padding:10px 20px 0;}
+  .instance-window-spacer{flex:1;}
   .instance-window-actions button{
     background:transparent;border:1px solid var(--forest-light);color:var(--text-light-secondary);
     padding:5px 10px;border-radius:3px;font-size:13px;cursor:pointer;
   }
   .instance-window-actions button:hover{background:var(--forest);color:#fff;}
+  #instanceExpandBtn.active{border-color:var(--gold);color:var(--gold-light);}
   .instance-window-body{padding:14px 20px 20px;}
+  .instance-window-body .sb-core{margin-bottom:10px;}
 
   .catalog{
     width:230px;flex-shrink:0;background:var(--desk-light);
@@ -776,16 +791,22 @@
 </div>
 
 <div class="instance-window-overlay" id="instanceWindowOverlay" style="display:none;">
-  <div class="instance-window">
+  <div class="instance-window" id="instanceWindowPanel">
     <div class="instance-window-head">
-      <div>
+      <div class="instance-window-titlewrap">
         <p class="instance-window-title" id="instanceWindowTitle"></p>
         <p class="instance-window-sub" id="instanceWindowSub"></p>
       </div>
-      <div class="instance-window-actions">
-        <button data-action="lookup-instance-online">Look up online</button>
-        <button data-action="close-instance-window">✕</button>
+      <div class="instance-window-stats">
+        <label>AC <input type="number" class="iw-stat-input" id="instanceWindowAcInput"></label>
+        <label>HP <input type="number" class="iw-stat-input" id="instanceWindowHpInput"></label>
       </div>
+    </div>
+    <div class="instance-window-actions">
+      <button data-action="toggle-instance-expanded" id="instanceExpandBtn">Full stat block</button>
+      <span class="instance-window-spacer"></span>
+      <button data-action="lookup-instance-online">Look up online</button>
+      <button data-action="close-instance-window">✕</button>
     </div>
     <div class="instance-window-body" id="instanceWindowBody"></div>
   </div>
@@ -830,6 +851,7 @@
     renamingEncounterId: null,
     renamingInstanceId: null,
     instanceWindowId: null,
+    instanceWindowExpanded: false,
     encounterOpen: false
   };
 
@@ -1568,63 +1590,6 @@
       el.innerHTML = '<div class="empty-state"><div class="big">No creature selected</div>Choose one from the catalog on the left,<br>or create a new one to begin.</div>';
       return;
     }
-    var abilities = ['str','dex','con','int','wis','cha'];
-    var abilityBoxes = abilities.map(function(a){
-      var score = m.abilities[a] || 10;
-      var md = abilityMod(score);
-      return '<div class="ability-box" data-action="roll-ability" data-mod="' + md + '" data-label="' + esc(m.name) + ' \u2014 ' + a.toUpperCase() + ' check">' +
-        '<div class="ab-name">' + a.toUpperCase() + '</div>' +
-        '<div class="ab-score">' + score + '</div>' +
-        '<div class="ab-mod">' + fmt(md) + '</div>' +
-      '</div>';
-    }).join('');
-
-    var saveBoxes = abilities.map(function(a){
-      var score = m.abilities[a] || 10;
-      var md = abilityMod(score);
-      var override = null;
-      (m.saves || []).forEach(function(s){
-        if(s.name && String(s.name).trim().toLowerCase().slice(0, 3) === a){ override = s.bonus; }
-      });
-      var proficient = override !== null;
-      var bonus = proficient ? override : md;
-      var cls = 'ability-box save-box' + (proficient ? ' proficient' : '');
-      return '<div class="' + cls + '" data-action="roll-save" data-bonus="' + bonus + '" data-label="' + esc(m.name) + ' \u2014 ' + a.toUpperCase() + ' save">' +
-        '<div class="ab-name">' + a.toUpperCase() + (proficient ? ' <span class="prof-dot" title="Proficient">\u25CF</span>' : '') + '</div>' +
-        '<div class="ab-mod save-mod">' + fmt(bonus) + '</div>' +
-      '</div>';
-    }).join('');
-
-    var skillsHtml = (m.skills || []).map(function(s){
-      return '<button class="pill" data-action="roll-skill" data-bonus="' + s.bonus + '" data-label="' + esc(m.name) + ' \u2014 ' + esc(s.name) + '">' + esc(s.name) + ' ' + fmt(s.bonus) + '</button>';
-    }).join('');
-
-    var traitsHtml = traitLikeHtml(m.traits);
-
-    var actionsHtml = (m.actions || []).map(function(a){
-      var rolls = '';
-      if(a.toHit !== null && a.toHit !== undefined && a.toHit !== ''){
-        rolls += '<button class="stamp" data-action="roll-attack" data-bonus="' + a.toHit + '" data-label="' + esc(m.name) + ' \u2014 ' + esc(a.name) + ' to hit">' + fmt(Number(a.toHit)) + ' to hit</button>';
-      }
-      if(a.damage){
-        rolls += '<button class="stamp dmg" data-action="roll-damage" data-dice="' + esc(a.damage) + '" data-typelabel="' + esc(a.damageType||'') + '" data-label="' + esc(m.name) + ' \u2014 ' + esc(a.name) + ' damage">' + esc(a.damage) + (a.damageType ? (' ' + esc(a.damageType)) : '') + '</button>';
-        var bonusDmg = findBonusDamage(a.text);
-        if(bonusDmg && (bonusDmg.dice !== a.damage || bonusDmg.type !== a.damageType)){
-          rolls += '<button class="stamp dmg" data-action="roll-damage" data-dice="' + esc(bonusDmg.dice) + '" data-typelabel="' + esc(bonusDmg.type) + '" data-label="' + esc(m.name) + ' \u2014 ' + esc(a.name) + ' extra damage">' + esc(bonusDmg.dice) + (bonusDmg.type ? (' ' + esc(bonusDmg.type)) : '') + '</button>';
-        }
-        var altDmg = findAlternateDamage(a.text);
-        if(altDmg && (altDmg.dice !== a.damage || altDmg.type !== a.damageType) && (!bonusDmg || altDmg.dice !== bonusDmg.dice || altDmg.type !== bonusDmg.type)){
-          rolls += '<button class="stamp dmg" data-action="roll-damage" data-dice="' + esc(altDmg.dice) + '" data-typelabel="' + esc(altDmg.type) + '" data-label="' + esc(m.name) + ' \u2014 ' + esc(a.name) + ' alternate damage">' + esc(altDmg.dice) + (altDmg.type ? (' ' + esc(altDmg.type)) : '') + ' (alt)</button>';
-        }
-      }
-      return '<div class="action-row"><span class="a-name">' + esc(a.name) + '.</span> ' + highlightSpells(highlightCastingFrequency(highlightNumbers(esc(a.text)))) +
-        (rolls ? '<div class="action-rolls">' + rolls + '</div>' : '') + '</div>';
-    }).join('');
-
-    var legendaryHtml = traitLikeHtml(m.legendary);
-    var reactionsHtml = traitLikeHtml(m.reactions);
-    var bonusActionsHtml = traitLikeHtml(m.bonusActions);
-
     var dexMod = abilityMod(m.abilities.dex || 10);
     var initBonus = (m.initiative === null || m.initiative === undefined || m.initiative === '') ? dexMod : Number(m.initiative);
 
@@ -1655,20 +1620,10 @@
           '</div>' +
         '</div>' +
         '<div class="section-title">Ability checks</div>' +
-        '<div class="ability-grid">' + abilityBoxes + '</div>' +
+        '<div class="ability-grid">' + encAbilityBoxesHtml(m, m.name) + '</div>' +
         '<div class="section-title">Saving throws</div>' +
-        '<div class="ability-grid save-grid">' + saveBoxes + '</div>' +
-        (skillsHtml ? '<div class="pillrow">' + skillsHtml + '</div>' : '') +
-        (m.resistances ? '<div class="sb-line"><b>Resistances</b> ' + esc(m.resistances) + '</div>' : '') +
-        (m.immunities ? '<div class="sb-line"><b>Immunities</b> ' + esc(m.immunities) + '</div>' : '') +
-        (m.senses ? '<div class="sb-line"><b>Senses</b> ' + esc(m.senses) + '</div>' : '') +
-        (m.languages ? '<div class="sb-line"><b>Languages</b> ' + esc(m.languages) + '</div>' : '') +
-        '<div class="sb-divider"></div>' +
-        (traitsHtml || '') +
-        (actionsHtml ? '<div class="section-title">Actions</div>' + actionsHtml : '') +
-        (bonusActionsHtml ? '<div class="section-title">Bonus actions</div>' + bonusActionsHtml : '') +
-        (reactionsHtml ? '<div class="section-title">Reactions</div>' + reactionsHtml : '') +
-        (legendaryHtml ? '<div class="section-title">Legendary actions</div>' + legendaryHtml : '') +
+        '<div class="ability-grid save-grid">' + encSaveBoxesHtml(m, m.name) + '</div>' +
+        monsterDetailHtml(m, m.name) +
       '</div>';
   }
 
@@ -1795,9 +1750,63 @@
     }).join('');
   }
 
+  // Shared between the main stage and the encounter instance popup's "full"
+  // view, parameterized by a display label so roll-log entries read using
+  // whatever name is showing (the real monster name on the stage, a
+  // possibly-renamed instance label in an encounter).
+  function monsterSkillsHtml(m, label){
+    return (m.skills || []).map(function(s){
+      return '<button class="pill" data-action="roll-skill" data-bonus="' + s.bonus + '" data-label="' + esc(label) + ' — ' + esc(s.name) + '">' + esc(s.name) + ' ' + fmt(s.bonus) + '</button>';
+    }).join('');
+  }
+
+  function monsterActionsHtml(m, label){
+    return (m.actions || []).map(function(a){
+      var rolls = '';
+      if(a.toHit !== null && a.toHit !== undefined && a.toHit !== ''){
+        rolls += '<button class="stamp" data-action="roll-attack" data-bonus="' + a.toHit + '" data-label="' + esc(label) + ' — ' + esc(a.name) + ' to hit">' + fmt(Number(a.toHit)) + ' to hit</button>';
+      }
+      if(a.damage){
+        rolls += '<button class="stamp dmg" data-action="roll-damage" data-dice="' + esc(a.damage) + '" data-typelabel="' + esc(a.damageType||'') + '" data-label="' + esc(label) + ' — ' + esc(a.name) + ' damage">' + esc(a.damage) + (a.damageType ? (' ' + esc(a.damageType)) : '') + '</button>';
+        var bonusDmg = findBonusDamage(a.text);
+        if(bonusDmg && (bonusDmg.dice !== a.damage || bonusDmg.type !== a.damageType)){
+          rolls += '<button class="stamp dmg" data-action="roll-damage" data-dice="' + esc(bonusDmg.dice) + '" data-typelabel="' + esc(bonusDmg.type) + '" data-label="' + esc(label) + ' — ' + esc(a.name) + ' extra damage">' + esc(bonusDmg.dice) + (bonusDmg.type ? (' ' + esc(bonusDmg.type)) : '') + '</button>';
+        }
+        var altDmg = findAlternateDamage(a.text);
+        if(altDmg && (altDmg.dice !== a.damage || altDmg.type !== a.damageType) && (!bonusDmg || altDmg.dice !== bonusDmg.dice || altDmg.type !== bonusDmg.type)){
+          rolls += '<button class="stamp dmg" data-action="roll-damage" data-dice="' + esc(altDmg.dice) + '" data-typelabel="' + esc(altDmg.type) + '" data-label="' + esc(label) + ' — ' + esc(a.name) + ' alternate damage">' + esc(altDmg.dice) + (altDmg.type ? (' ' + esc(altDmg.type)) : '') + ' (alt)</button>';
+        }
+      }
+      return '<div class="action-row"><span class="a-name">' + esc(a.name) + '.</span> ' + highlightSpells(highlightCastingFrequency(highlightNumbers(esc(a.text)))) +
+        (rolls ? '<div class="action-rolls">' + rolls + '</div>' : '') + '</div>';
+    }).join('');
+  }
+
+  // Skills through legendary actions - everything in a full stat block after
+  // the ability/save grids.
+  function monsterDetailHtml(m, label){
+    var skillsHtml = monsterSkillsHtml(m, label);
+    var traitsHtml = traitLikeHtml(m.traits);
+    var actionsHtml = monsterActionsHtml(m, label);
+    var legendaryHtml = traitLikeHtml(m.legendary);
+    var reactionsHtml = traitLikeHtml(m.reactions);
+    var bonusActionsHtml = traitLikeHtml(m.bonusActions);
+    return (skillsHtml ? '<div class="pillrow">' + skillsHtml + '</div>' : '') +
+      (m.resistances ? '<div class="sb-line"><b>Resistances</b> ' + esc(m.resistances) + '</div>' : '') +
+      (m.immunities ? '<div class="sb-line"><b>Immunities</b> ' + esc(m.immunities) + '</div>' : '') +
+      (m.senses ? '<div class="sb-line"><b>Senses</b> ' + esc(m.senses) + '</div>' : '') +
+      (m.languages ? '<div class="sb-line"><b>Languages</b> ' + esc(m.languages) + '</div>' : '') +
+      '<div class="sb-divider"></div>' +
+      (traitsHtml || '') +
+      (actionsHtml ? '<div class="section-title">Actions</div>' + actionsHtml : '') +
+      (bonusActionsHtml ? '<div class="section-title">Bonus actions</div>' + bonusActionsHtml : '') +
+      (reactionsHtml ? '<div class="section-title">Reactions</div>' + reactionsHtml : '') +
+      (legendaryHtml ? '<div class="section-title">Legendary actions</div>' + legendaryHtml : '');
+  }
+
   function encInstanceHtml(inst){
     if(state.renamingInstanceId === inst.id){
-      return '<div class="enc-instance-chip renaming"><input type="text" class="enc-instance-rename-input" id="encInstanceRenameInput" value="' + esc(inst.label) + '" maxlength="40"></div>';
+      return '<div class="enc-instance-chip renaming"><input type="text" class="enc-instance-rename-input" id="encInstanceRenameInput" value="' + esc(inst.label) + '" maxlength="30"></div>';
     }
     return '<div class="enc-instance-chip">' +
       '<button class="enc-instance-chip-name" data-action="open-instance-window" data-instance-id="' + esc(inst.id) + '" title="Click to open · right-click to rename">' + esc(inst.label) + '</button>' +
@@ -1837,6 +1846,7 @@
 
   function openInstanceWindow(instanceId){
     state.instanceWindowId = instanceId;
+    state.instanceWindowExpanded = false;
     renderInstanceWindow();
   }
 
@@ -1854,14 +1864,35 @@
       overlay.style.display = 'none';
       return;
     }
-    var label = found.instance.label;
+    var inst = found.instance;
+    var label = inst.label;
+    var ac = (inst.ac === undefined || inst.ac === null || inst.ac === '') ? m.ac : inst.ac;
+    var hp = (inst.hp === undefined || inst.hp === null || inst.hp === '') ? m.hp : inst.hp;
+
     document.getElementById('instanceWindowTitle').textContent = label;
     document.getElementById('instanceWindowSub').textContent = m.size + ' ' + m.type + ' · CR ' + m.cr;
-    document.getElementById('instanceWindowBody').innerHTML =
+    document.getElementById('instanceWindowAcInput').value = ac;
+    document.getElementById('instanceWindowHpInput').value = hp;
+
+    document.getElementById('instanceWindowPanel').classList.toggle('expanded', state.instanceWindowExpanded);
+    var expandBtn = document.getElementById('instanceExpandBtn');
+    expandBtn.textContent = state.instanceWindowExpanded ? 'Small view' : 'Full stat block';
+    expandBtn.classList.toggle('active', state.instanceWindowExpanded);
+
+    document.getElementById('instanceWindowBody').innerHTML = state.instanceWindowExpanded ?
+      ('<div class="sb-core">' +
+        '<div><b>Speed</b> ' + esc(m.speed) + '</div>' +
+        '<div><b>Initiative</b> ' + fmt(abilityMod(m.abilities.dex || 10)) + '</div>' +
+      '</div>' +
       '<div class="section-title">Ability checks</div>' +
       '<div class="ability-grid">' + encAbilityBoxesHtml(m, label) + '</div>' +
       '<div class="section-title">Saving throws</div>' +
-      '<div class="ability-grid save-grid">' + encSaveBoxesHtml(m, label) + '</div>';
+      '<div class="ability-grid save-grid">' + encSaveBoxesHtml(m, label) + '</div>' +
+      monsterDetailHtml(m, label)) :
+      ('<div class="section-title">Ability checks</div>' +
+      '<div class="ability-grid">' + encAbilityBoxesHtml(m, label) + '</div>' +
+      '<div class="section-title">Saving throws</div>' +
+      '<div class="ability-grid save-grid">' + encSaveBoxesHtml(m, label) + '</div>');
     overlay.style.display = 'flex';
   }
 
@@ -1903,6 +1934,10 @@
     if(state.instanceWindowId) renderInstanceWindow();
   }
 
+  function makeInstance(m){
+    return {id: uid(), label: m.name, ac: m.ac, hp: m.hp};
+  }
+
   function addToEncounter(monsterId){
     var enc = getActiveEncounter();
     if(!enc) return;
@@ -1910,7 +1945,7 @@
     if(enc.groups.length >= ENCOUNTER_MAX_GROUPS) return;
     var m = getMonster(monsterId);
     if(!m) return;
-    enc.groups.push({monsterId: monsterId, instances: [{id: uid(), label: m.name}]});
+    enc.groups.push({monsterId: monsterId, instances: [makeInstance(m)]});
     saveLibrary();
     renderEncounter();
   }
@@ -2011,7 +2046,7 @@
       var addGroup = addGroupEnc && addGroupEnc.groups.find(function(g){ return g.monsterId === t.getAttribute('data-monster-id'); });
       if(addGroup && addGroup.instances.length < ENCOUNTER_MAX_INSTANCES){
         var addMon = getMonster(addGroup.monsterId);
-        addGroup.instances.push({id: uid(), label: addMon ? addMon.name : 'Creature'});
+        addGroup.instances.push(addMon ? makeInstance(addMon) : {id: uid(), label: 'Creature'});
         saveLibrary();
         renderEncounter();
       }
@@ -2019,6 +2054,9 @@
       openInstanceWindow(t.getAttribute('data-instance-id'));
     } else if(action === 'close-instance-window'){
       closeInstanceWindow();
+    } else if(action === 'toggle-instance-expanded'){
+      state.instanceWindowExpanded = !state.instanceWindowExpanded;
+      renderInstanceWindow();
     } else if(action === 'lookup-instance-online'){
       var lookupFound = state.instanceWindowId ? findEncounterInstance(state.instanceWindowId) : null;
       var lookupMon = lookupFound ? getMonster(lookupFound.group.monsterId) : null;
@@ -2131,6 +2169,22 @@
 
   document.getElementById('instanceWindowOverlay').addEventListener('click', function(e){
     if(e.target === e.currentTarget) closeInstanceWindow();
+  });
+
+  document.getElementById('instanceWindowAcInput').addEventListener('change', function(e){
+    var found = state.instanceWindowId ? findEncounterInstance(state.instanceWindowId) : null;
+    if(!found) return;
+    var v = parseInt(e.target.value, 10);
+    found.instance.ac = isNaN(v) ? found.instance.ac : v;
+    saveLibrary();
+  });
+
+  document.getElementById('instanceWindowHpInput').addEventListener('change', function(e){
+    var found = state.instanceWindowId ? findEncounterInstance(state.instanceWindowId) : null;
+    if(!found) return;
+    var v = parseInt(e.target.value, 10);
+    found.instance.hp = isNaN(v) ? found.instance.hp : v;
+    saveLibrary();
   });
 
   document.getElementById('encPickerInput').addEventListener('input', function(e){
