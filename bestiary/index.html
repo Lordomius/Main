@@ -1283,7 +1283,7 @@
 
     function cardHtml(m){
       var sel = m.id === state.currentId ? ' selected' : '';
-      return '<div class="cat-card' + sel + '" draggable="true" data-action="select-monster" data-id="' + m.id + '">' +
+      return '<div class="cat-card' + sel + '" draggable="true" data-action="select-monster" data-id="' + esc(m.id) + '">' +
         '<div class="cc-name">' + esc(m.name) + '</div>' +
         '<div class="cc-meta">CR ' + esc(m.cr) + ' \u00b7 ' + esc(m.type) + '</div>' +
       '</div>';
@@ -1493,10 +1493,10 @@
     var initBonus = (m.initiative === null || m.initiative === undefined || m.initiative === '') ? dexMod : Number(m.initiative);
 
     var topbarButtons =
-      '<button data-action="duplicate-monster" data-id="' + m.id + '">Duplicate</button>' +
-      '<button data-action="export-monster" data-id="' + m.id + '">Export</button>' +
-      '<button data-action="edit-monster" data-id="' + m.id + '">Edit</button>' +
-      '<button class="danger" data-action="delete-monster" data-id="' + m.id + '">Delete</button>';
+      '<button data-action="duplicate-monster" data-id="' + esc(m.id) + '">Duplicate</button>' +
+      '<button data-action="export-monster" data-id="' + esc(m.id) + '">Export</button>' +
+      '<button data-action="edit-monster" data-id="' + esc(m.id) + '">Edit</button>' +
+      '<button class="danger" data-action="delete-monster" data-id="' + esc(m.id) + '">Delete</button>';
     el.innerHTML =
       '<div class="sb-card">' +
         '<div class="sb-topbar">' + topbarButtons + '</div>' +
