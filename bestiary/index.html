@@ -1454,10 +1454,21 @@
   }
 
   var bgEditTopZ = 1;
+  // img.x/img.y are always viewport-relative (they're applied via
+  // background-position under background-attachment:fixed, which is
+  // viewport-relative) - this converts to canvas-local coordinates only for
+  // on-screen placement while editing, since #bgEditCanvas sits below the
+  // topbar and isn't flush with the viewport's top-left.
+  function bgCanvasOffset(){
+    var r = document.getElementById('bgEditCanvas').getBoundingClientRect();
+    return {left: r.left, top: r.top};
+  }
+
   function renderBgEditCanvas(){
     var canvas = document.getElementById('bgEditCanvas');
+    var off = bgCanvasOffset();
     canvas.innerHTML = state.bgImages.map(function(img, i){
-      return '<div class="bg-image-item" id="bgimg_' + esc(img.id) + '" style="left:' + img.x + 'px;top:' + img.y + 'px;width:' + img.w + 'px;height:' + img.h + 'px;z-index:' + (i + 1) + ';">' +
+      return '<div class="bg-image-item" id="bgimg_' + esc(img.id) + '" style="left:' + (img.x - off.left) + 'px;top:' + (img.y - off.top) + 'px;width:' + img.w + 'px;height:' + img.h + 'px;z-index:' + (i + 1) + ';">' +
         '<img src="' + esc(img.src) + '" draggable="false">' +
         '<button class="bg-image-remove" data-action="remove-bg-image" data-bg-id="' + esc(img.id) + '" title="Remove">×</button>' +
         '<div class="bg-image-resize" title="Drag to resize"></div>' +
@@ -1501,8 +1512,8 @@
       var y = Math.max(0, Math.min(e.clientY - canvasRect.top - offsetY, canvasRect.height - el.offsetHeight));
       el.style.left = x + 'px';
       el.style.top = y + 'px';
-      imgData.x = Math.round(x);
-      imgData.y = Math.round(y);
+      imgData.x = Math.round(x + canvasRect.left);
+      imgData.y = Math.round(y + canvasRect.top);
     });
     function endDrag(){
       if(!dragging) return;
@@ -3890,7 +3901,8 @@
     reader.onload = function(){
       downscaleImage(reader.result, 1600, function(src){
         var cascade = (state.bgImages.length % 6) * 30;
-        state.bgImages.push({id: uid(), src: src, x: 40 + cascade, y: 40 + cascade, w: 260, h: 200});
+        var off = bgCanvasOffset();
+        state.bgImages.push({id: uid(), src: src, x: off.left + 40 + cascade, y: off.top + 40 + cascade, w: 260, h: 200});
         saveBgImages();
         applyBgImages();
         if(state.bgEditMode) renderBgEditCanvas();
