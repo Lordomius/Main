@@ -278,26 +278,45 @@
   }
   .enc-remove-btn:hover{color:var(--fumble-color);}
 
-  .enc-instances{display:flex;flex-wrap:wrap;gap:10px;padding:10px;}
-  .enc-instance{
-    background:var(--card-bg);border:1px solid var(--gold);border-radius:4px;padding:10px 12px;
-    width:290px;flex-shrink:0;font-size:13px;
+  .enc-instance-list{display:flex;flex-wrap:wrap;gap:8px;padding:10px;}
+  .enc-instance-chip{
+    display:flex;align-items:center;background:var(--card-bg);border:1px solid var(--gold);border-radius:16px;
+    overflow:hidden;
   }
-  .enc-instance-head{display:flex;align-items:baseline;gap:6px;margin-bottom:6px;}
-  .enc-instance-name{font-family:var(--font-display);color:var(--crimson-bright);font-size:15px;cursor:pointer;flex-shrink:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  .enc-instance-name:hover{text-decoration:underline;}
-  .enc-instance-meta{color:var(--text-light-secondary);font-size:11.5px;margin-left:auto;flex-shrink:0;}
-  .enc-instance-remove{background:none;border:none;color:var(--text-light-secondary);font-size:15px;line-height:1;cursor:pointer;padding:0 0 0 2px;flex-shrink:0;}
-  .enc-instance-remove:hover{color:var(--fumble-color);}
-  .enc-instance .ability-grid{grid-template-columns:repeat(6,1fr);gap:3px;margin-bottom:6px;}
-  .enc-instance .ability-box{padding:4px 2px;font-size:11px;}
-  .enc-instance .ab-score{font-size:13px;}
-  .enc-instance .pillrow{margin-bottom:6px;gap:4px;}
-  .enc-instance .pill{padding:2px 7px;font-size:11.5px;}
-  .enc-instance .action-row{font-size:12px;margin-bottom:5px;}
-  .enc-instance .a-name{font-size:12.5px;}
-  .enc-instance .stamp{padding:2px 7px;font-size:11px;}
+  .enc-instance-chip.renaming{border-radius:4px;padding:2px;}
+  .enc-instance-chip-name{
+    background:none;border:none;color:var(--crimson-bright);font-family:var(--font-display);
+    font-size:14px;padding:6px 6px 6px 14px;cursor:pointer;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .enc-instance-chip-name:hover{text-decoration:underline;}
+  .enc-instance-chip-remove{
+    background:none;border:none;color:var(--text-light-secondary);font-size:14px;line-height:1;
+    cursor:pointer;padding:6px 12px 6px 4px;
+  }
+  .enc-instance-chip-remove:hover{color:var(--fumble-color);}
   .enc-empty{color:var(--parchment-darker);font-size:14px;padding:20px 4px;line-height:1.5;}
+
+  .instance-window-overlay{
+    position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;
+    z-index:250;padding:20px;
+  }
+  .instance-window{
+    background:var(--card-bg);border:3px solid var(--gold);border-radius:5px;
+    max-width:420px;width:100%;max-height:85vh;overflow-y:auto;box-shadow:0 10px 30px rgba(0,0,0,0.6);
+  }
+  .instance-window-head{
+    display:flex;justify-content:space-between;align-items:flex-start;gap:10px;
+    padding:16px 20px 12px;border-bottom:2px solid var(--crimson);
+  }
+  .instance-window-title{font-family:var(--font-name);font-variant:small-caps;font-size:24px;color:var(--crimson-bright);margin:0;}
+  .instance-window-sub{font-style:italic;font-size:13.5px;color:var(--text-light-secondary);margin:2px 0 0;}
+  .instance-window-actions{display:flex;gap:8px;flex-shrink:0;}
+  .instance-window-actions button{
+    background:transparent;border:1px solid var(--forest-light);color:var(--text-light-secondary);
+    padding:5px 10px;border-radius:3px;font-size:13px;cursor:pointer;
+  }
+  .instance-window-actions button:hover{background:var(--forest);color:#fff;}
+  .instance-window-body{padding:14px 20px 20px;}
 
   .catalog{
     width:230px;flex-shrink:0;background:var(--desk-light);
@@ -756,6 +775,22 @@
   </div>
 </div>
 
+<div class="instance-window-overlay" id="instanceWindowOverlay" style="display:none;">
+  <div class="instance-window">
+    <div class="instance-window-head">
+      <div>
+        <p class="instance-window-title" id="instanceWindowTitle"></p>
+        <p class="instance-window-sub" id="instanceWindowSub"></p>
+      </div>
+      <div class="instance-window-actions">
+        <button data-action="lookup-instance-online">Look up online</button>
+        <button data-action="close-instance-window">✕</button>
+      </div>
+    </div>
+    <div class="instance-window-body" id="instanceWindowBody"></div>
+  </div>
+</div>
+
 <script>
 (function(){
   var STORAGE_KEY = 'dndBestiaryLibrary_v1';
@@ -794,6 +829,7 @@
     activeEncounterId: null,
     renamingEncounterId: null,
     renamingInstanceId: null,
+    instanceWindowId: null,
     encounterOpen: false
   };
 
@@ -1759,49 +1795,20 @@
     }).join('');
   }
 
-  function encSkillsHtml(m, label){
-    return (m.skills || []).map(function(s){
-      return '<button class="pill" data-action="roll-skill" data-bonus="' + s.bonus + '" data-label="' + esc(label) + ' — ' + esc(s.name) + '">' + esc(s.name) + ' ' + fmt(s.bonus) + '</button>';
-    }).join('');
-  }
-
-  function encActionsHtml(m, label){
-    return (m.actions || []).map(function(a){
-      var rolls = '';
-      if(a.toHit !== null && a.toHit !== undefined && a.toHit !== ''){
-        rolls += '<button class="stamp" data-action="roll-attack" data-bonus="' + a.toHit + '" data-label="' + esc(label) + ' — ' + esc(a.name) + ' to hit">' + fmt(Number(a.toHit)) + ' to hit</button>';
-      }
-      if(a.damage){
-        rolls += '<button class="stamp dmg" data-action="roll-damage" data-dice="' + esc(a.damage) + '" data-typelabel="' + esc(a.damageType||'') + '" data-label="' + esc(label) + ' — ' + esc(a.name) + ' damage">' + esc(a.damage) + (a.damageType ? (' ' + esc(a.damageType)) : '') + '</button>';
-      }
-      if(!rolls) return '';
-      return '<div class="action-row"><span class="a-name">' + esc(a.name) + '</span><div class="action-rolls">' + rolls + '</div></div>';
-    }).join('');
-  }
-
-  function encInstanceHtml(m, inst){
-    var label = inst.label;
-    var renaming = state.renamingInstanceId === inst.id;
-    var nameHtml = renaming ?
-      '<input type="text" class="enc-instance-rename-input" id="encInstanceRenameInput" value="' + esc(label) + '" maxlength="40">' :
-      '<span class="enc-instance-name" data-action="start-rename-instance" data-instance-id="' + esc(inst.id) + '" title="Click to rename">' + esc(label) + '</span>';
-    return '<div class="enc-instance">' +
-      '<div class="enc-instance-head">' +
-        nameHtml +
-        '<span class="enc-instance-meta">AC ' + esc(m.ac) + ' · HP ' + esc(m.hp) + '</span>' +
-        '<button class="enc-instance-remove" data-action="encounter-remove-instance" data-instance-id="' + esc(inst.id) + '" title="Remove this instance">×</button>' +
-      '</div>' +
-      '<div class="ability-grid">' + encAbilityBoxesHtml(m, label) + '</div>' +
-      '<div class="ability-grid save-grid">' + encSaveBoxesHtml(m, label) + '</div>' +
-      (m.skills && m.skills.length ? '<div class="pillrow">' + encSkillsHtml(m, label) + '</div>' : '') +
-      encActionsHtml(m, label) +
+  function encInstanceHtml(inst){
+    if(state.renamingInstanceId === inst.id){
+      return '<div class="enc-instance-chip renaming"><input type="text" class="enc-instance-rename-input" id="encInstanceRenameInput" value="' + esc(inst.label) + '" maxlength="40"></div>';
+    }
+    return '<div class="enc-instance-chip">' +
+      '<button class="enc-instance-chip-name" data-action="open-instance-window" data-instance-id="' + esc(inst.id) + '" title="Click to open · right-click to rename">' + esc(inst.label) + '</button>' +
+      '<button class="enc-instance-chip-remove" data-action="encounter-remove-instance" data-instance-id="' + esc(inst.id) + '" title="Remove this instance">×</button>' +
     '</div>';
   }
 
   function encGroupHtml(group){
     var m = getMonster(group.monsterId);
     if(!m) return '';
-    var instances = group.instances.map(function(inst){ return encInstanceHtml(m, inst); }).join('');
+    var instances = group.instances.map(encInstanceHtml).join('');
     return '<div class="enc-group">' +
       '<div class="enc-group-head">' +
         '<span class="enc-group-name">' + esc(m.name) + '</span>' +
@@ -1812,8 +1819,50 @@
         '</div>' +
         '<button class="enc-remove-btn" data-action="encounter-remove-group" data-monster-id="' + esc(group.monsterId) + '" title="Remove all instances of this creature">×</button>' +
       '</div>' +
-      '<div class="enc-instances">' + instances + '</div>' +
+      '<div class="enc-instance-list">' + instances + '</div>' +
     '</div>';
+  }
+
+  function findEncounterInstance(instanceId){
+    var enc = getActiveEncounter();
+    if(!enc) return null;
+    for(var i = 0; i < enc.groups.length; i++){
+      var g = enc.groups[i];
+      for(var j = 0; j < g.instances.length; j++){
+        if(g.instances[j].id === instanceId) return {group: g, instance: g.instances[j]};
+      }
+    }
+    return null;
+  }
+
+  function openInstanceWindow(instanceId){
+    state.instanceWindowId = instanceId;
+    renderInstanceWindow();
+  }
+
+  function closeInstanceWindow(){
+    state.instanceWindowId = null;
+    document.getElementById('instanceWindowOverlay').style.display = 'none';
+  }
+
+  function renderInstanceWindow(){
+    var overlay = document.getElementById('instanceWindowOverlay');
+    var found = state.instanceWindowId ? findEncounterInstance(state.instanceWindowId) : null;
+    var m = found ? getMonster(found.group.monsterId) : null;
+    if(!m){
+      state.instanceWindowId = null;
+      overlay.style.display = 'none';
+      return;
+    }
+    var label = found.instance.label;
+    document.getElementById('instanceWindowTitle').textContent = label;
+    document.getElementById('instanceWindowSub').textContent = m.size + ' ' + m.type + ' · CR ' + m.cr;
+    document.getElementById('instanceWindowBody').innerHTML =
+      '<div class="section-title">Ability checks</div>' +
+      '<div class="ability-grid">' + encAbilityBoxesHtml(m, label) + '</div>' +
+      '<div class="section-title">Saving throws</div>' +
+      '<div class="ability-grid save-grid">' + encSaveBoxesHtml(m, label) + '</div>';
+    overlay.style.display = 'flex';
   }
 
   function encTabsHtml(){
@@ -1851,6 +1900,7 @@
       var instInput = document.getElementById('encInstanceRenameInput');
       if(instInput){ instInput.focus(); instInput.select(); }
     }
+    if(state.instanceWindowId) renderInstanceWindow();
   }
 
   function addToEncounter(monsterId){
@@ -1961,10 +2011,19 @@
       var addGroup = addGroupEnc && addGroupEnc.groups.find(function(g){ return g.monsterId === t.getAttribute('data-monster-id'); });
       if(addGroup && addGroup.instances.length < ENCOUNTER_MAX_INSTANCES){
         var addMon = getMonster(addGroup.monsterId);
-        var n = addGroup.instances.length + 1;
-        addGroup.instances.push({id: uid(), label: (addMon ? addMon.name : 'Creature') + ' #' + n});
+        addGroup.instances.push({id: uid(), label: addMon ? addMon.name : 'Creature'});
         saveLibrary();
         renderEncounter();
+      }
+    } else if(action === 'open-instance-window'){
+      openInstanceWindow(t.getAttribute('data-instance-id'));
+    } else if(action === 'close-instance-window'){
+      closeInstanceWindow();
+    } else if(action === 'lookup-instance-online'){
+      var lookupFound = state.instanceWindowId ? findEncounterInstance(state.instanceWindowId) : null;
+      var lookupMon = lookupFound ? getMonster(lookupFound.group.monsterId) : null;
+      if(lookupMon){
+        window.open('https://www.google.com/search?q=' + encodeURIComponent(lookupMon.name + ' D&D 5e monster'), '_blank', 'noopener,noreferrer');
       }
     } else if(action === 'encounter-remove-instance'){
       var remInstEnc = getActiveEncounter();
@@ -2070,6 +2129,10 @@
 
   document.getElementById('catSearch').addEventListener('input', renderCatalog);
 
+  document.getElementById('instanceWindowOverlay').addEventListener('click', function(e){
+    if(e.target === e.currentTarget) closeInstanceWindow();
+  });
+
   document.getElementById('encPickerInput').addEventListener('input', function(e){
     var resultsEl = document.getElementById('encPickerResults');
     var q = e.target.value.trim().toLowerCase();
@@ -2148,6 +2211,8 @@
     } else if(e.target && e.target.id === 'encInstanceRenameInput'){
       if(e.key === 'Enter'){ renameInstance(state.renamingInstanceId, e.target.value); }
       else if(e.key === 'Escape'){ state.renamingInstanceId = null; renderEncounter(); }
+    } else if(e.key === 'Escape' && state.instanceWindowId){
+      closeInstanceWindow();
     }
   });
 
@@ -2195,9 +2260,9 @@
       var encId = e.target.closest('.enc-tab').getAttribute('data-encounter-id');
       menu.innerHTML = '<button data-action="start-rename-encounter" data-encounter-id="' + esc(encId) + '">Rename encounter</button>';
       showContextMenu(menu, e.clientX, e.clientY);
-    } else if(e.target.closest('.enc-instance-name')){
+    } else if(e.target.closest('.enc-instance-chip-name')){
       e.preventDefault();
-      var instId = e.target.closest('.enc-instance-name').getAttribute('data-instance-id');
+      var instId = e.target.closest('.enc-instance-chip-name').getAttribute('data-instance-id');
       menu.innerHTML = '<button data-action="start-rename-instance" data-instance-id="' + esc(instId) + '">Rename creature</button>';
       showContextMenu(menu, e.clientX, e.clientY);
     }
