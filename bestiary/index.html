@@ -762,7 +762,7 @@
         <div class="cat-filter-chips" id="filterTypeChips"></div>
       </div>
       <div class="cat-filter-group">
-        <div class="cat-filter-group-label">Features</div>
+        <div class="cat-filter-group-label">Features (must have all selected)</div>
         <div class="cat-filter-chips" id="filterFeatureChips"></div>
       </div>
       <div class="cat-filter-group">
@@ -1755,8 +1755,12 @@
         if(!state.filterTypes.some(function(t){ return types.indexOf(t) !== -1; })) return false;
       }
       if(state.filterFeatures.length){
+        // Features require ALL selected to match (a legendary creature with
+        // a lair should have both a legendary action AND a regional effect
+        // selected to show up), unlike Size/Type where selecting multiple
+        // values is a broadening OR (a creature can't be two sizes at once).
         var features = monsterFeatureTokens(m);
-        if(!state.filterFeatures.some(function(f){ return features.indexOf(f) !== -1; })) return false;
+        if(!state.filterFeatures.every(function(f){ return features.indexOf(f) !== -1; })) return false;
       }
       if(crRangeActive){
         var crNum = crToNumber(m.cr);
