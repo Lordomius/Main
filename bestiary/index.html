@@ -163,12 +163,13 @@
   .tb-btn:hover{background:var(--forest-dark);}
   .tb-btn.primary{border-color:var(--gold);color:var(--gold-light);}
   .tb-btn.primary:hover{background:var(--btn-primary-hover);}
+  .tb-btn.active{background:var(--forest);border-color:var(--gold);color:#fff;}
   .mode-toggle{display:flex;border:1px solid var(--forest-light);border-radius:3px;overflow:hidden;}
   .mode-toggle button{
     background:transparent;border:none;color:var(--parchment);padding:7px 12px;font-size:14px;
   }
   .mode-toggle button.active{background:var(--forest);color:#fff;}
-  #fileImportInput,#mdImportInput,#imageUploadInput,#bgImageInput{display:none;}
+  #imageUploadInput,#bgImageInput{display:none;}
 
   .settings-btn{
     background:transparent;border:1px solid var(--forest-light);color:var(--parchment);
@@ -219,6 +220,61 @@
   }
 
   .layout{display:flex;flex:1;min-height:0;}
+
+  .encounter-view{flex:1;min-height:0;display:flex;flex-direction:column;overflow-y:auto;padding:16px 24px;}
+  .enc-toolbar{display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-shrink:0;}
+  .enc-picker{position:relative;flex:1;max-width:420px;}
+  .enc-picker input{
+    width:100%;padding:8px 10px;border-radius:3px;border:1px solid var(--forest-light);
+    background:var(--desk);color:var(--parchment);font-size:14px;font-family:var(--font-body);
+  }
+  .enc-picker-results{
+    position:absolute;top:100%;left:0;right:0;z-index:50;margin-top:2px;max-height:280px;overflow-y:auto;
+    background:var(--desk-light);border:1px solid var(--gold);border-radius:4px;box-shadow:0 8px 24px rgba(0,0,0,0.5);
+  }
+  .enc-picker-result{
+    display:flex;justify-content:space-between;gap:8px;padding:7px 10px;cursor:pointer;font-size:13.5px;color:var(--parchment);
+  }
+  .enc-picker-result:hover{background:var(--forest-dark);}
+  .enc-picker-result .epr-meta{color:var(--text-light-secondary);font-size:12px;}
+  .enc-picker-empty{padding:8px 10px;font-size:12.5px;color:var(--text-light-secondary);font-style:italic;}
+  .enc-count-note{font-size:12.5px;color:var(--text-light-secondary);flex-shrink:0;}
+
+  .enc-group{
+    border:1px solid var(--forest-light);border-radius:5px;margin-bottom:16px;background:var(--card-bg-alt);
+  }
+  .enc-group-head{display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid var(--forest-light);}
+  .enc-group-name{font-family:var(--font-display);color:var(--gold-light);font-size:16px;flex:1;}
+  .enc-group-meta{font-size:12.5px;color:var(--text-light-secondary);}
+  .enc-count-controls{display:flex;align-items:center;gap:4px;}
+  .enc-count-btn{
+    width:22px;height:22px;border-radius:3px;border:1px solid var(--forest-light);background:transparent;
+    color:var(--parchment);cursor:pointer;font-size:14px;line-height:1;padding:0;
+  }
+  .enc-count-btn:hover{background:var(--forest-dark);}
+  .enc-count-val{min-width:16px;text-align:center;font-size:13.5px;color:var(--parchment);}
+  .enc-remove-btn{
+    background:none;border:none;color:var(--text-light-secondary);font-size:16px;line-height:1;cursor:pointer;padding:0 2px;
+  }
+  .enc-remove-btn:hover{color:var(--fumble-color);}
+
+  .enc-instances{display:flex;flex-wrap:wrap;gap:10px;padding:10px;}
+  .enc-instance{
+    background:var(--card-bg);border:1px solid var(--gold);border-radius:4px;padding:10px 12px;
+    width:290px;flex-shrink:0;font-size:13px;
+  }
+  .enc-instance-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;}
+  .enc-instance-name{font-family:var(--font-display);color:var(--crimson-bright);font-size:15px;}
+  .enc-instance-meta{color:var(--text-light-secondary);font-size:11.5px;}
+  .enc-instance .ability-grid{grid-template-columns:repeat(6,1fr);gap:3px;margin-bottom:6px;}
+  .enc-instance .ability-box{padding:4px 2px;font-size:11px;}
+  .enc-instance .ab-score{font-size:13px;}
+  .enc-instance .pillrow{margin-bottom:6px;gap:4px;}
+  .enc-instance .pill{padding:2px 7px;font-size:11.5px;}
+  .enc-instance .action-row{font-size:12px;margin-bottom:5px;}
+  .enc-instance .a-name{font-size:12.5px;}
+  .enc-instance .stamp{padding:2px 7px;font-size:11px;}
+  .enc-empty{color:var(--parchment-darker);font-size:14px;padding:20px 4px;line-height:1.5;}
 
   .catalog{
     width:230px;flex-shrink:0;background:var(--desk-light);
@@ -508,16 +564,6 @@
     z-index:300;padding:20px;
   }
 
-  .drop-overlay{
-    position:fixed;inset:0;z-index:500;display:none;align-items:center;justify-content:center;
-    background:rgba(0,0,0,0.7);border:4px dashed var(--gold);pointer-events:none;
-  }
-  .drop-overlay.active{display:flex;}
-  .drop-overlay-inner{
-    font-family:var(--font-display);font-size:26px;color:var(--gold-light);
-    padding:26px 46px;border:2px solid var(--gold);border-radius:10px;background:var(--card-bg);
-    text-align:center;
-  }
   .confirm-box{
     background:var(--card-bg);border:3px solid var(--gold);border-radius:6px;
     max-width:400px;width:100%;padding:20px 24px;box-shadow:0 10px 30px rgba(0,0,0,0.6);
@@ -569,9 +615,7 @@
   <button class="settings-btn" id="settingsBtn" data-action="toggle-settings" title="Settings">⚙</button>
   <h1>Bestiary</h1>
   <button class="tb-btn primary" data-action="new-monster">+ New monster</button>
-  <button class="tb-btn" data-action="trigger-import">Import JSON</button>
-  <button class="tb-btn" data-action="trigger-import-md">Import Markdown</button>
-  <button class="tb-btn" data-action="export-all">Export library</button>
+  <button class="tb-btn" id="encounterToggleBtn" data-action="toggle-encounter">Encounter</button>
   <div class="spacer"></div>
   <div class="mode-toggle" id="modeToggle">
     <button data-mode="normal" class="active">Normal</button>
@@ -596,16 +640,11 @@
   <div class="repo-cfg-row"><label>Path</label><input type="text" id="repoCfgPath"></div>
   <button class="settings-btn-full" data-action="save-repo-config">Save &amp; refresh</button>
 </div>
-<input type="file" id="fileImportInput" accept="application/json,.json">
-<input type="file" id="mdImportInput" accept=".md,text/markdown,text/plain" multiple>
 <input type="file" id="imageUploadInput" accept="image/*">
 <input type="file" id="bgImageInput" accept="image/*">
-<div class="drop-overlay" id="dropOverlay">
-  <div class="drop-overlay-inner">Drop .md stat block file(s) to import</div>
-</div>
 <div class="context-menu" id="contextMenu" style="display:none;"></div>
 
-<div class="layout">
+<div class="layout" id="mainLayout">
   <aside class="catalog" id="catalogPanel">
     <input class="cat-search" id="catSearch" placeholder="Search library…">
     <div class="cat-folder-tools">
@@ -649,6 +688,17 @@
   <main class="stage" id="stageMain">
     <div class="stage-inner" id="stageInner"></div>
   </main>
+</div>
+
+<div class="encounter-view" id="encounterView" style="display:none;">
+  <div class="enc-toolbar">
+    <div class="enc-picker">
+      <input type="text" id="encPickerInput" placeholder="Add a creature to the encounter…" autocomplete="off">
+      <div class="enc-picker-results" id="encPickerResults" style="display:none;"></div>
+    </div>
+    <span class="enc-count-note" id="encCountNote"></span>
+  </div>
+  <div id="encList"></div>
 </div>
 
 <div class="rolllog" id="rolllogPanel">
@@ -715,7 +765,9 @@
     filterCrMinIdx: 0,
     filterCrMaxIdx: CR_SCALE.length - 1,
     filtersOpen: false,
-    catalogWidth: 230
+    catalogWidth: 230,
+    encounter: [],
+    encounterOpen: false
   };
 
   var CREATURE_SIZES = ['tiny','small','medium','large','huge','gargantuan'];
@@ -798,8 +850,12 @@
     addLog(label, breakdown.join(' + ') || expr, total, false, false, suffix);
   }
 
+  function currentLogKey(){
+    return state.encounterOpen ? '__encounter__' : (state.currentId || '__unassigned__');
+  }
+
   function addLog(label, detail, total, isCrit, isFumble, suffix){
-    var key = state.currentId || '__unassigned__';
+    var key = currentLogKey();
     if(!state.logs[key]) state.logs[key] = [];
     state.logs[key].unshift({label:label, detail:detail, total:total, isCrit:!!isCrit, isFumble:!!isFumble, suffix:suffix||''});
     if(state.logs[key].length > 60) state.logs[key].pop();
@@ -810,7 +866,7 @@
 
   function renderLog(){
     var el = document.getElementById('logList');
-    var key = state.currentId || '__unassigned__';
+    var key = currentLogKey();
     var entries = state.logs[key] || [];
     if(!entries.length){
       el.innerHTML = '<div class="log-empty">No rolls yet — click any stat, save, skill, or attack.</div>';
@@ -831,7 +887,7 @@
         sortMode: state.sortMode, repoLibraryConfig: state.repoLibraryConfig, repoOverrides: state.repoOverrides,
         filterSizes: state.filterSizes, filterTypes: state.filterTypes,
         filterCrMinIdx: state.filterCrMinIdx, filterCrMaxIdx: state.filterCrMaxIdx,
-        catalogWidth: state.catalogWidth
+        catalogWidth: state.catalogWidth, encounter: state.encounter
       }));
     }catch(err){
       console.error('Could not save library', err);
@@ -1064,6 +1120,7 @@
         state.filterCrMinIdx = (data && typeof data.filterCrMinIdx === 'number') ? data.filterCrMinIdx : 0;
         state.filterCrMaxIdx = (data && typeof data.filterCrMaxIdx === 'number') ? data.filterCrMaxIdx : CR_SCALE.length - 1;
         state.catalogWidth = (data && typeof data.catalogWidth === 'number') ? data.catalogWidth : 230;
+        state.encounter = Array.isArray(data && data.encounter) ? data.encounter : [];
         return;
       }
     }catch(err){
@@ -1537,9 +1594,136 @@
   }
 
   function render(){
-    renderCatalog();
-    renderStage();
+    document.getElementById('mainLayout').style.display = state.encounterOpen ? 'none' : 'flex';
+    document.getElementById('encounterView').style.display = state.encounterOpen ? 'flex' : 'none';
+    var encBtn = document.getElementById('encounterToggleBtn');
+    if(encBtn) encBtn.classList.toggle('active', state.encounterOpen);
+    if(state.encounterOpen){
+      renderEncounter();
+    } else {
+      renderCatalog();
+      renderStage();
+    }
     renderLog();
+  }
+
+  // --- Encounter view --------------------------------------------------
+  // A lighter-weight companion to the normal single-monster stage: pick up
+  // to 10 different creatures, each with 1-5 instances, and get every
+  // instance's rollable ability/save/skill/attack buttons on screen at
+  // once so a multi-monster fight doesn't mean re-selecting a monster in
+  // the catalog between every roll. No HP/turn tracking by design - it's a
+  // roster, not a full initiative tracker.
+  var ENCOUNTER_MAX_GROUPS = 10;
+  var ENCOUNTER_MAX_COUNT = 5;
+
+  function allKnownMonsters(){
+    return state.monsters.concat(state.repoMonsters);
+  }
+
+  function encAbilityBoxesHtml(m, label){
+    var abilities = ['str','dex','con','int','wis','cha'];
+    return abilities.map(function(a){
+      var score = m.abilities[a] || 10;
+      var md = abilityMod(score);
+      return '<div class="ability-box" data-action="roll-ability" data-mod="' + md + '" data-label="' + esc(label) + ' — ' + a.toUpperCase() + ' check">' +
+        '<div class="ab-name">' + a.toUpperCase() + '</div>' +
+        '<div class="ab-score">' + score + '</div>' +
+        '<div class="ab-mod">' + fmt(md) + '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  function encSaveBoxesHtml(m, label){
+    var abilities = ['str','dex','con','int','wis','cha'];
+    return abilities.map(function(a){
+      var score = m.abilities[a] || 10;
+      var md = abilityMod(score);
+      var override = null;
+      (m.saves || []).forEach(function(s){
+        if(s.name && String(s.name).trim().toLowerCase().slice(0, 3) === a){ override = s.bonus; }
+      });
+      var proficient = override !== null;
+      var bonus = proficient ? override : md;
+      var cls = 'ability-box save-box' + (proficient ? ' proficient' : '');
+      return '<div class="' + cls + '" data-action="roll-save" data-bonus="' + bonus + '" data-label="' + esc(label) + ' — ' + a.toUpperCase() + ' save">' +
+        '<div class="ab-name">' + a.toUpperCase() + (proficient ? ' <span class="prof-dot" title="Proficient">●</span>' : '') + '</div>' +
+        '<div class="ab-mod save-mod">' + fmt(bonus) + '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  function encSkillsHtml(m, label){
+    return (m.skills || []).map(function(s){
+      return '<button class="pill" data-action="roll-skill" data-bonus="' + s.bonus + '" data-label="' + esc(label) + ' — ' + esc(s.name) + '">' + esc(s.name) + ' ' + fmt(s.bonus) + '</button>';
+    }).join('');
+  }
+
+  function encActionsHtml(m, label){
+    return (m.actions || []).map(function(a){
+      var rolls = '';
+      if(a.toHit !== null && a.toHit !== undefined && a.toHit !== ''){
+        rolls += '<button class="stamp" data-action="roll-attack" data-bonus="' + a.toHit + '" data-label="' + esc(label) + ' — ' + esc(a.name) + ' to hit">' + fmt(Number(a.toHit)) + ' to hit</button>';
+      }
+      if(a.damage){
+        rolls += '<button class="stamp dmg" data-action="roll-damage" data-dice="' + esc(a.damage) + '" data-typelabel="' + esc(a.damageType||'') + '" data-label="' + esc(label) + ' — ' + esc(a.name) + ' damage">' + esc(a.damage) + (a.damageType ? (' ' + esc(a.damageType)) : '') + '</button>';
+      }
+      if(!rolls) return '';
+      return '<div class="action-row"><span class="a-name">' + esc(a.name) + '</span><div class="action-rolls">' + rolls + '</div></div>';
+    }).join('');
+  }
+
+  function encInstanceHtml(m, index){
+    var label = m.name + ' #' + (index + 1);
+    return '<div class="enc-instance">' +
+      '<div class="enc-instance-head">' +
+        '<span class="enc-instance-name">' + esc(label) + '</span>' +
+        '<span class="enc-instance-meta">AC ' + esc(m.ac) + ' · HP ' + esc(m.hp) + '</span>' +
+      '</div>' +
+      '<div class="ability-grid">' + encAbilityBoxesHtml(m, label) + '</div>' +
+      '<div class="ability-grid save-grid">' + encSaveBoxesHtml(m, label) + '</div>' +
+      (m.skills && m.skills.length ? '<div class="pillrow">' + encSkillsHtml(m, label) + '</div>' : '') +
+      encActionsHtml(m, label) +
+    '</div>';
+  }
+
+  function encGroupHtml(entry){
+    var m = getMonster(entry.monsterId);
+    if(!m) return '';
+    var instances = '';
+    for(var i = 0; i < entry.count; i++) instances += encInstanceHtml(m, i);
+    return '<div class="enc-group">' +
+      '<div class="enc-group-head">' +
+        '<span class="enc-group-name">' + esc(m.name) + '</span>' +
+        '<span class="enc-group-meta">CR ' + esc(m.cr) + ' · ' + esc(m.type) + '</span>' +
+        '<div class="enc-count-controls">' +
+          '<button class="enc-count-btn" data-action="encounter-count-dec" data-monster-id="' + esc(entry.monsterId) + '" title="Fewer instances">−</button>' +
+          '<span class="enc-count-val">×' + entry.count + '</span>' +
+          '<button class="enc-count-btn" data-action="encounter-count-inc" data-monster-id="' + esc(entry.monsterId) + '" title="More instances (max ' + ENCOUNTER_MAX_COUNT + ')">+</button>' +
+        '</div>' +
+        '<button class="enc-remove-btn" data-action="encounter-remove" data-monster-id="' + esc(entry.monsterId) + '" title="Remove from encounter">×</button>' +
+      '</div>' +
+      '<div class="enc-instances">' + instances + '</div>' +
+    '</div>';
+  }
+
+  function renderEncounter(){
+    var list = document.getElementById('encList');
+    if(!state.encounter.length){
+      list.innerHTML = '<div class="enc-empty">No creatures in the encounter yet. Search above to add up to ' + ENCOUNTER_MAX_GROUPS + ' different creatures (up to ' + ENCOUNTER_MAX_COUNT + ' instances each).</div>';
+    } else {
+      list.innerHTML = state.encounter.map(encGroupHtml).join('');
+    }
+    var note = document.getElementById('encCountNote');
+    if(note) note.textContent = state.encounter.length + ' / ' + ENCOUNTER_MAX_GROUPS + ' creatures';
+  }
+
+  function addToEncounter(monsterId){
+    if(state.encounter.some(function(e){ return e.monsterId === monsterId; })) return;
+    if(state.encounter.length >= ENCOUNTER_MAX_GROUPS) return;
+    state.encounter.push({monsterId: monsterId, count: 1});
+    saveLibrary();
+    renderEncounter();
   }
 
   document.addEventListener('click', function(e){
@@ -1610,6 +1794,26 @@
       state.filterCrMaxIdx = CR_SCALE.length - 1;
       saveLibrary();
       renderCatalog();
+    } else if(action === 'toggle-encounter'){
+      state.encounterOpen = !state.encounterOpen;
+      render();
+    } else if(action === 'encounter-pick'){
+      addToEncounter(t.getAttribute('data-monster-id'));
+      document.getElementById('encPickerInput').value = '';
+      document.getElementById('encPickerResults').style.display = 'none';
+    } else if(action === 'encounter-count-inc'){
+      var incId = t.getAttribute('data-monster-id');
+      var incEntry = state.encounter.find(function(x){ return x.monsterId === incId; });
+      if(incEntry && incEntry.count < ENCOUNTER_MAX_COUNT){ incEntry.count++; saveLibrary(); renderEncounter(); }
+    } else if(action === 'encounter-count-dec'){
+      var decId = t.getAttribute('data-monster-id');
+      var decEntry = state.encounter.find(function(x){ return x.monsterId === decId; });
+      if(decEntry && decEntry.count > 1){ decEntry.count--; saveLibrary(); renderEncounter(); }
+    } else if(action === 'encounter-remove'){
+      var remId = t.getAttribute('data-monster-id');
+      state.encounter = state.encounter.filter(function(x){ return x.monsterId !== remId; });
+      saveLibrary();
+      renderEncounter();
     } else if(action === 'delete-folder'){
       deleteFolder(t.getAttribute('data-folder-id'));
       e.stopPropagation();
@@ -1673,15 +1877,8 @@
     } else if(action === 'export-monster'){
       var m = getMonster(t.getAttribute('data-id'));
       if(m) downloadJSON({version:1, monsters:[m]}, (m.name.replace(/[^a-z0-9]+/gi,'_').toLowerCase() || 'monster') + '.json');
-    } else if(action === 'export-all'){
-      downloadJSON({version:1, monsters: state.monsters}, 'bestiary-export.json');
-    } else if(action === 'trigger-import'){
-      document.getElementById('fileImportInput').click();
-    } else if(action === 'trigger-import-md'){
-      document.getElementById('mdImportInput').click();
     } else if(action === 'clear-log'){
-      var logKey = state.currentId || '__unassigned__';
-      state.logs[logKey] = [];
+      state.logs[currentLogKey()] = [];
       renderLog();
     } else if(action === 'close-rolllog'){
       document.getElementById('rolllogPanel').style.display = 'none';
@@ -1701,6 +1898,38 @@
   });
 
   document.getElementById('catSearch').addEventListener('input', renderCatalog);
+
+  document.getElementById('encPickerInput').addEventListener('input', function(e){
+    var resultsEl = document.getElementById('encPickerResults');
+    var q = e.target.value.trim().toLowerCase();
+    if(!q){ resultsEl.style.display = 'none'; resultsEl.innerHTML = ''; return; }
+    if(state.encounter.length >= ENCOUNTER_MAX_GROUPS){
+      resultsEl.innerHTML = '<div class="enc-picker-empty">Encounter is full (' + ENCOUNTER_MAX_GROUPS + ' creatures max). Remove one to add another.</div>';
+      resultsEl.style.display = 'block';
+      return;
+    }
+    var alreadyIn = {};
+    state.encounter.forEach(function(x){ alreadyIn[x.monsterId] = true; });
+    var matches = allKnownMonsters().filter(function(m){
+      return !alreadyIn[m.id] && m.name.toLowerCase().indexOf(q) !== -1;
+    }).slice(0, 20);
+    if(!matches.length){
+      resultsEl.innerHTML = '<div class="enc-picker-empty">No matches.</div>';
+    } else {
+      resultsEl.innerHTML = matches.map(function(m){
+        return '<div class="enc-picker-result" data-action="encounter-pick" data-monster-id="' + esc(m.id) + '">' +
+          '<span>' + esc(m.name) + '</span><span class="epr-meta">CR ' + esc(m.cr) + '</span>' +
+        '</div>';
+      }).join('');
+    }
+    resultsEl.style.display = 'block';
+  });
+
+  document.addEventListener('click', function(e){
+    if(!e.target.closest('.enc-picker')){
+      document.getElementById('encPickerResults').style.display = 'none';
+    }
+  });
 
   document.getElementById('catSortSelect').addEventListener('change', function(e){
     state.sortMode = e.target.value;
@@ -1844,31 +2073,6 @@
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     URL.revokeObjectURL(url);
   }
-
-  document.getElementById('fileImportInput').addEventListener('change', function(e){
-    var file = e.target.files[0];
-    if(!file) return;
-    var reader = new FileReader();
-    reader.onload = function(){
-      try{
-        var data = JSON.parse(reader.result);
-        var incoming = Array.isArray(data) ? data : (data.monsters || [data]);
-        incoming.forEach(function(m){
-          m.id = uid();
-          state.monsters.push(m);
-        });
-        if(incoming.length){
-          state.currentId = state.monsters[state.monsters.length-1].id;
-        }
-        saveLibrary();
-        render();
-      }catch(err){
-        alert('Could not read that file. Make sure it is a JSON file exported from this app.');
-      }
-    };
-    reader.readAsText(file);
-    e.target.value = '';
-  });
 
   // ---- Markdown stat block import ----
   // Understands the common "Homebrewery-style" 5e markdown stat block format
@@ -2680,85 +2884,9 @@
     return splitMarkdownBlocks(text).map(parseMarkdownMonster).filter(function(m){ return m; });
   }
 
-  function readFileAsText(file){
-    return new Promise(function(resolve){
-      var reader = new FileReader();
-      reader.onload = function(){ resolve(reader.result); };
-      reader.onerror = function(){ resolve(null); };
-      reader.readAsText(file);
-    });
-  }
-
-  function importMarkdownFiles(fileList){
-    var files = Array.prototype.filter.call(fileList, function(f){
-      return /\.md$/i.test(f.name) || f.type === 'text/markdown' || f.type === 'text/plain' || f.type === '';
-    });
-    if(!files.length){
-      alert('No .md files found to import. Drop or select files with a .md extension.');
-      return;
-    }
-    Promise.all(files.map(function(file){
-      return readFileAsText(file).then(function(text){ return {name: file.name, text: text}; });
-    })).then(function(results){
-      var allImported = [];
-      var failedFiles = [];
-      results.forEach(function(r){
-        if(r.text === null){ failedFiles.push(r.name); return; }
-        var imported;
-        try{ imported = parseMarkdownLibrary(r.text); }catch(err){ console.error('Markdown import failed for ' + r.name, err); imported = []; }
-        if(!imported.length){ failedFiles.push(r.name); return; }
-        allImported = allImported.concat(imported);
-      });
-      if(allImported.length){
-        allImported.forEach(function(m){ state.monsters.push(m); });
-        state.currentId = allImported[allImported.length - 1].id;
-        saveLibrary();
-        render();
-      }
-      var msg = '';
-      if(allImported.length){
-        msg = 'Imported ' + allImported.length + ' creature' + (allImported.length === 1 ? '' : 's') + ': ' + allImported.map(function(m){ return m.name; }).join(', ') + '.';
-      }
-      if(failedFiles.length){
-        msg += (msg ? '\n\n' : '') + 'Could not find a recognizable stat block in: ' + failedFiles.join(', ') + '.';
-      }
-      if(!msg) msg = 'Could not find a recognizable stat block in that file. Expected a 5e-style markdown stat block (name heading, "Armor Class", "Hit Points", ability score table, etc.).';
-      else if(allImported.length) msg += '\n\nReview the stat block(s) and use Edit to fix anything the parser missed.';
-      alert(msg);
-    });
-  }
-
-  document.getElementById('mdImportInput').addEventListener('change', function(e){
-    if(e.target.files.length) importMarkdownFiles(e.target.files);
-    e.target.value = '';
-  });
-
-  var dragDepth = 0;
   function dragHasFiles(e){
     return e.dataTransfer && e.dataTransfer.types && Array.prototype.indexOf.call(e.dataTransfer.types, 'Files') !== -1;
   }
-  window.addEventListener('dragenter', function(e){
-    if(!dragHasFiles(e)) return;
-    e.preventDefault();
-    dragDepth++;
-    document.getElementById('dropOverlay').classList.add('active');
-  });
-  window.addEventListener('dragover', function(e){
-    if(!dragHasFiles(e)) return;
-    e.preventDefault();
-  });
-  window.addEventListener('dragleave', function(e){
-    if(!dragHasFiles(e)) return;
-    dragDepth = Math.max(0, dragDepth - 1);
-    if(dragDepth === 0) document.getElementById('dropOverlay').classList.remove('active');
-  });
-  window.addEventListener('drop', function(e){
-    if(!dragHasFiles(e)){ return; }
-    e.preventDefault();
-    dragDepth = 0;
-    document.getElementById('dropOverlay').classList.remove('active');
-    if(e.dataTransfer.files && e.dataTransfer.files.length) importMarkdownFiles(e.dataTransfer.files);
-  });
 
   var ABILITY_LABELS = {str:'Strength', dex:'Dexterity', con:'Constitution', int:'Intelligence', wis:'Wisdom', cha:'Charisma'};
 
