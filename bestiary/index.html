@@ -224,11 +224,14 @@
   .encounter-view{flex:1;min-height:0;display:flex;flex-direction:column;overflow-y:auto;padding:16px 24px;}
   .enc-tabs{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:12px;flex-shrink:0;}
   .enc-tab{
-    display:flex;align-items:center;gap:8px;background:transparent;border:1px solid var(--forest-light);
+    display:flex;align-items:center;gap:7px;background:transparent;border:1px solid var(--forest-light);
     border-radius:4px 4px 0 0;padding:6px 10px;cursor:pointer;font-family:var(--font-body);font-size:13.5px;color:var(--text-light-secondary);
   }
   .enc-tab:hover{background:var(--forest-dark);}
   .enc-tab.active{border-color:var(--gold);color:var(--gold-light);background:var(--card-bg-alt);border-bottom:2px solid var(--gold);}
+  .enc-tab-name{overflow-wrap:break-word;}
+  .enc-tab-rename-icon{color:var(--text-light-secondary);font-size:12px;line-height:1;}
+  .enc-tab-rename-icon:hover{color:var(--gold-light);}
   .enc-tab-close{color:var(--text-light-secondary);font-size:14px;line-height:1;}
   .enc-tab-close:hover{color:var(--fumble-color);}
   .enc-tab-add{
@@ -1909,8 +1912,9 @@
       if(state.renamingEncounterId === enc.id){
         return '<span class="enc-tab' + active + '"><input type="text" class="enc-tab-rename-input" id="encTabRenameInput" value="' + esc(enc.name) + '" maxlength="30"></span>';
       }
-      return '<button class="enc-tab' + active + '" data-action="select-encounter" data-encounter-id="' + esc(enc.id) + '" title="Right-click to rename">' +
+      return '<button class="enc-tab' + active + '" data-action="select-encounter" data-encounter-id="' + esc(enc.id) + '">' +
         '<span class="enc-tab-name">' + esc(enc.name) + '</span>' +
+        '<span class="enc-tab-rename-icon" data-action="start-rename-encounter" data-encounter-id="' + esc(enc.id) + '" title="Rename encounter">✎</span>' +
         '<span class="enc-tab-close" data-action="delete-encounter" data-encounter-id="' + esc(enc.id) + '" title="Delete encounter">×</span>' +
       '</button>';
     }).join('') + (state.encounters.length < ENCOUNTER_MAX_ENCOUNTERS ? '<button class="enc-tab-add" data-action="new-encounter" title="New encounter (max ' + ENCOUNTER_MAX_ENCOUNTERS + ')">+</button>' : '');
