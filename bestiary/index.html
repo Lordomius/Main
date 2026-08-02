@@ -798,10 +798,34 @@
   <div class="enc-tabs" id="encTabs"></div>
   <div class="enc-toolbar">
     <div class="enc-picker">
-      <input type="text" id="encPickerInput" placeholder="Add a creature to the encounter…" autocomplete="off">
+      <input type="text" id="encPickerInput" placeholder="Search creatures to add…" autocomplete="off">
       <div class="enc-picker-results" id="encPickerResults" style="display:none;"></div>
     </div>
+    <button class="cat-filter-btn" id="encFilterBtn" data-action="toggle-enc-filters" title="Filter by size, type, features &amp; CR">Filters<span class="filter-badge" id="encFilterBadge" style="display:none;">0</span></button>
+    <button class="cat-refresh-btn" data-action="refresh-enc-search" title="Reset search &amp; filters">⟳</button>
     <span class="enc-count-note" id="encCountNote"></span>
+  </div>
+  <div class="cat-filter-panel" id="encFilterPanel" style="display:none;">
+    <div class="cat-filter-group">
+      <div class="cat-filter-group-label">Size</div>
+      <div class="cat-filter-chips" id="encFilterSizeChips"></div>
+    </div>
+    <div class="cat-filter-group">
+      <div class="cat-filter-group-label">Type</div>
+      <div class="cat-filter-chips" id="encFilterTypeChips"></div>
+    </div>
+    <div class="cat-filter-group">
+      <div class="cat-filter-group-label">Features (must have all selected)</div>
+      <div class="cat-filter-chips" id="encFilterFeatureChips"></div>
+    </div>
+    <div class="cat-filter-group">
+      <div class="cat-filter-group-label">Challenge rating: <span id="encCrRangeLabel">0 – 30</span></div>
+      <div class="cr-slider">
+        <input type="range" id="encCrMinSlider" min="0" max="33" step="1" value="0">
+        <input type="range" id="encCrMaxSlider" min="0" max="33" step="1" value="33">
+      </div>
+    </div>
+    <button type="button" class="cat-filter-clear" data-action="clear-enc-filters">Clear filters</button>
   </div>
   <div id="encList"></div>
 </div>
@@ -932,7 +956,16 @@
     spellFilterLevels: [],
     spellFilterSchools: [],
     spellFilterComponents: [],
-    spellFiltersOpen: false
+    spellFiltersOpen: false,
+    // Encounter Builder's own copy of the bestiary's search+filters, kept
+    // deliberately independent (not persisted to localStorage) so it resets
+    // fresh on reload instead of tracking the bestiary catalog's filters.
+    encFilterSizes: [],
+    encFilterTypes: [],
+    encFilterFeatures: [],
+    encFilterCrMinIdx: 0,
+    encFilterCrMaxIdx: CR_SCALE.length - 1,
+    encFiltersOpen: false
   };
 
   var CREATURE_SIZES = ['tiny','small','medium','large','huge','gargantuan'];
@@ -2301,6 +2334,106 @@
     }).join('') + (state.encounters.length < ENCOUNTER_MAX_ENCOUNTERS ? '<button class="enc-tab-add" data-action="new-encounter" title="New encounter (max ' + ENCOUNTER_MAX_ENCOUNTERS + ')">+</button>' : '');
   }
 
+  // Returns the filtered/searched monster list for the picker dropdown, or
+  // null when there's nothing active (search box empty, no filters) so the
+  // dropdown stays hidden, or 'full' when the encounter is already at its
+  // creature-group cap.
+  function encPickerMatches(){
+    var input = document.getElementById('encPickerInput');
+    var q = (input && input.value || '').trim().toLowerCase();
+    var crRangeActive = state.encFilterCrMinIdx > 0 || state.encFilterCrMaxIdx < CR_SCALE.length - 1;
+    var filtersActive = !!(state.encFilterSizes.length || state.encFilterTypes.length || state.encFilterFeatures.length || crRangeActive);
+    if(!q && !filtersActive) return null;
+    var activeEnc = getActiveEncounter();
+    var groups = (activeEnc && activeEnc.groups) || [];
+    if(groups.length >= ENCOUNTER_MAX_GROUPS) return 'full';
+    var alreadyIn = {};
+    groups.forEach(function(x){ alreadyIn[x.monsterId] = true; });
+    return allKnownMonsters().filter(function(m){
+      if(alreadyIn[m.id]) return false;
+      if(q && m.name.toLowerCase().indexOf(q) === -1) return false;
+      if(state.encFilterSizes.length){
+        var sizes = monsterSizeTokens(m);
+        if(!state.encFilterSizes.some(function(s){ return sizes.indexOf(s) !== -1; })) return false;
+      }
+      if(state.encFilterTypes.length){
+        var types = monsterTypeTokens(m);
+        if(!state.encFilterTypes.some(function(t){ return types.indexOf(t) !== -1; })) return false;
+      }
+      if(state.encFilterFeatures.length){
+        var features = monsterFeatureTokens(m);
+        if(!state.encFilterFeatures.every(function(f){ return features.indexOf(f) !== -1; })) return false;
+      }
+      if(crRangeActive){
+        var crNum = crToNumber(m.cr);
+        if(crNum < CR_SCALE[state.encFilterCrMinIdx] || crNum > CR_SCALE[state.encFilterCrMaxIdx]) return false;
+      }
+      return true;
+    }).slice(0, 20);
+  }
+
+  function renderEncPickerResults(){
+    var resultsEl = document.getElementById('encPickerResults');
+    if(!resultsEl) return;
+    var matches = encPickerMatches();
+    if(matches === null){ resultsEl.style.display = 'none'; resultsEl.innerHTML = ''; return; }
+    if(matches === 'full'){
+      resultsEl.innerHTML = '<div class="enc-picker-empty">This encounter is full (' + ENCOUNTER_MAX_GROUPS + ' creatures max). Remove one to add another.</div>';
+      resultsEl.style.display = 'block';
+      return;
+    }
+    if(!matches.length){
+      resultsEl.innerHTML = '<div class="enc-picker-empty">No matches.</div>';
+    } else {
+      resultsEl.innerHTML = matches.map(function(m){
+        return '<div class="enc-picker-result" data-action="encounter-pick" data-monster-id="' + esc(m.id) + '">' +
+          '<span>' + esc(m.name) + '</span><span class="epr-meta">CR ' + esc(m.cr) + '</span>' +
+        '</div>';
+      }).join('');
+    }
+    resultsEl.style.display = 'block';
+  }
+
+  // Encounter Builder's own copy of the bestiary's Size/Type/Features/CR
+  // filter panel - same chip UI, but its state (state.encFilter*) is
+  // deliberately independent of the bestiary's filterSizes/filterTypes/etc,
+  // per the two search engines not staying in sync with each other.
+  function renderEncFilterPanel(){
+    var sizeEl = document.getElementById('encFilterSizeChips');
+    var typeEl = document.getElementById('encFilterTypeChips');
+    var featureEl = document.getElementById('encFilterFeatureChips');
+    if(!sizeEl || !typeEl || !featureEl) return;
+    function chip(action, value, activeList, label){
+      var active = activeList.indexOf(value) !== -1;
+      return '<button type="button" class="filter-chip' + (active ? ' active' : '') + '" data-action="' + action + '" data-value="' + esc(value) + '">' + esc(label) + '</button>';
+    }
+    sizeEl.innerHTML = CREATURE_SIZES.map(function(s){ return chip('toggle-enc-filter-size', s, state.encFilterSizes, s.charAt(0).toUpperCase() + s.slice(1)); }).join('');
+    typeEl.innerHTML = CREATURE_TYPES.map(function(t){ return chip('toggle-enc-filter-type', t, state.encFilterTypes, t.charAt(0).toUpperCase() + t.slice(1)); }).join('');
+    featureEl.innerHTML = CREATURE_FEATURES.map(function(f){ return chip('toggle-enc-filter-feature', f.id, state.encFilterFeatures, f.label); }).join('');
+
+    var crMinEl = document.getElementById('encCrMinSlider');
+    var crMaxEl = document.getElementById('encCrMaxSlider');
+    var crLabel = document.getElementById('encCrRangeLabel');
+    if(crMinEl) crMinEl.value = state.encFilterCrMinIdx;
+    if(crMaxEl) crMaxEl.value = state.encFilterCrMaxIdx;
+    if(crLabel) crLabel.textContent = crLabelForIndex(state.encFilterCrMinIdx) + ' – ' + crLabelForIndex(state.encFilterCrMaxIdx);
+    var crRangeActive = state.encFilterCrMinIdx > 0 || state.encFilterCrMaxIdx < CR_SCALE.length - 1;
+
+    var count = state.encFilterSizes.length + state.encFilterTypes.length + state.encFilterFeatures.length + (crRangeActive ? 1 : 0);
+    var badge = document.getElementById('encFilterBadge');
+    if(badge){
+      badge.textContent = count;
+      badge.style.display = count ? '' : 'none';
+    }
+    var filterBtn = document.getElementById('encFilterBtn');
+    if(filterBtn) filterBtn.classList.toggle('active', count > 0);
+
+    var panel = document.getElementById('encFilterPanel');
+    if(panel) panel.style.display = state.encFiltersOpen ? '' : 'none';
+
+    renderEncPickerResults();
+  }
+
   function renderEncounter(){
     ensureActiveEncounter();
     document.getElementById('encTabs').innerHTML = encTabsHtml();
@@ -2314,6 +2447,7 @@
     }
     var note = document.getElementById('encCountNote');
     if(note) note.textContent = enc ? (enc.groups.length + ' / ' + ENCOUNTER_MAX_GROUPS + ' creatures') : '';
+    renderEncFilterPanel();
 
     if(state.renamingEncounterId){
       var tabInput = document.getElementById('encTabRenameInput');
@@ -2458,6 +2592,42 @@
       state.spellFilterSchools = [];
       state.spellFilterComponents = [];
       renderSpellList();
+    } else if(action === 'toggle-enc-filters'){
+      state.encFiltersOpen = !state.encFiltersOpen;
+      renderEncFilterPanel();
+      e.stopPropagation();
+    } else if(action === 'toggle-enc-filter-size'){
+      var encSizeVal = t.getAttribute('data-value');
+      var encSizeIdx = state.encFilterSizes.indexOf(encSizeVal);
+      if(encSizeIdx === -1) state.encFilterSizes.push(encSizeVal); else state.encFilterSizes.splice(encSizeIdx, 1);
+      renderEncFilterPanel();
+    } else if(action === 'toggle-enc-filter-type'){
+      var encTypeVal = t.getAttribute('data-value');
+      var encTypeIdx = state.encFilterTypes.indexOf(encTypeVal);
+      if(encTypeIdx === -1) state.encFilterTypes.push(encTypeVal); else state.encFilterTypes.splice(encTypeIdx, 1);
+      renderEncFilterPanel();
+    } else if(action === 'toggle-enc-filter-feature'){
+      var encFeatureVal = t.getAttribute('data-value');
+      var encFeatureIdx = state.encFilterFeatures.indexOf(encFeatureVal);
+      if(encFeatureIdx === -1) state.encFilterFeatures.push(encFeatureVal); else state.encFilterFeatures.splice(encFeatureIdx, 1);
+      renderEncFilterPanel();
+    } else if(action === 'clear-enc-filters'){
+      state.encFilterSizes = [];
+      state.encFilterTypes = [];
+      state.encFilterFeatures = [];
+      state.encFilterCrMinIdx = 0;
+      state.encFilterCrMaxIdx = CR_SCALE.length - 1;
+      renderEncFilterPanel();
+    } else if(action === 'refresh-enc-search'){
+      document.getElementById('encPickerInput').value = '';
+      state.encFilterSizes = [];
+      state.encFilterTypes = [];
+      state.encFilterFeatures = [];
+      state.encFilterCrMinIdx = 0;
+      state.encFilterCrMaxIdx = CR_SCALE.length - 1;
+      state.encFiltersOpen = false;
+      renderEncFilterPanel();
+      e.stopPropagation();
     } else if(action === 'encounter-pick'){
       addToEncounter(t.getAttribute('data-monster-id'));
       document.getElementById('encPickerInput').value = '';
@@ -2616,39 +2786,33 @@
     if(state.instanceWindowId === found.instance.id) renderInstanceWindow();
   });
 
-  document.getElementById('encPickerInput').addEventListener('input', function(e){
-    var resultsEl = document.getElementById('encPickerResults');
-    var q = e.target.value.trim().toLowerCase();
-    if(!q){ resultsEl.style.display = 'none'; resultsEl.innerHTML = ''; return; }
-    var activeEnc = getActiveEncounter();
-    var groups = (activeEnc && activeEnc.groups) || [];
-    if(groups.length >= ENCOUNTER_MAX_GROUPS){
-      resultsEl.innerHTML = '<div class="enc-picker-empty">This encounter is full (' + ENCOUNTER_MAX_GROUPS + ' creatures max). Remove one to add another.</div>';
-      resultsEl.style.display = 'block';
-      return;
-    }
-    var alreadyIn = {};
-    groups.forEach(function(x){ alreadyIn[x.monsterId] = true; });
-    var matches = allKnownMonsters().filter(function(m){
-      return !alreadyIn[m.id] && m.name.toLowerCase().indexOf(q) !== -1;
-    }).slice(0, 20);
-    if(!matches.length){
-      resultsEl.innerHTML = '<div class="enc-picker-empty">No matches.</div>';
-    } else {
-      resultsEl.innerHTML = matches.map(function(m){
-        return '<div class="enc-picker-result" data-action="encounter-pick" data-monster-id="' + esc(m.id) + '">' +
-          '<span>' + esc(m.name) + '</span><span class="epr-meta">CR ' + esc(m.cr) + '</span>' +
-        '</div>';
-      }).join('');
-    }
-    resultsEl.style.display = 'block';
+  document.getElementById('encPickerInput').addEventListener('input', renderEncPickerResults);
+  document.getElementById('encPickerInput').addEventListener('focus', renderEncPickerResults);
+
+  document.getElementById('encCrMinSlider').addEventListener('input', function(e){
+    var v = parseInt(e.target.value, 10);
+    if(v > state.encFilterCrMaxIdx) v = state.encFilterCrMaxIdx;
+    state.encFilterCrMinIdx = v;
+    renderEncFilterPanel();
+  });
+  document.getElementById('encCrMaxSlider').addEventListener('input', function(e){
+    var v = parseInt(e.target.value, 10);
+    if(v < state.encFilterCrMinIdx) v = state.encFilterCrMinIdx;
+    state.encFilterCrMaxIdx = v;
+    renderEncFilterPanel();
   });
 
+  // Capture phase, not bubble: toggling a filter chip re-renders (via
+  // innerHTML) the very container the clicked chip lives in, which detaches
+  // e.target from the document before a bubble-phase listener would run -
+  // any closest() check done afterward would then wrongly see "outside"
+  // since the detached node's ancestor chain is gone. Capture runs first,
+  // while e.target is still attached and its real ancestry is intact.
   document.addEventListener('click', function(e){
-    if(!e.target.closest('.enc-picker')){
+    if(!e.target.closest('.enc-picker') && !e.target.closest('#encFilterPanel') && !e.target.closest('#encFilterBtn')){
       document.getElementById('encPickerResults').style.display = 'none';
     }
-  });
+  }, true);
 
   document.getElementById('catSortSelect').addEventListener('change', function(e){
     state.sortMode = e.target.value;
