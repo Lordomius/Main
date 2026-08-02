@@ -672,7 +672,8 @@
   <button class="settings-btn" id="settingsBtn" data-action="toggle-settings" title="Settings">⚙</button>
   <h1>Bestiary</h1>
   <button class="tb-btn primary" data-action="new-monster">+ New monster</button>
-  <button class="tb-btn" id="encounterToggleBtn" data-action="toggle-encounter">Encounter</button>
+  <button class="tb-btn" id="bestiaryNavBtn" data-action="show-bestiary">📖 Bestiary</button>
+  <button class="tb-btn" id="encounterToggleBtn" data-action="show-encounter">Encounter Builder</button>
   <div class="spacer"></div>
   <div class="mode-toggle" id="modeToggle">
     <button data-mode="normal" class="active">Normal</button>
@@ -1632,6 +1633,8 @@
     document.getElementById('encounterView').style.display = state.encounterOpen ? 'flex' : 'none';
     var encBtn = document.getElementById('encounterToggleBtn');
     if(encBtn) encBtn.classList.toggle('active', state.encounterOpen);
+    var bestBtn = document.getElementById('bestiaryNavBtn');
+    if(bestBtn) bestBtn.classList.toggle('active', !state.encounterOpen);
     if(state.encounterOpen){
       renderEncounter();
     } else {
@@ -2018,8 +2021,11 @@
       state.filterCrMaxIdx = CR_SCALE.length - 1;
       saveLibrary();
       renderCatalog();
-    } else if(action === 'toggle-encounter'){
-      state.encounterOpen = !state.encounterOpen;
+    } else if(action === 'show-bestiary'){
+      state.encounterOpen = false;
+      render();
+    } else if(action === 'show-encounter'){
+      state.encounterOpen = true;
       render();
     } else if(action === 'encounter-pick'){
       addToEncounter(t.getAttribute('data-monster-id'));
