@@ -288,8 +288,14 @@
     cursor:pointer;padding:0 0 0 2px;flex-shrink:0;
   }
   .enc-card-remove:hover{color:var(--fumble-color);}
-  .enc-card-stats{display:flex;gap:10px;margin-bottom:8px;}
+  .enc-card-stats{display:flex;gap:10px;margin-bottom:8px;align-items:center;}
   .enc-card-stats label{font-size:11px;color:var(--text-light-secondary);display:flex;align-items:center;gap:4px;}
+  .enc-init-box{
+    background:var(--card-bg-alt);border:1px solid var(--forest-light);border-radius:3px;
+    padding:3px 8px;font-size:11px;color:var(--text-light);cursor:pointer;font-family:var(--font-body);
+    transition:border-color .1s;
+  }
+  .enc-init-box:hover{border-color:var(--gold);}
   .enc-hp-max{color:var(--parchment);font-size:12px;}
   .iw-stat-input{
     width:48px;padding:3px 5px;border-radius:3px;border:1px solid var(--forest-light);
@@ -2187,6 +2193,7 @@
     var maxHp = m.hp;
     var ac = (inst.ac === undefined || inst.ac === null || inst.ac === '') ? m.ac : inst.ac;
     var hp = (inst.hp === undefined || inst.hp === null || inst.hp === '') ? maxHp : inst.hp;
+    var initBonus = (m.initiative === null || m.initiative === undefined || m.initiative === '') ? abilityMod(m.abilities.dex || 10) : Number(m.initiative);
     var bloodiedDot = isBloodied(hp, maxHp) ? '<span class="enc-bloodied-dot" title="Bloodied (at or below half HP)">●</span>' : '';
     var addBtn = groupCount < ENCOUNTER_MAX_INSTANCES ?
       '<button class="enc-card-add" data-action="encounter-add-instance" data-monster-id="' + esc(groupMonsterId) + '" title="Add another instance of ' + esc(m.name) + '">+</button>' : '';
@@ -2200,6 +2207,7 @@
         '<button class="enc-card-remove" data-action="encounter-remove-instance" data-instance-id="' + esc(inst.id) + '" title="Remove">×</button>' +
       '</div>' +
       '<div class="enc-card-stats">' +
+        '<button type="button" class="enc-init-box" data-action="roll-initiative" data-bonus="' + initBonus + '" data-label="' + esc(inst.label) + ' — initiative" title="Roll initiative">Init ' + fmt(initBonus) + '</button>' +
         '<label>AC <input type="number" class="iw-stat-input" data-stat="ac" data-instance-id="' + esc(inst.id) + '" value="' + esc(ac) + '"></label>' +
         '<label>HP <input type="number" class="iw-stat-input" data-stat="hp" data-instance-id="' + esc(inst.id) + '" value="' + esc(hp) + '">/<span class="enc-hp-max">' + esc(maxHp) + '</span></label>' +
       '</div>' +
