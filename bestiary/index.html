@@ -3253,7 +3253,12 @@
     s = s.replace(/\{@actSaveFail\}/g, 'Failure: ');
     s = s.replace(/\{@actSaveSuccess\}/g, 'Success: ');
     s = s.replace(/\{@h\}/g, 'Hit: ');
-    s = s.replace(/\{@dc (\d+)\}/g, '$1');
+    // Bare {@dc N} relies on the tag itself to supply the word "DC" - true
+    // for ~1142 "spell save {@dc N}"-style occurrences across the dataset,
+    // vs. exactly 1 pre-existing "DC {@dc N}" line, which the first pass
+    // below collapses so it doesn't end up as "DC DC N".
+    s = s.replace(/\bDC\s*\{@dc (\d+)\}/gi, 'DC $1');
+    s = s.replace(/\{@dc (\d+)\}/g, 'DC $1');
     s = s.replace(/\{@\w+\s+([^}|]*)(?:\|[^}]*)?\}/g, '$1');
     s = s.replace(/\{@\w+\}/g, '');
     s = s.replace(/[ \t]+/g, ' ').trim();
