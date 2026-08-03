@@ -222,8 +222,9 @@
   .encounter-view{flex:1;min-height:0;display:flex;flex-direction:column;overflow-y:auto;padding:16px 24px;}
   .enc-tabs{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:12px;flex-shrink:0;}
   .enc-tab{
-    display:flex;align-items:center;gap:7px;background:transparent;border:1px solid var(--forest-light);
+    display:flex;align-items:center;gap:7px;background:var(--desk-light);border:1px solid var(--forest-light);
     border-radius:4px 4px 0 0;padding:6px 10px;cursor:pointer;font-family:var(--font-body);font-size:13.5px;color:var(--text-light-secondary);
+    box-shadow:0 1px 4px rgba(0,0,0,0.4);
   }
   .enc-tab:hover{background:var(--forest-dark);}
   .enc-tab.active{border-color:var(--gold);color:var(--gold-light);background:var(--card-bg-alt);border-bottom:2px solid var(--gold);}
@@ -233,8 +234,8 @@
   .enc-tab-close{color:var(--text-light-secondary);font-size:14px;line-height:1;}
   .enc-tab-close:hover{color:var(--fumble-color);}
   .enc-tab-add{
-    background:transparent;border:1px dashed var(--forest-light);border-radius:4px;color:var(--text-light-secondary);
-    padding:6px 12px;cursor:pointer;font-size:15px;line-height:1;
+    background:var(--desk-light);border:1px dashed var(--forest-light);border-radius:4px;color:var(--text-light-secondary);
+    padding:6px 12px;cursor:pointer;font-size:15px;line-height:1;box-shadow:0 1px 4px rgba(0,0,0,0.4);
   }
   .enc-tab-add:hover{border-color:var(--gold);color:var(--gold-light);}
   .enc-tab-rename-input, .enc-instance-rename-input{
@@ -259,7 +260,11 @@
   .enc-picker-result:hover{background:var(--forest-dark);}
   .enc-picker-result .epr-meta{color:var(--text-light-secondary);font-size:12px;}
   .enc-picker-empty{padding:8px 10px;font-size:12.5px;color:var(--text-light-secondary);font-style:italic;}
-  .enc-count-note{font-size:12.5px;color:var(--text-light-secondary);flex-shrink:0;}
+  .enc-count-note{
+    font-size:12.5px;color:var(--text-light-secondary);flex-shrink:0;
+    background:var(--desk-light);border:1px solid var(--forest-light);border-radius:3px;padding:4px 9px;
+    box-shadow:0 1px 4px rgba(0,0,0,0.4);
+  }
 
   .enc-empty{color:var(--parchment-darker);font-size:14px;padding:20px 4px;line-height:1.5;}
 
@@ -421,6 +426,13 @@
   }
   .cat-filter-btn:hover{background:var(--forest-dark);}
   .cat-filter-btn.active{border-color:var(--gold);color:var(--gold-light);}
+  /* These sit over the encounter/spell-list views' own background image
+     (see applyBgImages) rather than the catalog sidebar's opaque backing,
+     so they need a solid backdrop of their own to stay legible against a
+     bright image - the sidebar copies of these same classes don't need it. */
+  .encounter-view .cat-refresh-btn, .encounter-view .cat-filter-btn{
+    background:var(--desk-light);box-shadow:0 1px 4px rgba(0,0,0,0.4);
+  }
   .filter-badge{
     background:var(--gold);color:var(--desk);font-size:10px;font-weight:bold;
     border-radius:8px;padding:0 5px;line-height:15px;min-width:15px;text-align:center;
@@ -854,7 +866,7 @@
       <div class="cat-filter-chips" id="spellFilterSchoolChips"></div>
     </div>
     <div class="cat-filter-group">
-      <div class="cat-filter-group-label">Components</div>
+      <div class="cat-filter-group-label">Components (must have all selected)</div>
       <div class="cat-filter-chips" id="spellFilterComponentChips"></div>
     </div>
     <button type="button" class="cat-filter-clear" data-action="clear-spell-filters">Clear filters</button>
@@ -4153,8 +4165,11 @@
       if(state.spellFilterLevels.length && state.spellFilterLevels.indexOf(s.level) === -1) return false;
       if(state.spellFilterSchools.length && state.spellFilterSchools.indexOf(s.school) === -1) return false;
       if(state.spellFilterComponents.length){
+        // AND, not OR - matches the bestiary Features filter's convention:
+        // picking Verbal + Somatic should only show spells needing both, not
+        // either. Level/School stay OR, same as Size/Type do in the bestiary.
         var comps = String(s.components || '').split(',').map(function(c){ return c.trim(); });
-        if(!state.spellFilterComponents.some(function(c){ return comps.indexOf(c) !== -1; })) return false;
+        if(!state.spellFilterComponents.every(function(c){ return comps.indexOf(c) !== -1; })) return false;
       }
       return true;
     });
