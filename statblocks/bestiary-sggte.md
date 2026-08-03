@@ -142,9 +142,9 @@ ___
 >### Actions
 >***Multiattack.*** The patient makes one attack with its metal limb. On a hit, the patient can make one bite attack against the same target.
 >
->***Bite.*** *Melee Weapon Attack:* +3 to hit, reach 5 ft., one target. *Hit:* 3 (1d4 + 1) piercing damage and 3 (1d6) psychic damage, and the patient regains hit points equal to the piercing damage dealt.
+>***Bite.*** *Melee Weapon Attack:* +3 to hit, reach 5 ft., one target. *Hit:* 3 (1d4 + 1) piercing damage plus 3 (1d6) psychic damage, and the patient regains hit points equal to the piercing damage dealt.
 >
->***Metal Limb.*** *Melee Weapon Attack:* +3 to hit, reach 5 ft., one target. *Hit:* 5 (1d8 + 1) bludgeoning or slashing damage (patient's choice) and 3 (1d6) psychic damage.
+>***Metal Limb.*** *Melee Weapon Attack:* +3 to hit, reach 5 ft., one target. *Hit:* 5 (1d8 + 1) bludgeoning or slashing damage (patient's choice) plus 3 (1d6) psychic damage.
 >
 >### Bonus Actions
 >***Wail of Insanity (Recharge 6).*** The patient unleashes the chaos within itself. A creature of the patient's choice within 5 feet of it must succeed on a DC 12 Wisdom saving throw or gain a short-term madness.
@@ -627,7 +627,7 @@ ___
 >### Actions
 >***Multiattack.*** The dullahan makes two attacks with its spine whip.
 >
->***Spine Whip.*** *Melee Weapon Attack:* +7 to hit, reach 10 ft., one target. *Hit:* 9 (2d4 + 4) slashing damage and 13 (3d8) bludgeoning damage. If the target is a creature, it must succeed on a DC 15 Strength saving throw or be knocked prone.
+>***Spine Whip.*** *Melee Weapon Attack:* +7 to hit, reach 10 ft., one target. *Hit:* 9 (2d4 + 4) slashing damage plus 13 (3d8) bludgeoning damage. If the target is a creature, it must succeed on a DC 15 Strength saving throw or be knocked prone.
 >
 >### Bonus Actions
 >***Cunning Action.*** The dullahan takes the Dash, Disengage, or Hide action.
@@ -706,9 +706,9 @@ ___
 >### Actions
 >***Multiattack.*** The centipede makes three attacks: one with its bite and two with its pincers.
 >
->***Bite.*** *Melee Weapon Attack:* +7 to hit, reach 5 ft., one target. *Hit:* 15 (2d10 + 4) piercing damage and 6 (1d12) poison damage. If the target is a creature, it must succeed on a DC 13 Constitution saving throw or become poisoned for 1 minute. A poisoned creature can repeat the saving throw at the end of each of its turns, ending the effect on a success.
+>***Bite.*** *Melee Weapon Attack:* +7 to hit, reach 5 ft., one target. *Hit:* 15 (2d10 + 4) piercing damage plus 6 (1d12) poison damage. If the target is a creature, it must succeed on a DC 13 Constitution saving throw or become poisoned for 1 minute. A poisoned creature can repeat the saving throw at the end of each of its turns, ending the effect on a success.
 >
->***Pincer.*** *Melee Weapon Attack:* +7 to hit, reach 5 ft., one target. *Hit:* 13 (2d8 + 4) slashing damage and 3 (1d6) poison damage. The centipede has advantage on the attack roll if it is grappling the target.
+>***Pincer.*** *Melee Weapon Attack:* +7 to hit, reach 5 ft., one target. *Hit:* 13 (2d8 + 4) slashing damage plus 3 (1d6) poison damage. The centipede has advantage on the attack roll if it is grappling the target.
 >
 >### Bonus Actions
 >***Crawl.*** The centipede moves up to its speed.
@@ -788,7 +788,7 @@ ___
 >### Actions
 >***Multiattack.*** The dreadcrow makes two attacks with its claws or Devour Fear. It can use Living Nightmare in place of one attack.
 >
->***Claw.*** *Melee Weapon Attack:* +6 to hit, reach 5 ft., one target. *Hit:* 16 (2d12 + 3) slashing damage and 5 (1d10) psychic damage.
+>***Claw.*** *Melee Weapon Attack:* +6 to hit, reach 5 ft., one target. *Hit:* 16 (2d12 + 3) slashing damage plus 5 (1d10) psychic damage.
 >
 >***Devour Fear.*** *Ranged Spell Attack:* +8 to hit, range 120 ft., one target. *Hit:* 21 (3d10 + 5) psychic damage. If the target is frightened, the dreadcrow has advantage on the attack roll and regains hit points equal to the damage dealt.
 >
@@ -970,7 +970,7 @@ ___
 >
 >***Blade.*** *Melee Weapon Attack:* +7 to hit, reach 5 ft., one target. *Hit:* 10 (1d12 + 4) slashing damage.
 >
->***Mithril Wind Strike (1/Day).*** The Sentinel chooses up to three creatures it can see within 30 feet of it and makes a melee spell attack (+6 to hit) against each target. On a hit, a target takes 19 (3d12) slashing damage and 13 (3d8) radiant damage. It can then teleport to an unoccupied space it can see within 5 feet of one of the targets. The Sentinel regains the use of this action if a creature within 30 feet of it loses concentration on a spell.
+>***Mithril Wind Strike (1/Day).*** The Sentinel chooses up to three creatures it can see within 30 feet of it and makes a melee spell attack (+6 to hit) against each target. On a hit, a target takes 19 (3d12) slashing damage plus 13 (3d8) radiant damage. It can then teleport to an unoccupied space it can see within 5 feet of one of the targets. The Sentinel regains the use of this action if a creature within 30 feet of it loses concentration on a spell.
 >
 >### Bonus Actions
 >***Breaking Palm.*** The Sentinel touches a creature within 5 feet of it, removing any temporary hit points the target has.
@@ -1370,7 +1370,7 @@ ___
 >### Legendary Actions
 >*The prowler can take 1 legendary action, choosing the option below. Only one legendary action option can be used at a time and only at the end of another creature's turn. The prowler regains spent legendary actions at the start of its turn.*
 >
->- **Leap.** The prowler jumps a number of feet up to its speed and lands on its feet in a space that can contain one or more other creatures. Each of those creatures must make a DC 16 Dexterity saving throw. On a failed save, a creature takes 14 (4d6) bludgeoning damage and 14 (4d6) lightning damage and is knocked prone. On a successful save, a creature takes half as much damage, isn't knocked prone, and is pushed 5 feet into an unoccupied space of the creature's choice. If no unoccupied space is within range, the creature instead falls prone in the creature's space.
+>- **Leap.** The prowler jumps a number of feet up to its speed and lands on its feet in a space that can contain one or more other creatures. Each of those creatures must make a DC 16 Dexterity saving throw. On a failed save, a creature takes 14 (4d6) bludgeoning damage plus 14 (4d6) lightning damage and is knocked prone. On a successful save, a creature takes half as much damage, isn't knocked prone, and is pushed 5 feet into an unoccupied space of the creature's choice. If no unoccupied space is within range, the creature instead falls prone in the creature's space.
 
 ___
 >## Death
@@ -1570,7 +1570,7 @@ ___
 >
 >***Claw.*** *Melee Weapon Attack:* +14 to hit, reach 5 ft., one target. *Hit:* 15 (2d6 + 8) slashing damage.
 >
->***Cosmic Breath (Recharge 5-6).*** The dragon exhales a rush of void and stars in a 90-foot cone. Each creature in that area must make a DC 20 Constitution saving throw. On a failed save, a creature takes 18 (4d8) necrotic damage and 18 (4d8) cold damage, and gains a short-term madness. On a successful save, the creature takes half as much damage and doesn't suffer any additional effect.
+>***Cosmic Breath (Recharge 5-6).*** The dragon exhales a rush of void and stars in a 90-foot cone. Each creature in that area must make a DC 20 Constitution saving throw. On a failed save, a creature takes 18 (4d8) necrotic damage plus 18 (4d8) cold damage, and gains a short-term madness. On a successful save, the creature takes half as much damage and doesn't suffer any additional effect.
 >
 >### Bonus Actions
 >***Tentacle.*** *Melee Weapon Attack:* +14 to hit, reach 15 ft., one creature. *Hit:* 12 (1d8 + 8) psychic damage. If the target is Huge or smaller, it is grappled (escape DC 22). The dragon can have up to four creatures grappled at a time.
@@ -1630,7 +1630,7 @@ ___
 >### Actions
 >***Multiattack.*** Orr makes two tentacle attacks.
 >
->***Tentacle.*** *Melee Weapon Attack:* +12 to hit, reach 15 ft., one target. *Hit:* 17 (2d10 + 6) slashing damage and 13 (2d12) cold damage. If a creature is damaged by this attack twice before the start of Orr's next turn, it must succeed on a DC 20 Constitution saving throw or gain one level of exhaustion.
+>***Tentacle.*** *Melee Weapon Attack:* +12 to hit, reach 15 ft., one target. *Hit:* 17 (2d10 + 6) slashing damage plus 13 (2d12) cold damage. If a creature is damaged by this attack twice before the start of Orr's next turn, it must succeed on a DC 20 Constitution saving throw or gain one level of exhaustion.
 >
 >***Scream (3/Day).*** Orr emits a scream of pure rage and agony. Each time it screams before finishing a long rest, the scream is louder and the effect is different, as detailed below. Each creature within 500 feet of Orr and able to hear the scream must make a DC 20 Constitution saving throw.
 >
@@ -1638,7 +1638,7 @@ ___
 >
 >***Scream of Harvest.*** Each creature that fails its save becomes vulnerable to necrotic and cold damage for 1 minute. A creature can repeat the saving throw at the end of each of its turns, ending the effect on itself on a success.
 >
->***Scream of Death.*** Each creature takes 22 (4d10) cold damage and 22 (4d10) necrotic damage on a failed save, or half as much damage on a successful save.
+>***Scream of Death.*** Each creature takes 22 (4d10) cold damage plus 22 (4d10) necrotic damage on a failed save, or half as much damage on a successful save.
 >
 >### Bonus Actions
 >***Teleport.*** Orr magically teleports, along with any equipment it is wearing or carrying, up to 60 feet to an unoccupied space.
@@ -1698,7 +1698,7 @@ ___
 >### Actions
 >***Multiattack.*** Orr uses its Frozen Rebirth. It then makes three tentacle attacks. It can replace up to two tentacle attacks with one maddening shard attack each.
 >
->***Tentacle.*** *Melee Weapon Attack:* +12 to hit, reach 20 ft., one target. *Hit:* 19 (3d8 + 6) bludgeoning damage and 10 (3d6) cold damage, and Orr can push the target up to 30 feet away in a straight line.
+>***Tentacle.*** *Melee Weapon Attack:* +12 to hit, reach 20 ft., one target. *Hit:* 19 (3d8 + 6) bludgeoning damage plus 10 (3d6) cold damage, and Orr can push the target up to 30 feet away in a straight line.
 >
 >***Maddening Shard.*** *Ranged Spell Attack:* +14 to hit, range 150 ft., one target. *Hit:* 24 (3d10 + 8) cold damage, and if the target is a creature, it must succeed on a DC 22 Wisdom saving throw or gain a short-term madness.
 >
@@ -1763,7 +1763,7 @@ ___
 >### Actions
 >***Multiattack.*** The avatar uses her Maddening Presence, then makes three attacks. She can use Circle of Rebirth in place of one of her attacks.
 >
->***Claw.*** *Melee Weapon Attack:* +12 to hit, reach 20 ft., one target. *Hit:* 31 (4d12 + 5) slashing damage and 13 (2d12) poison damage. If the target is a humanoid, it must succeed on a DC 25 Charisma saving throw or fall under the Curse of Goat's Blood. While cursed in this way, a creature has disadvantage on ability checks and attack rolls it makes while within the avatar's Circles of Rebirth.
+>***Claw.*** *Melee Weapon Attack:* +12 to hit, reach 20 ft., one target. *Hit:* 31 (4d12 + 5) slashing damage plus 13 (2d12) poison damage. If the target is a humanoid, it must succeed on a DC 25 Charisma saving throw or fall under the Curse of Goat's Blood. While cursed in this way, a creature has disadvantage on ability checks and attack rolls it makes while within the avatar's Circles of Rebirth.
 >
 >***Curse.*** *Ranged Spell Attack:* +17 to hit, range 300 ft., one creature. *Hit:* 26 (3d10 + 10) poison damage and the target suffers one of the following curses (avatar's choice):
 >
@@ -1989,11 +1989,11 @@ ___
 >### Actions
 >***Multiattack.*** Malach makes two censer attacks.
 >
->***Censer.*** *Melee Weapon Attack:* +10 to hit, reach 5 ft., one target. *Hit:* 9 (1d8 + 5) bludgeoning and 9 (2d8) poison damage.
+>***Censer.*** *Melee Weapon Attack:* +10 to hit, reach 5 ft., one target. *Hit:* 9 (1d8 + 5) bludgeoning plus 9 (2d8) poison damage.
 >
 >***Create Miasma.*** Malach creates a 15-foot-radius sphere of poisonous fog centered on a point within 60 feet of him. It lasts until the end of Malach's next turn. Its area is heavily obscured for creatures other than Malach and creatures within Malach's Deadly Miasma trait.
 >
->***Bane of Flesh (Recharge 6).*** Malach chooses a non-construct creature he can see within 15 feet of him and attempts to rip out its flesh with vile magic. The creature must succeed on a DC 19 Constitution saving throw or take 27 (6d8) poison damage and 27 (6d8) lightning damage. Creatures within Malach's Deadly Miasma have disadvantage on this saving throw and the weakening miasma causes the damage to ignore damage resistance.
+>***Bane of Flesh (Recharge 6).*** Malach chooses a non-construct creature he can see within 15 feet of him and attempts to rip out its flesh with vile magic. The creature must succeed on a DC 19 Constitution saving throw or take 27 (6d8) poison damage plus 27 (6d8) lightning damage. Creatures within Malach's Deadly Miasma have disadvantage on this saving throw and the weakening miasma causes the damage to ignore damage resistance.
 >
 >### Legendary Actions
 >*Malach can take 3 legendary actions, choosing from the options below. Only one legendary action option can be used at a time and only at the end of another creature's turn. Malach regains spent legendary actions at the start of his turn.*
