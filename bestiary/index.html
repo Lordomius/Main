@@ -170,6 +170,8 @@
     background:transparent;border:none;color:var(--parchment);padding:7px 12px;font-size:14px;
   }
   .mode-toggle button.active{background:var(--forest);color:#fff;}
+  .crit-toggle{margin-left:8px;}
+  .crit-toggle button.active{background:var(--gold-light);color:var(--desk);}
   #imageUploadInput,#bgImageInput{display:none;}
 
   .settings-btn{
@@ -837,6 +839,9 @@
     <button data-mode="adv">Advantage</button>
     <button data-mode="dis">Disadvantage</button>
   </div>
+  <div class="mode-toggle crit-toggle" id="critToggle">
+    <button data-crit-toggle="1" id="critToggleModeBtn" title="Roll every damage button as a critical hit (doubles the damage dice)">Crit</button>
+  </div>
 </div>
 <div class="settings-panel" id="settingsPanel">
   <h3>Color palette</h3>
@@ -1102,6 +1107,7 @@
     monsters: [],
     currentId: null,
     mode: 'normal',
+    critMode: false,
     logs: {},
     editing: null,
     theme: 'blue',
@@ -1237,6 +1243,7 @@
   }
 
   function rollDamage(expr, label, typeLabel){
+    var critOn = !!state.critMode;
     var parts = String(expr).split('+').map(function(s){ return s.trim(); }).filter(Boolean);
     var total = 0;
     var breakdown = [];
@@ -1244,18 +1251,20 @@
       var m = p.match(/^(\d+)d(\d+)$/i);
       if(m){
         var n = parseInt(m[1], 10), s = parseInt(m[2], 10);
+        if(critOn) n *= 2;
         var rolls = [];
         for(var i = 0; i < n; i++) rolls.push(rollDie(s));
         var sum = rolls.reduce(function(a,b){ return a + b; }, 0);
         total += sum;
-        breakdown.push(p + '(' + rolls.join('+') + ')');
+        breakdown.push(n + 'd' + s + '(' + rolls.join('+') + ')');
       } else if(/^\d+$/.test(p)){
         total += parseInt(p, 10);
         breakdown.push(p);
       }
     });
     var suffix = typeLabel ? (' ' + typeLabel) : '';
-    addLog(label, breakdown.join(' + ') || expr, total, false, false, suffix);
+    if(critOn) suffix += ' (crit)';
+    addLog(label, breakdown.join(' + ') || expr, total, critOn, false, suffix);
   }
 
   function currentLogKey(){
@@ -3170,6 +3179,13 @@
     Array.prototype.forEach.call(document.querySelectorAll('#modeToggle button'), function(btn){
       btn.classList.toggle('active', btn === b);
     });
+  });
+
+  document.getElementById('critToggle').addEventListener('click', function(e){
+    var b = e.target.closest('button[data-crit-toggle]');
+    if(!b) return;
+    state.critMode = !state.critMode;
+    b.classList.toggle('active', state.critMode);
   });
 
   // ---- Markdown stat block import ----
