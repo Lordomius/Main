@@ -1,5 +1,5 @@
 ___
->## Parasitic Geist (SGttE)
+>## Parasitic Geist
 >*Small Undead, Neutral Evil*
 >___
 >- **Armor Class** 11
@@ -26,7 +26,7 @@ ___
 >***Devour Life.*** *Melee Weapon Attack:* +3 to hit, reach 5 ft., one creature. *Hit:* 6 (2d4 + 1) necrotic damage and the geist attaches to the target. While attached, the geist can't use this attack. Instead, at the start of each of the geist's turns, the target takes 6 (2d4 + 1) necrotic damage. The geist moves with the target and can detach as a bonus action.
 
 ___
->## Fallen Luyarnhian (SGttE)
+>## Fallen Luyarnhian
 >*Medium Beast & Humanoid (any race), Chaotic Evil*
 >___
 >- **Armor Class** 12
@@ -53,7 +53,7 @@ ___
 >***Claw.*** *Melee Weapon Attack:* +4 to hit, reach 5 ft., one target. *Hit:* 6 (1d8 + 2) slashing damage.
 
 ___
->## Corvian Dweller (SGttE)
+>## Corvian Dweller
 >*Medium Beast & Humanoid, Chaotic Evil*
 >___
 >- **Armor Class** 13 (natural armor)
@@ -85,7 +85,7 @@ ___
 >***Wing Flutter.*** If the corvian dweller's speed isn't 0, and it is targeted by a melee attack, it flaps its wings in defense. It moves 5 feet, and makes a Dexterity saving throw with a DC equal to the attacker's attack roll's total. On a success, it evades completely and the attack misses. On a failure, it halves the attack's damage against itself if the attack hits. This movement doesn't provoke opportunity attacks.
 
 ___
->## Geist (SGttE)
+>## Geist
 >*Medium Undead, Chaotic Evil*
 >___
 >- **Armor Class** 12
@@ -118,7 +118,7 @@ ___
 >***Rotten Touch (Material Form).*** *Melee Weapon Attack:* +4 to hit, reach 5 ft., one target. *Hit:* 9 (2d6 + 2) poison damage and the target must succeed on a DC 10 Constitution saving throw or become poisoned for 1 minute. The target can repeat the saving throw at the end of each of its turns, ending the effect on a success.
 
 ___
->## Enhanced Patient (SGttE)
+>## Enhanced Patient
 >*Medium Humanoid (any race), Any Chaotic*
 >___
 >- **Armor Class** 12 (natural armor)
@@ -150,7 +150,7 @@ ___
 >***Wail of Insanity (Recharge 6).*** The patient unleashes the chaos within itself. A creature of the patient's choice within 5 feet of it must succeed on a DC 12 Wisdom saving throw or gain a short-term madness.
 
 ___
->## Zealot (SGttE)
+>## Zealot
 >*Medium Humanoid (any race), Any Alignment*
 >___
 >- **Armor Class** 13 (chain shirt)
@@ -180,7 +180,7 @@ ___
 >***Mace.*** *Melee Weapon Attack:* +2 to hit, reach 5 ft., one target. *Hit:* 3 (1d6) bludgeoning damage.
 
 ___
->## Butcher (SGttE)
+>## Butcher
 >*Large Humanoid & Monstrosity, Lawful Neutral*
 >___
 >- **Armor Class** 13 (natural armor)
@@ -215,7 +215,7 @@ ___
 >***Parry.*** The butcher adds 2 to its AC against one melee attack that would hit it. To do so, the butcher must see the attacker, and be wielding a melee weapon.
 
 ___
->## Scourge Lycan (SGttE)
+>## Scourge Lycan
 >*Medium Beast & Humanoid, Chaotic Evil*
 >___
 >- **Armor Class** 14 (natural armor)
@@ -245,7 +245,7 @@ ___
 >***Devour (Recharge 4-6).*** The scourge lycan attempts to eat a creature within 5 feet of it. The target must make a DC 13 Dexterity saving throw. On a failure, the creature is crunched by the werewolf, taking 12 (2d8 + 3) piercing damage and falling prone. The scourge lycan regains hit points equal to the damage dealt.
 
 ___
->## Guardian Gargoyle (SGttE)
+>## Guardian Gargoyle
 >*Medium Construct, Lawful Good*
 >___
 >- **Armor Class** 16 (natural armor)
@@ -282,7 +282,7 @@ ___
 >***Stone Defense.*** When another creature within 5 feet of the gargoyle takes damage, the gargoyle can partially turn it to stone, giving the target resistance to the triggering damage type(s) until the start of the target's next turn.
 
 ___
->## Hunter (SGttE)
+>## Hunter
 >*Medium Humanoid (any race), Any Alignment*
 >___
 >- **Armor Class** 17 (splint)
@@ -312,7 +312,7 @@ ___
 >***Dodge Step (3/Short Rest).*** If the hunter's speed isn't 0, and it is targeted by an attack, it dodges in defense. It moves 5 feet, and makes a Dexterity saving throw with a DC equal to the attacker's attack roll's total. On a success, it evades completely and the attack misses. On a failure, it halves the attack's damage against itself if the attack hits. This movement doesn't provoke opportunity attacks.
 
 ___
->## Razorblade Bitzer (SGttE)
+>## Razorblade Bitzer
 >*Medium Construct, Unaligned*
 >___
 >- **Armor Class** 16 (natural armor)
@@ -351,7 +351,7 @@ ___
 >***Tail.*** *Melee Weapon Attack:* +5 to hit, reach 10 ft., one target. *Hit:* 6 (1d6 + 3) piercing damage.
 
 ___
->## Screechwing (SGttE)
+>## Screechwing
 >*Medium Beast & Humanoid, Chaotic Evil*
 >___
 >- **Armor Class** 17 (half plate)
@@ -382,7 +382,7 @@ ___
 >***Screech (Recharge 4-6).*** The screechwing lets out a powerful screech in a 90-foot cone. Each creature in the area must succeed on a DC 12 Constitution saving throw or take 9 (2d8) thunder damage, become stunned until the end of its next turn, and become deafened for 1 minute. A deafened creature can repeat the saving throw at the end of each of its turns, ending the effect on itself on a success.
 
 ___
->## Abductor (SGttE)
+>## Abductor
 >*Medium Aberration & Humanoid, Lawful Evil*
 >___
 >- **Armor Class** 16 (studded leather)
@@ -417,7 +417,7 @@ ___
 >***Nimble Escape.*** The abductor takes the Disengage or Hide action.
 
 ___
->## Revenant Bear (SGttE)
+>## Revenant Bear
 >*Large Beast & Undead, Chaotic Evil*
 >___
 >- **Armor Class** 12
@@ -451,7 +451,7 @@ ___
 >***Snapjaw.*** *Melee Weapon Attack:* +6 to hit, reach 5 ft., one target. *Hit:* 14 (3d6 + 4) piercing damage, and the target is grappled (escape DC 14). Until this grapple ends, the bear can't make snapjaw attacks against another target, and the target takes an extra 7 (2d6) damage when it's hit by this attack.
 
 ___
->## Wisp Liege (SGttE)
+>## Wisp Liege
 >*Large Undead, Chaotic Evil*
 >___
 >- **Armor Class** 15 (natural armor)
@@ -482,7 +482,7 @@ ___
 >***Create Wisps (Recharge 6).*** The liege opens its mouth to let out 1d4 will-o'-wisps. They share its initiative, but take their turn immediately after the liege's. The liege can command them telepathically (no action required by the liege), and they will follow its commands.
 
 ___
->## Reviled Hound (SGttE)
+>## Reviled Hound
 >*Medium Beast & Aberration, Unaligned*
 >___
 >- **Armor Class** 16 (natural armor)
@@ -515,7 +515,7 @@ ___
 >***Eldritch Tethers (Recharge 3-6).*** If the hound isn't grappling any creatures with its tentacles, it can make a tentacle attack against up to five creatures within reach. Each attack must target a separate creature.
 
 ___
->## Scorched Adjudicator (SGttE)
+>## Scorched Adjudicator
 >*Medium Aberration, Chaotic Evil*
 >___
 >- **Armor Class** 14 (natural armor)
@@ -554,7 +554,7 @@ ___
 >***Snuff Out the Light.*** When a spell that restores hit points is being cast within 120 feet of the adjudicator, the adjudicator teleports to an unoccupied space within 5 feet of the caster and makes a handaxe attack against it with advantage. On a hit, the spell fails and has no effect.
 
 ___
->## Ales Nebulae (SGttE)
+>## Ales Nebulae
 >*Large Monstrosity, Lawful Neutral*
 >___
 >- **Armor Class** 14 (natural armor)
@@ -594,7 +594,7 @@ ___
 >***Invert Gravity (Recharge 5-6).*** The ales nebulae's speed becomes 0 until the start of its next turn. Each creature within 15 feet of the ales nebulae must make a DC 14 Dexterity saving throw. On a failed save, a creature is lifted 10 feet in the air and is stunned until the start of the ales nebulae's next turn. Any creature that enters the area during that time must also make the saving throw. When gravity reverts, all stunned creatures are slammed down, taking 27 (8d6) bludgeoning damage and falling prone. On a successful save, a creature can move up to half its speed until it is no longer in the area. If it doesn't leave the area, it suffers the effects of a failed save.
 
 ___
->## Dullahan (SGttE)
+>## Dullahan
 >*Large Undead, Lawful Evil*
 >___
 >- **Armor Class** 17 (natural armor)
@@ -636,7 +636,7 @@ ___
 >***Maddening Sight.*** When a creature within 30 feet of the dullahan targets it with an attack or spell, the dullahan can force the creature to gaze into its severed head. The target must succeed on a DC 14 Wisdom saving throw or become blinded for 1 minute and gain a short-term madness. A blinded creature can repeat the saving throw at the end of each of its turns, ending the blinded condition on a success.
 
 ___
->## Living Artillery (SGttE)
+>## Living Artillery
 >*Large Aberration & Humanoid, Chaotic Neutral*
 >___
 >- **Armor Class** 14 (studded leather)
@@ -674,7 +674,7 @@ ___
 >***Engage.*** If the living artillery has all its hit points, it moves up to its speed without provoking opportunity attacks.
 
 ___
->## Nightmare Centipede (SGttE)
+>## Nightmare Centipede
 >*Large Aberration, Unaligned*
 >___
 >- **Armor Class** 17 (natural armor)
@@ -717,7 +717,7 @@ ___
 >***Regurgitate (Recharge 5-6).*** After being hit by an attack, the centipede exhales a stream of acidic ichor in a 40-foot line that is 5 feet wide. Each creature in that area must make a DC 13 Dexterity saving throw, taking 26 (4d12) poison damage on a failed save, or half as much damage on a successful one.
 
 ___
->## Skulking Shade (SGttE)
+>## Skulking Shade
 >*Huge Fiend & Monstrosity, Chaotic Evil*
 >___
 >- **Armor Class** 16 (natural armor)
@@ -755,7 +755,7 @@ ___
 >***Death Breath (Recharge 5-6).*** The shade exhales a breath of deathly energy in a 30-foot cone. Each creature in the area must make a DC 14 Constitution saving throw, taking 22 (4d10) necrotic damage on a failure, or half as much damage on a success. All non-creature organic material in the area, such as plants, wood, or food, begin to rot and wither.
 
 ___
->## Dreadcrow (SGttE)
+>## Dreadcrow
 >*Medium Aberration, Chaotic Evil*
 >___
 >- **Armor Class** 13 (18 with Illusory Horror)
@@ -803,7 +803,7 @@ ___
 >***Skittering Walk.*** When a creature moves within 5 feet of the dreadcrow, the dreadcrow can move up to 20 feet. Its AC increases by 3 during this movement.
 
 ___
->## Nightgaunt (SGttE)
+>## Nightgaunt
 >*Large Aberration, Neutral*
 >___
 >- **Armor Class** 16 (natural armor)
@@ -849,7 +849,7 @@ ___
 >***Feed on Emotions.*** When a creature within 10 feet of the nightgaunt fails a saving throw against its Blank Face or Prehensile Tail, the nightgaunt can feed on the creature's emotions - fear, anger, surprise - and regains 8 (1d10 + 3) hit points. If a creature fails the saving throw by 5 or more, the nightgaunt regains 14 (2d10 + 3) hit points instead.
 
 ___
->## Cloistered Maiden (SGttE)
+>## Cloistered Maiden
 >*Large Aberration & Undead, Neutral Evil*
 >___
 >- **Armor Class** 15 (natural armor)
@@ -893,7 +893,7 @@ ___
 >***Spinal Explosion (1/Day).*** The maiden releases all the bony protrusions on its spine. Each creature within 30 feet of the maiden must make a DC 15 Dexterity saving throw, taking 28 (8d6) piercing damage on a failed save, or half as much damage on a successful one. Each creature that fails the saving throw is also embedded with bony spikes. At the start of the creature's next turn, it must make a DC 14 Constitution saving throw. On a failed save, it becomes restrained, as its body begins to harden. On a successful save, its body ejects the spikes and it isn't otherwise affected. A restrained creature must make another DC 14 Constitution saving throw at the start of its next turn. On a success, the effect ends on the creature. On a failure, its skin hardens into bone and it becomes petrified until the maiden dies, or until it is released by a *greater restoration* spell.
 
 ___
->## Chained Giant (SGttE)
+>## Chained Giant
 >*Huge Giant, Chaotic Evil*
 >___
 >- **Armor Class** 16 (natural armor)
@@ -931,7 +931,7 @@ ___
 >***Lead Catching.*** If a rock, cannonball, or similar object is hurled at the giant, the giant can make a DC 10 Dexterity saving throw, catching the missile and taking no damage from it on a success.
 
 ___
->## Hollow Sentinel (SGttE)
+>## Hollow Sentinel
 >*Medium Construct & Humanoid, Lawful Good*
 >___
 >- **Armor Class** 17 (natural armor)
@@ -983,7 +983,7 @@ ___
 >***Anti-Magic Strike.*** When a creature within 5 feet of the Sentinel casts a spell, the Sentinel can make a melee weapon attack against it.
 
 ___
->## Jaeger (SGttE)
+>## Jaeger
 >*Medium Humanoid (any race), Any Alignment*
 >___
 >- **Armor Class** 18 (natural armor)
@@ -1027,7 +1027,7 @@ ___
 >***Special Equipment.*** The jaeger wields a dream executioner. Alternatively it can be wielding an orphan's cradle, a serpent bladewhip, or a meat hookshot. Its blade attack and references to it are replaced with an attack made with the respective weapon.
 
 ___
->## Lunar Revenant (SGttE)
+>## Lunar Revenant
 >*Huge Undead, Lawful Neutral*
 >___
 >- **Armor Class** 13 (natural armor)
@@ -1070,7 +1070,7 @@ ___
 >***Maddening Screech (Recharge 5-6).*** The revenant howls an inaudible sound that shatters the mind. Each creature within 60 feet of the revenant must succeed on a DC 15 Wisdom saving throw, taking 33 (6d10) psychic damage and gaining one short-term madness on a failure.
 
 ___
->## Roaring Mane (SGttE)
+>## Roaring Mane
 >*Large Beast & Elemental, Unaligned*
 >___
 >- **Armor Class** 17 (natural armor)
@@ -1109,7 +1109,7 @@ ___
 >***Tectonic Roar (Recharge 6).*** The roaring mane unleashes an earth-shattering roar, sending out a shockwave in a 15-foot cone in front of it. Each creature within the area must succeed on a DC 15 Constitution saving throw or take 22 (4d10) thunder damage, be knocked prone, and have its speed reduced to 0 until the end of its next turn. The roaring mane can use this action while it is burrowed, and if it does so, the ground in the area becomes difficult terrain for other creatures for 1 minute. Each 5-foot square of difficult terrain can be cleared if a creature spends its action to do so.
 
 ___
->## Blue-Flame Custodian (SGttE)
+>## Blue-Flame Custodian
 >*Large Construct, Unaligned*
 >___
 >- **Armor Class** 17 (natural armor)
@@ -1154,7 +1154,7 @@ ___
 >***Blinding Nova.*** When the custodian is attacked by a creature within 30 feet of it that it can see, the custodian can impose disadvantage on the attack roll, causing a burst of blinding flames to erupt from itself. An attacker that can't be blinded is immune to this effect.
 
 ___
->## Cervus Tenebris (SGttE)
+>## Cervus Tenebris
 >*Medium Monstrosity, Neutral Evil*
 >___
 >- **Armor Class** 15
@@ -1197,7 +1197,7 @@ ___
 >***Feast on Darkness.*** When the tenebris reduces a creature to 0 hit points, it devours the creature's shadow. The tenebris's wings grow longer, its flying speed increases by 20 feet, and it gains a +2 bonus to attack and damage rolls for 1 minute or until it is unconscious. It can gain this bonus multiple times, each time it devours a creature's shadow. A creature whose shadow has been devoured can't be targeted by this reaction again. A *remove curse* spell cast on a creature that lost its shadow allows it to regrow it.
 
 ___
->## Devouring Belua (SGttE)
+>## Devouring Belua
 >*Large Monstrosity, Chaotic Evil*
 >___
 >- **Armor Class** 15 (natural armor)
@@ -1240,7 +1240,7 @@ ___
 >***Leap.*** The belua jumps up to 50 feet horizontally or vertically.
 
 ___
->## Owlbear (SGttE)
+>## Owlbear
 >*Huge Monstrosity, Unaligned*
 >___
 >- **Armor Class** 14 (natural armor)
@@ -1278,7 +1278,7 @@ ___
 >***Rush.*** The owlbear moves up to half its speed.
 
 ___
->## Penitent (SGttE)
+>## Penitent
 >*Large Humanoid & Monstrosity, Chaotic Evil*
 >___
 >- **Armor Class** 12
@@ -1323,7 +1323,7 @@ ___
 >***Blasphemous Prison.*** When a creature starts its turn within 5 feet of the penitent, or enters the area for the first time on a turn, the penitent can entrap it in its crucible. The target must succeed on a DC 19 Dexterity saving throw or be trapped in the crucible. While trapped, the target is restrained, has total cover against effects outside the crucible, and takes 7 (2d6) fire damage at the start of each of the penitent's turns. A trapped creature, or any ally within reach, can use its action to make a DC 19 Athletics check, toppling the crucible and freeing the creature on a success. If toppled, the crucible magically teleports onto the back of the penitent at the end of its next turn. Alternatively, the penitent can recall it as a bonus action. While not carrying the crucible, the penitent can't use its Hands of Punishment, Limb Offering, or Reattach Limb actions.
 
 ___
->## Galvanized Prowler (SGttE)
+>## Galvanized Prowler
 >*Large Beast & Monstrosity, Chaotic Evil*
 >___
 >- **Armor Class** 15 (natural armor)
@@ -1373,7 +1373,7 @@ ___
 >- **Leap.** The prowler jumps a number of feet up to its speed and lands on its feet in a space that can contain one or more other creatures. Each of those creatures must make a DC 16 Dexterity saving throw. On a failed save, a creature takes 14 (4d6) bludgeoning damage and 14 (4d6) lightning damage and is knocked prone. On a successful save, a creature takes half as much damage, isn't knocked prone, and is pushed 5 feet into an unoccupied space of the creature's choice. If no unoccupied space is within range, the creature instead falls prone in the creature's space.
 
 ___
->## Death (SGttE)
+>## Death
 >*Medium Undead, Lawful Evil*
 >___
 >- **Armor Class** 20 (natural armor)
@@ -1424,7 +1424,7 @@ ___
 >***Close the Gap.*** When Death is targeted by a ranged weapon attack, it can teleport to an unoccupied space within 5 feet of the attacker. To do so, Death must see the attacker.
 
 ___
->## Dreamer's Minor Avatar (SGttE)
+>## Dreamer's Minor Avatar
 >*Large Aberration, Any Evil*
 >___
 >- **Armor Class** 10
@@ -1471,7 +1471,7 @@ ___
 >***Gift of Power.*** The avatar utters a word of power. Allied creatures within 60 feet of the avatar that can hear it gain a power die that can be added to any die roll once before it's expended. The die begins as a d4, but increases to a d8, d10, and finally a d12 each time Gift of Power is used on the creature prior to it expending the die.
 
 ___
->## Soul-Snatching Aranea (SGttE)
+>## Soul-Snatching Aranea
 >*Large Monstrosity, Any Evil*
 >___
 >- **Armor Class** 17 (natural armor)
@@ -1530,7 +1530,7 @@ ___
 >***Web Sense.*** While in contact with a web, the aranea knows the exact location of any other creature in contact with the same web.
 
 ___
->## Ectellax, The Flayed (Adult Eldritch Dragon) (SGttE)
+>## Ectellax, The Flayed (Adult Eldritch Dragon)
 >*Huge Aberration & Dragon, Chaotic Evil*
 >___
 >- **Armor Class** 17 (natural armor)
@@ -1588,7 +1588,7 @@ ___
 >- **Shatter Mind (Costs 2 Actions).** The dragon targets a creature that it can see. The target must succeed on a DC 20 Intelligence saving throw or take 10 (3d6) psychic damage and gain a short-term madness. A creature the dragon is grappling automatically fails this saving throw.
 
 ___
->## Orr, The Grieving Rebirth (First Form) (SGttE)
+>## Orr, The Grieving Rebirth (First Form)
 >*Huge Aberration (god), Chaotic Evil*
 >___
 >- **Armor Class** 17 (natural armor)
@@ -1654,7 +1654,7 @@ ___
 >- **Cast a Spell (Costs 3 Actions).** Orr casts a spell from its Innate Spellcasting trait, expending a use as normal.
 
 ___
->## Orr, The Grieving Rebirth (Second Form) (SGttE)
+>## Orr, The Grieving Rebirth (Second Form)
 >*Huge Aberration (god), Chaotic Evil*
 >___
 >- **Armor Class** 23 (natural armor)
@@ -1717,3 +1717,604 @@ ___
 >- **Teleport (Costs 1 Actions).** Orr uses its Vanish.
 >- **Cast a Spell (Costs 2 Actions).** Orr casts a spell from its Innate Spellcasting trait, expending a use as normal.
 
+
+___
+>## Goat Mother's Avatar
+>*Huge Aberration, Neutral Evil*
+>___
+>- **Armor Class** 19 (natural armor)
+>- **Hit Points** 229 (17d12 + 119)
+>- **Speed** 60 ft., climb 60 ft.
+>- **Initiative** +4 (14)
+>___
+>|STR|DEX|CON|INT|WIS|CHA|
+>|:---:|:---:|:---:|:---:|:---:|:---:|
+>|21 (+5)|18 (+4)|24 (+7)|16 (+3)|30 (+10)|23 (+6)|
+>___
+>- **Saving Throws** Con +14, Int +10, Wis +17, Cha +13
+>- **Skills** Perception +17, Religion +10
+>- **Damage Resistances** cold, fire
+>- **Damage Immunities** necrotic, poison; bludgeoning, piercing, and slashing from nonmagical attacks
+>- **Condition Immunities** blinded, charmed, exhaustion, frightened, madness, poisoned, unconscious
+>- **Senses** darkvision 300 ft., truesight 100 ft., passive Perception 27
+>- **Languages** Deep Speech, understands Common but can't speak it
+>- **Challenge** 22 (41,000 XP)
+>___
+>***Curse Weaver.*** The avatar's curses last for 1 minute. A cursed creature can make a DC 25 Charisma saving throw at the end of each of its turns, ending the oldest of these curses on itself on a success. If a creature drinks a vial of holy water, the DC of its next such saving throw is reduced by 5. A *remove curse* spell removes only one curse of the caster's choosing (or one at random). A *greater restoration* spell ends all curses on the target.
+>
+>***Cycle of Rebirth.*** If the avatar is reduced to 0 hit points, she teleports to the center of her nearest Circle of Rebirth. When she does, she regains 50 hit points, and all her curses end. Until the end of her next turn, she can't be reduced below 1 hit point.
+>
+>***Goat Leap.*** The avatar's long jump is up to 120 feet and her high jump is up to 60 feet, with or without a running start.
+>
+>***Legendary Resistance (3/Day).*** If the avatar fails a saving throw, she can choose to succeed instead.
+>
+>***Mother Tongue.*** The avatar can communicate with creatures she has summoned as if they shared a language.
+>
+>***Nurturing Essence.*** Whenever a creature summoned by the avatar ends its turn within 10 feet of her, it regains 16 (3d10) hit points.
+>
+>***Progenitor's Tears.*** Whenever a creature that was summoned by the avatar dies, the avatar mourns its death, taking 14 (4d6) psychic damage and becoming enraged, granting her advantage on attack rolls until the end of her next turn.
+>
+>***Spellcasting.*** The avatar's innate spellcasting ability is Wisdom. It can innately cast the following spells, requiring no material components:
+>
+>At will: *find the path*, *revivify*, *world breaker*†
+>3/day each: *dominate monster*, *forest of dread*†, *heal* (other creatures only)
+>1/day: *divine order: sacrifice*†
+>
+>### Actions
+>***Multiattack.*** The avatar uses her Maddening Presence, then makes three attacks. She can use Circle of Rebirth in place of one of her attacks.
+>
+>***Claw.*** *Melee Weapon Attack:* +12 to hit, reach 20 ft., one target. *Hit:* 31 (4d12 + 5) slashing damage and 13 (2d12) poison damage. If the target is a humanoid, it must succeed on a DC 25 Charisma saving throw or fall under the Curse of Goat's Blood. While cursed in this way, a creature has disadvantage on ability checks and attack rolls it makes while within the avatar's Circles of Rebirth.
+>
+>***Curse.*** *Ranged Spell Attack:* +17 to hit, range 300 ft., one creature. *Hit:* 26 (3d10 + 10) poison damage and the target suffers one of the following curses (avatar's choice):
+>
+>Curse of Acquired Scent. Creatures summoned by the avatar have advantage on attack rolls against this creature.
+>Curse of Draining Life. Whenever the creature would regain hit points, the avatar regains those hit points instead.
+>Curse of the Red Moon. The creature can't cast spells of 5th level or higher.
+>
+>***Maddening Presence.*** The avatar expunges doom from her many faces. Each creature of the avatar's choice within 120 feet of the avatar and aware of her must succeed on a DC 25 Wisdom saving throw or become paralyzed until the end of its next turn. A creature paralyzed in this way isn't incapacitated, though it still can't move or speak. If a creature has failed this saving throw three times, it also gains an indefinite madness. If a creature's saving throw is successful or it has already gained an indefinite madness from this action, the creature is otherwise immune to the avatar's Maddening Presence for the next 24 hours.
+>
+>***Circle of Rebirth (Recharge 4-6).*** Using her birthing powers, the avatar creates a 15-foot-radius circle centered on a point within 120 feet of her. When the circle appears and at the start of each of the avatar's turns, she can summon any aberration, beast, humanoid, or monstrosity of CR 5 or lower which emerges under her control in the circle. The creature shares her initiative count, but takes its turn immediately after her, following the avatar's telepathic commands (no action required by her). The circle has 50 hit points and AC 21. It has resistance to cold, fire, and necrotic damage, and immunity to poison and psychic damage. If the avatar summons three monsters from it or the circle is reduced to 0 hit points, it is destroyed.
+>
+>### Reactions
+>***Maternal Instincts.*** When a creature summoned by the avatar within 30 feet of her is targeted by an attack roll, she can impose disadvantage on the attack roll.
+>
+>### Legendary Actions
+>*The avatar can take 3 legendary actions, choosing from the options below. Only one legendary action option can be used at a time and only at the end of another creature's turn. The avatar regains spent legendary actions at the start of her turn.*
+>
+>- **Claw.** The avatar makes one claw attack.
+>- **Detect.** The avatar makes a Perception check.
+>- **Dark Voyage (Costs 2 Actions).** The avatar teleports to an unoccupied space within one of her Circles of Rebirth.
+>- **Goat Mother's Will (Costs 3 Actions).** The avatar amplifies all curses she currently has active, weakening her foes. Each creature currently under the effect of a curse must succeed on a DC 25 Constitution saving throw or suffer an additional effect based on the curse affecting it, which lasts until the curse is removed: Curse of Goat's Blood - at the start of each of its turns, the creature gains one level of exhaustion. Curse of Acquired Scent - whenever the creature takes damage from a creature summoned by the avatar, it takes an additional 11 (2d10) poison damage. Curse of Draining Life - the creature has disadvantage on Strength and Dexterity saving throws and checks. Curse of the Red Moon - at the start of each of its turns, the creature loses its highest level spell slot.
+
+___
+>## Veiled Hunter
+>*Medium Aberration, Chaotic Evil*
+>___
+>- **Armor Class** 12 (16 with *barkskin*)
+>- **Hit Points** 91 (14d8 + 28)
+>- **Speed** 30 ft.
+>- **Initiative** +2 (12)
+>___
+>|STR|DEX|CON|INT|WIS|CHA|
+>|:---:|:---:|:---:|:---:|:---:|:---:|
+>|6 (-2)|14 (+2)|15 (+2)|13 (+1)|15 (+2)|19 (+4)|
+>___
+>- **Saving Throws** Wis +5, Cha +7
+>- **Skills** Perception +5, Stealth +8
+>- **Damage Resistances** acid, necrotic, poison
+>- **Condition Immunities** poisoned
+>- **Senses** darkvision 120 ft., passive Perception 15
+>- **Languages** Common, Deep Speech, Sylvan
+>- **Challenge** 7 (2,900 XP)
+>___
+>***Innate Spellcasting.*** The Hunter's innate spellcasting ability is Charisma (spell save DC 15). The Hunter can innately cast the following spells, requiring no material components:
+>
+>At will: *druidcraft*
+>3/day each: *blight*, *dominate beast*, *spike growth*
+>
+>***Eldritch Mask.*** The Hunter's mask is the source of its power. The mask has AC 22 and 25 hit points. The mask is immune to all damage except bludgeoning, fire, force, piercing, and slashing damage and it doesn't take damage from effects that target an area. While the Hunter is wearing its mask, it has advantage on saving throws against spells and other magical effects, can cast *speak with animals and plants* at will, and can't be deafened or magically put to sleep. If the mask is destroyed, it loses these benefits.
+>
+>***Legendary Resistance (1/Day).*** If the Hunter fails a saving throw, it can choose to succeed instead.
+>
+>***Treestep.*** Once on its turn, the Hunter can use 10 feet of its movement to step magically into one living tree within its reach and emerge from a second living tree within 60 feet of the first tree, appearing in an unoccupied space within 5 feet of the second tree. Both trees must be Large or bigger. After using this trait, the hunter gains the benefits of the *barkskin* spell until the start of its next turn.
+>
+>### Actions
+>***Multiattack.*** The Hunter makes two attacks: one with its gravetouch and one with its maggotspit.
+>
+>***Gravetouch.*** *Melee Spell Attack:* +7 to hit, reach 15 ft., one target. *Hit:* 25 (6d6 + 4) necrotic damage.
+>
+>***Maggotspit.*** *Melee Spell Attack:* +7 to hit, reach 10 ft., one target. *Hit:* 24 (8d4 + 4) poison damage and the target must succeed on a DC 15 Constitution saving throw or become poisoned for 1 minute. A poisoned creature can repeat this saving throw at the end of each of its turns, ending the effect on a success.
+>
+>***Rootprison (Recharge 4-6).*** The Hunter chooses up to five creatures within 30 feet of a tree the Hunter can see. Each creature must make a DC 15 Dexterity saving throw. On a failure, a creature takes 18 (4d8) piercing damage and is restrained for 1 minute. If a restrained creature uses its action to make an attack or cast a spell, it takes 9 (2d8) piercing damage. A creature can use its action to make a DC 15 Athletics check to break itself or another creature within its reach free of this restraint, ending the effect on that creature on a success.
+>
+>***Wooden Labyrinth.*** The Hunter chooses a creature it can see within 120 feet of it. The target must make a DC 15 Wisdom saving throw. On a failure, the creature becomes magically lost, automatically failing all Nature and Survival checks it makes for the next 24 hours and being unable to escape the woods. The creature isn't aware of this effect. On a success, the creature is immune to this effect for the next 24 hours.
+>
+>### Bonus Actions
+>***They Have Eyes.*** The Hunter transports its senses into any tree within 500 miles of it that it has seen, seeing and hearing as if it occupied the tree's space, until it ends the effect (no action required). During this time, it is blind and deaf in regard to its own senses.
+>
+>### Reactions
+>***House of Leaves (3/Day).*** When the Hunter is hit by an attack, it turns into a pile of leaves and reappears in the branches of a tree within 60 feet of it, causing the attack to miss.
+
+___
+>## The Defiled Librarian
+>*Medium Undead, Lawful Evil*
+>___
+>- **Armor Class** 13 (16 with *mage armor*)
+>- **Hit Points** 90 (12d8 + 36)
+>- **Speed** 15 ft., fly 40 ft. (hover)
+>- **Initiative** +3 (13)
+>___
+>|STR|DEX|CON|INT|WIS|CHA|
+>|:---:|:---:|:---:|:---:|:---:|:---:|
+>|11 (+0)|16 (+3)|16 (+3)|20 (+5)|15 (+2)|19 (+4)|
+>___
+>- **Saving Throws** Con +7, Int +9, Wis +6
+>- **Skills** Arcana +9, History +9, Perception +6, Religion +9
+>- **Damage Resistances** piercing
+>- **Damage Immunities** poison, psychic
+>- **Condition Immunities** exhaustion, poisoned, madness
+>- **Senses** truesight 60 ft., passive Perception 16
+>- **Languages** all
+>- **Challenge** 11 (5,000 XP)
+>___
+>***After Image.*** The Librarian can use this trait if it has been reduced to 0 hit points in the past hour. Whenever the Librarian casts an osteomancy spell of 1st level or higher, it can teleport up to 30 feet to an unoccupied space that it can see. It also becomes invisible and projects an illusory image that makes it appear to be in its previous location until the start of its next turn. A creature that uses its action to examine the image can determine that it is an illusion with a successful DC 17 Investigation check. If a creature targets the image with an attack or effect that deals damage, the illusion ends, giving the impression that the Librarian is magically absorbing the damage.
+>
+>***Aura of Silence.*** The Librarian has a permanent *silence* spell cast on itself that moves with it; this aura doesn't prevent the Librarian from casting spells with a verbal component, and it can't be dispelled.
+>
+>***Dark Devotion.*** The Librarian has advantage on saving throws against being charmed or frightened or gaining madness.
+>
+>***Erase Reality.*** The Librarian can sense when any creature within 120 feet of it can see through illusions (such as with truesight) and the Librarian has advantage on attack rolls against such creatures.
+>
+>***Eternal Nightmare (1/Day).*** If the Librarian is reduced to 0 hit points, it doesn't die or fall unconscious. Instead, it regains all its hit points and regains all its spell slots of 1st, 2nd, 3rd, and 7th level.
+>
+>***Spellcasting.*** The Librarian is a 13th-level spellcaster. Its spellcasting ability is Intelligence (spell save DC 17, +9 to hit with spell attacks). The Librarian has the following wizard spells prepared:
+>
+>Cantrips (at will): *brittle bone throw*†, *mage hand*, *minor illusion*, *ray of frost*, *shocking grasp*
+>1st level (4 slots): *absorb elements*, *bone shield*\*†, *mage armor*, *phalangeal shot*\*†, *shield*
+>2nd level (3 slots): *arm cannon*\*†, *hold person*, *invisibility*, *misty step*
+>3rd level (3 slots): *blink*, *counterspell*, *displacing maw*\*†, *osseous impalement*\*†
+>4th level (3 slots): *dread scarecrow*\*†, *greater invisibility*, *maiden of bones*\*†
+>5th level (2 slots): *chisel skull*\*†, *dominate person*, *forest of dread*†
+>6th level (1 slot): *wall of bones*\*†
+>7th level (1 slot): *crush*\*†
+>
+>\*osteomancy spell of 1st level or higher
+>
+>### Actions
+>***Quarterstaff.*** *Melee Weapon Attack:* +4 to hit, reach 5 ft., one target. *Hit:* 3 (1d6) bludgeoning damage, or 4 (1d8) bludgeoning damage if used with two hands.
+>
+>### Bonus Actions
+>***Nightmare Dash.*** The librarian flies up to 30 feet in a straight line.
+>
+>### Reactions
+>***Spell Reflection.*** When the Librarian succeeds on a saving throw against a spell, the spell is dispelled and the librarian gains a spell slot equal to the spell's level. This spell slot vanishes if the Librarian uses this reaction again or after 1 minute.
+
+___
+>## Tisiphone, The Primal Chaos
+>*Medium Aberration, Lawful Evil*
+>___
+>- **Armor Class** 15 (16 with *barkskin*)
+>- **Hit Points** 110 (13d8 + 52)
+>- **Speed** 40 ft., climb 40 ft.
+>- **Initiative** +5 (15)
+>___
+>|STR|DEX|CON|INT|WIS|CHA|
+>|:---:|:---:|:---:|:---:|:---:|:---:|
+>|16 (+3)|20 (+5)|18 (+4)|15 (+2)|20 (+5)|17 (+3)|
+>___
+>- **Saving Throws** Str +8, Con +9, Wis +10, Cha +8
+>- **Skills** Deception +8, Intimidation +8, Perception +15
+>- **Damage Immunities** bludgeoning, piercing, and slashing from nonmagical attacks that aren't moongilded
+>- **Senses** darkvision 60 ft., passive Perception 25
+>- **Languages** Common, Druidic
+>- **Challenge** 14 (11,500 XP)
+>___
+>***Keen Hearing and Sight.*** Tisiphone has advantage on Perception checks that rely on hearing or sight.
+>
+>***Legendary Resistance (1/Day).*** If Tisiphone fails a saving throw, she can choose to succeed instead.
+>
+>***Natural Resistance.*** Tisiphone has advantage on saving throws against spells, other magical effects, and effects that would knock her prone.
+>
+>***Primal Resurrection.*** When Tisiphone is reduced to 0 hit points, her orb of truth absorbs her essence. The orb of truth has an AC of 20, 50 hit points, a flying speed of 60 feet, and is invisible. It must reach Tisiphone's circle within 2 hours or be destroyed. Once in the circle, it releases Tisiphone with 0 hit points and she is paralyzed until she regains at least 1 hit point. After spending 1 hour in her circle in this way, she regains 1 hit point. If the orb is destroyed before reaching the circle, Tisiphone is also destroyed.
+>
+>***Primeval Power.*** Tisiphone's weapon attacks are magical and deal additional damage equal to her Wisdom modifier on a hit (included in the stat block).
+>
+>***Spellcasting.*** Tisiphone is a 14th-level spellcaster. Her spellcasting ability is Wisdom (spell save DC 18, +10 to hit with spell attacks). Tisiphone has the following druid spells prepared:
+>
+>Cantrips (at will): *bestial roar*†, *guidance*, *poison spray*, *shillelagh* (cast before combat)
+>1st level (4 slots): *bone shield*†, *longstrider*
+>2nd level (3 slots): *barkskin* (cast before combat), *blind ambush*†, *heat metal*, *skeletal tail*†
+>3rd level (3 slots): *dispel magic*, *osseous cage*†, *plant growth*
+>4th level (3 slots): *blight*, *graveyard shuffle*†, *maiden of bones*†, *tree stride*
+>5th level (2 slots): *ancestral bond*†, *contagion*, *forest of dread*†
+>6th level (1 slot): *wall of thorns*†
+>7th level (1 slot): *amputate*†
+>
+>***Violent Regeneration.*** Tisiphone regains 18 hit points at the start of her turn if she has at least 1 hit point. In addition, whenever she takes damage, each creature of her choice within 5 feet of her takes 5 (2d4) piercing damage and Tisiphone gains temporary hit points equal to the damage dealt.
+>
+>### Actions
+>***Multiattack.*** Tisiphone makes two staff attacks. She can cast a spell of 4th level or lower in place of one attack.
+>
+>***Staff.*** *Melee Weapon Attack:* +10 to hit, reach 5 ft., one target. *Hit:* 19 (2d8 + 10) bludgeoning damage and Tisiphone gains temporary hit points equal to the damage dealt.
+>
+>### Bonus Actions
+>***Orb of Truth.*** *Ranged Spell Attack:* +10 to hit, range 120 ft., one target. *Hit:* 18 (3d8 + 5) acid, bludgeoning, cold, or poison damage (Tisiphone's choice).
+>
+>### Legendary Actions
+>*Tisiphone can take 2 legendary actions, choosing from the options below. Only one legendary action option can be used at a time and only at the end of another creature's turn. Tisiphone regains spent legendary actions at the start of her turn.*
+>
+>- **Staff.** Tisiphone makes one staff attack.
+>- **Cast Spell (Costs 2 Actions).** Tisiphone casts a spell of 4th level or lower.
+
+___
+>## Malach, Angel of Flesh
+>*Medium Construct, Lawful Evil*
+>___
+>- **Armor Class** 18 (20 while he has 81 or fewer hit points)
+>- **Hit Points** 161 (17d8 + 85)
+>- **Speed** 30 ft., fly 120 ft.; walking 50 ft. only while he has 81 or fewer hit points
+>- **Initiative** +2 (12)
+>___
+>|STR|DEX|CON|INT|WIS|CHA|
+>|:---:|:---:|:---:|:---:|:---:|:---:|
+>|20 (+5)|14 (+2)|20 (+5)|23 (+6)|14 (+2)|17 (+3)|
+>___
+>- **Saving Throws** Int +11, Wis +7, Cha +8
+>- **Skills** Arcana +11, Deception +13, Insight +7, Intimidation +13, Persuasion +13
+>- **Damage Resistances** lightning; bludgeoning, piercing, and slashing from nonmagical attacks
+>- **Damage Immunities** necrotic, poison
+>- **Condition Immunities** charmed, exhaustion, frightened, petrified, poisoned
+>- **Senses** darkvision 120 ft., passive Perception 12
+>- **Languages** Common
+>- **Challenge** 15 (13,000 XP)
+>___
+>***Angel of Flesh.*** Malach's form changes according to his hit points, losing his mantle of flesh when reduced below half his hit point maximum. While he has more than 81 hit points, Malach is draped in the flesh of the foes he has slain, granting him a flying speed of 120 feet using his wings of flesh, advantage on Perception checks that rely on sight, and the ability to cast *alter self* at will (requiring no components) to disguise himself with flesh. While he has 81 hit points or fewer, Malach reveals the perfected golden machine beneath, granting him advantage on Strength, Dexterity, and Constitution saving throws against effects he can see, two additional censer attacks as part of his Multiattack, a +2 bonus to AC, and his speed increased by 20 feet.
+>
+>***Champion of Constructs.*** Malach can telepathically communicate to and understand constructs within 500 feet of him.
+>
+>***Consuming Hatred.*** If Malach starts his turn within 5 feet of an enemy humanoid, he must succeed on a DC 15 Wisdom saving throw or become consumed by wrath and spend his action attacking the creature with his censer.
+>
+>***Deadly Miasma.*** Malach's censer emits a 10-foot-radius sphere of poisonous fog centered on itself. The fog spreads around corners and lightly obscures the area. When a non-construct creature enters the fog's area for the first time on a turn or starts its turn there, that creature must make a DC 18 Constitution saving throw. On a failed save a creature takes 13 (3d8) poison damage and is poisoned for 1 minute. On a successful save, a creature takes half as much damage and isn't poisoned. Creatures are affected even if they hold their breath or don't need to breathe.
+>
+>***Innate Spellcasting.*** Malach's innate spellcasting ability is Intelligence (spell save DC 19, +11 to hit with spell attacks).
+>
+>At will: *charm person*, *command*, *prestidigitation*
+>2/day each: *major image*, *ray of enfeeblement*
+>1/day: *dominate person*
+>
+>***Legendary Resistance (2/Day).*** If Malach fails a saving throw, he can choose to succeed instead.
+>
+>***Magic Weapons.*** Malach's weapon attacks are magical.
+>
+>### Actions
+>***Multiattack.*** Malach makes two censer attacks.
+>
+>***Censer.*** *Melee Weapon Attack:* +10 to hit, reach 5 ft., one target. *Hit:* 9 (1d8 + 5) bludgeoning and 9 (2d8) poison damage.
+>
+>***Create Miasma.*** Malach creates a 15-foot-radius sphere of poisonous fog centered on a point within 60 feet of him. It lasts until the end of Malach's next turn. Its area is heavily obscured for creatures other than Malach and creatures within Malach's Deadly Miasma trait.
+>
+>***Bane of Flesh (Recharge 6).*** Malach chooses a non-construct creature he can see within 15 feet of him and attempts to rip out its flesh with vile magic. The creature must succeed on a DC 19 Constitution saving throw or take 27 (6d8) poison damage and 27 (6d8) lightning damage. Creatures within Malach's Deadly Miasma have disadvantage on this saving throw and the weakening miasma causes the damage to ignore damage resistance.
+>
+>### Legendary Actions
+>*Malach can take 3 legendary actions, choosing from the options below. Only one legendary action option can be used at a time and only at the end of another creature's turn. Malach regains spent legendary actions at the start of his turn.*
+>
+>- **Attack.** Malach makes one censer attack.
+>- **Zealous Path.** Malach moves up to his speed. This movement doesn't provoke opportunity attacks.
+>- **Miasma (Costs 2 Actions).** Malach uses his Create Miasma.
+>- **Higher Purpose (Costs 3 Actions).** Malach reaches for a higher purpose. This effect changes based on his Angel of Flesh trait. If above 81 hit points, Malach releases an all-powerful miasma with a 20-foot radius centered on a point within 120 feet of him. Each non-construct creature in the area must succeed on a DC 19 Constitution saving throw or become paralyzed until the end of Malach's next turn. While paralyzed in this way, a creature automatically fails its saving throws against Malach's Deadly Miasma. If at or below 81 hit points, Malach uses his golden form to release a glimmer of sickening light. Each non-construct creature within 120 feet of Malach must succeed on a DC 19 Constitution saving throw or take 18 (4d8) radiant damage and become poisoned for 1 minute. This ignores immunity to the poisoned condition. A creature can repeat the saving throw at the end of each of its turns, ending the effect on itself on a success.
+
+___
+>## Vicar Priscilla
+>*Medium Humanoid (half-elf), Lawful Neutral*
+>___
+>- **Armor Class** 19 (natural armor)
+>- **Hit Points** 161 (19d8 + 76)
+>- **Speed** 30 ft., fly 30 ft. (hover)
+>- **Initiative** +5 (15)
+>___
+>|STR|DEX|CON|INT|WIS|CHA|
+>|:---:|:---:|:---:|:---:|:---:|:---:|
+>|11 (+0)|20 (+5)|18 (+4)|16 (+3)|20 (+5)|16 (+3)|
+>___
+>- **Saving Throws** Dex +10, Int +8, Wis +10, Cha +8
+>- **Skills** Arcana +8, Deception +13, Insight +10, Persuasion +8, Religion +8
+>- **Damage Resistances** cold
+>- **Damage Immunities** radiant
+>- **Condition Immunities** blinded, unconscious
+>- **Senses** blindsight 60 ft., truesight 120 ft., passive Perception 15
+>- **Languages** Celestial, Common, Deep Speech, Infernal
+>- **Challenge** 15 (13,000 XP)
+>___
+>***Divine Warrior.*** Vicar Priscilla's weapon attacks deal an extra 7 (2d6) radiant damage on a hit (included in the attacks).
+>
+>***Honed Reflexes.*** Vicar Priscilla can take two reactions per round, but no more than one reaction per turn.
+>
+>***Legendary Resistance (3/Day).*** If Vicar Priscilla fails a saving throw, she can choose to succeed instead.
+>
+>***Magic Resistance.*** Vicar Priscilla has advantage on saving throws against spells and other magical effects.
+>
+>***Special Equipment.*** Vicar Priscilla has a *Shard of Moonlight* (SGttEH page 252). She cannot be disarmed of it while she is conscious.
+>
+>***Spellcasting.*** Vicar Priscilla is an 11th-level spellcaster. Her spellcasting ability is Wisdom (spell save DC 18, +10 to hit with spell attacks). Vicar Priscilla has the following cleric spells prepared:
+>
+>Cantrips (at will): *guidance*, *light*, *sacred flame*, *spare the dying*
+>1st level (4 slots): *bless*, *burning hands*, *command*, *faerie fire*, *healing word*
+>2nd level (3 slots): *hold person*, *scorching ray*, *spiritual weapon*
+>3rd level (3 slots): *daylight*, *dispel magic*, *fireball*, *mass healing word*
+>4th level (3 slots): *banishment*, *dimension door*, *guardian of faith*, *wall of fire*
+>5th level (2 slots): *flame strike*, *geas*, *mass cure wounds*, *scrying*
+>6th level (1 slot): *heal*, *word of recall*
+>
+>### Actions
+>***Multiattack.*** Vicar Priscilla makes two Shard of Moonlight attacks.
+>
+>***Shard of Moonlight.*** *Melee Weapon Attack:* +10 to hit, reach 5 ft., one target. *Hit:* 9 (1d8 + 5) slashing damage plus 10 (3d6) radiant damage, or 12 (2d6 + 5) slashing damage plus 14 (4d6) radiant damage if the blade is transformed.
+>
+>### Bonus Actions
+>***Divine Dash.*** Vicar Priscilla moves up to 40 feet in a straight line.
+>
+>### Legendary Actions
+>*Vicar Priscilla can take 3 legendary actions, choosing from the options below. Only one legendary action option can be used at a time and only at the end of another creature's turn. Vicar Priscilla regains spent legendary actions at the start of her turn.*
+>
+>- **Beckon the Moon.** Vicar Priscilla raises the Shard of Moonlight at the moon and the blade gains or loses 3 (1d4 + 1) charges, according to Vicar Priscilla's will.
+>- **Strike.** Vicar Priscilla makes a Shard of Moonlight attack.
+>- **Cast a Spell (Costs 2 Actions).** Vicar Priscilla casts a spell she has prepared.
+>- **Vanish (Costs 2 Actions).** Vicar Priscilla expends 5 charges from her Shard of Moonlight to step into the Ethereal Plane until the start of her next turn.
+
+___
+>## Abaddon, Failed Sentinel
+>*Large Celestial, Chaotic Evil*
+>___
+>- **Armor Class** 17 (natural armor)
+>- **Hit Points** 168 (16d10 + 80)
+>- **Speed** 40 ft., fly 30 ft.
+>- **Initiative** +3 (13)
+>___
+>|STR|DEX|CON|INT|WIS|CHA|
+>|:---:|:---:|:---:|:---:|:---:|:---:|
+>|20 (+5)|16 (+3)|20 (+5)|9 (-1)|17 (+3)|19 (+4)|
+>___
+>- **Saving Throws** Str +10, Con +10, Wis +8, Cha +9
+>- **Skills** Acrobatics +8, Athletics +15, Intimidation +9, Perception +8
+>- **Damage Resistances** cold, necrotic, piercing
+>- **Condition Immunities** charmed, exhaustion, frightened
+>- **Senses** truesight 120 ft., passive Perception 18
+>- **Languages** -
+>- **Challenge** 16 (15,000 XP)
+>___
+>***Infectious Wrath.*** A creature that grapples Abaddon or becomes grappled by it takes 9 (2d8) necrotic damage and must succeed on a DC 18 Constitution saving throw or gain a short-term madness. A creature takes 9 (2d8) necrotic damage each time it starts its turn grappling or grappled by Abaddon.
+>
+>***Innate Spellcasting.*** Abaddon's innate spellcasting ability is Constitution (spell save DC 18). It can innately cast the following spells, requiring no material components:
+>
+>6/day: *misty step*
+>2/day: *dominate monster*
+>
+>***Magic Resistance.*** Abaddon has advantage on saving throws against spells and other magical effects.
+>
+>***Moongilded Weapons.*** Abaddon's weapon attacks are magical. When Abaddon hits with any weapon, he deals an additional die of damage (included in the attack).
+>
+>***Moongilded Body.*** Abaddon has advantage on saving throws against madness and any critical hits it suffers become normal hits.
+>
+>***Legendary Resistance (3/Day).*** If Abaddon fails a saving throw, it can choose to succeed instead.
+>
+>***Reactive.*** Abaddon can take one reaction on every turn in combat.
+>
+>### Actions
+>***Multiattack.*** Abaddon makes three attacks: one with its greatsword, one with its hammer arm, and one with its tendinous lash.
+>
+>***Greatsword.*** *Melee Weapon Attack:* +10 to hit, reach 10 ft., one target. *Hit:* 15 (3d6 + 5) slashing damage.
+>
+>***Hammer Arm.*** *Melee Weapon Attack:* +10 to hit, reach 10 ft., one target. *Hit:* 15 (3d6 + 5) bludgeoning damage and Abaddon can push the target 5 feet away from it.
+>
+>***Tendinous Lash.*** *Melee Weapon Attack:* +10 to hit, reach 20 ft., one target. *Hit:* 10 (2d4 + 5) slashing damage and the target must succeed on a DC 18 Strength saving throw or be knocked prone.
+>
+>### Bonus Actions
+>***Tendril Explosion (2/Day).*** Each creature within 20 feet of Abaddon must succeed on a DC 18 Strength saving throw or take 5 (2d4) slashing damage, be pulled 15 feet in a straight line towards it, and be grappled (escape DC 25) until the start of Abaddon's next turn.
+>
+>### Reactions
+>***Annihilation.*** After Abaddon is targeted by a spell, it can fly up to 60 feet towards the caster without provoking opportunity attacks and make a greatsword attack against the caster.
+>
+>***Parry.*** Abaddon adds 5 to its AC against one weapon attack that would hit it. To do so, Abaddon must see the attacker.
+>
+>***Devour.*** When a creature within 15 feet of Abaddon misses it with an attack roll, or Abaddon succeeds on a saving throw against an effect from the creature, Abaddon can attempt to grapple the creature with a total +15 modifier.
+>
+>### Legendary Actions
+>*Abaddon can take 2 legendary actions, choosing from the options below. Only one legendary action option can be used at a time and only at the end of another creature's turn. Abaddon regains spent legendary actions at the start of its turn.*
+>
+>- **Absorb Magic.** Abaddon innately casts *dispel magic* (+10 spellcasting ability modifier).
+>- **Spread Corruption.** Abaddon makes a greatsword attack. On a hit, the target must also succeed on a DC 18 Constitution saving throw or gain a short-term madness.
+
+___
+>## Radiant Watcher
+>*Large Humanoid & Aberration, Lawful Evil*
+>___
+>- **Armor Class** 21 (tar armor)
+>- **Hit Points** 199 (21d10 + 84)
+>- **Speed** 60 ft., fly 120 ft.
+>- **Initiative** +3 (13)
+>___
+>|STR|DEX|CON|INT|WIS|CHA|
+>|:---:|:---:|:---:|:---:|:---:|:---:|
+>|21 (+5)|16 (+3)|18 (+4)|15 (+2)|13 (+1)|23 (+6)|
+>___
+>- **Saving Throws** Str +11, Con +10, Cha +12
+>- **Skills** Deception +12, Persuasion +12
+>- **Damage Resistances** cold; bludgeoning, piercing, and slashing from nonmagical attacks
+>- **Damage Immunities** necrotic, radiant
+>- **Condition Immunities** blinded, charmed, exhaustion
+>- **Senses** darkvision 120 ft., truesight 30 ft., passive Perception 11
+>- **Languages** Celestial, Common, Deep Speech
+>- **Challenge** 17 (18,000 XP)
+>___
+>***Cosmic Constitution.*** The Watcher sheds bright light in a 15-foot radius and dim light for another 15 feet. It can choose to turn this light on or off at any time while it isn't incapacitated (no action required). In addition, whenever a creature starts its turn within 30 feet of the Watcher, the creature must succeed on a DC 20 Strength saving throw or be pulled 30 feet toward it.
+>
+>***Onyx Flight.*** When the Watcher is flying up to 15 feet above the ground, it coats the ground beneath it in a thick layer of tar. Each creature except the Watcher that moves into an area coated in this tar must succeed on a DC 20 Dexterity saving throw or become tar-coated. A tar-coated creature's speed is halved. Whenever a tar-coated creature takes fire or lightning damage, it explodes and the tar vanishes; each creature within 10 feet of the creature must succeed on a DC 20 Dexterity saving throw or take 17 (5d6) fire damage. The tar-coated creature has disadvantage on the saving throw.
+>
+>***Spatial Rend.*** A melee weapon deals one extra die of damage when the Watcher hits with it (included in the attack).
+>
+>***Special Equipment.*** The Watcher has a *sword of the radiant watcher*, which is permanently in its Shadow Form (SGttEH page 253). The Watcher can't be disarmed of it while it is conscious.
+>
+>***Spellcasting.*** The Watcher's innate spellcasting ability is Charisma (spell save DC 20). The Watcher can innately cast the following spells, requiring no material components:
+>
+>At will: *light*, *message*, *thaumaturgy*
+>2/day each: *graviturgic smite*†, *gravity storm*†, *radiant slaughter*†
+>1/day: *starfall*†
+>
+>### Actions
+>***Multiattack.*** The Watcher uses its Starsky Presence, then makes three attacks.
+>
+>***Sword of the Radiant Watcher.*** *Melee Weapon Attack:* +11 to hit, reach 5 ft., one target. *Hit:* 14 (2d8 + 5) slashing damage, or 16 (2d10 + 5) slashing damage if used with two hands, plus 4 (1d8) necrotic damage.
+>
+>***Cosmic Bolt.*** *Ranged Weapon Attack:* +12 to hit, range 120 ft., one target. *Hit:* 19 (3d8 + 6) radiant damage.
+>
+>***Supernova (Recharge 6).*** Focusing its entire strength on one star from its body, the Watcher forms a supernova from within. Each creature within 60 feet of the Watcher must make a DC 20 Constitution saving throw. On a failure, a creature takes 42 (12d6) radiant damage and is blinded for 1 minute. On a success, a creature takes half as much damage and isn't blinded. A blinded creature can repeat the saving throw at the end of each of its turns, ending the effect on itself on a success.
+>
+>***Starsky Presence.*** The Watcher forces those around it to gaze into the void of the cosmos and realize their meaninglessness. Each creature of the Watcher's choice within 120 feet of the Watcher and aware of it must succeed on a DC 20 Wisdom saving throw or gain a long-term madness for 1 minute. A creature can repeat the saving throw at the end of each of its turns, ending the effect on itself on a success. If a creature's saving throw is successful or the effect ends for it, the creature gains one short-term madness and is otherwise immune to the Watcher's Starsky Presence for the next 24 hours.
+>
+>### Bonus Actions
+>***Star Drop.*** The Watcher deals 2 (1d4) radiant damage to a creature that it can see within 120 feet of it.
+>
+>### Reactions
+>***Tar Slew.*** When the Watcher is hit by an attack, it can explode in a wave of tar. Each creature within 10 feet of it must succeed on a DC 20 Dexterity saving throw or become tar-coated per the Watcher's Onyx Flight trait.
+>
+>### Legendary Actions
+>*The Watcher can take 1 legendary action, choosing from the options below. Only one legendary action option can be used at a time and only at the end of another creature's turn. The Watcher regains spent legendary actions at the start of its turn.*
+>
+>- **Fly.** The Watcher flies up to its speed.
+>- **Strike.** The Watcher makes one attack.
+
+___
+>## Gerhard, Accursed Knight
+>*Large Celestial & Humanoid, Chaotic Evil*
+>___
+>- **Armor Class** 21 (natural armor)
+>- **Hit Points** 216 (16d10 + 128)
+>- **Speed** 60 ft., climb 60 ft.
+>- **Initiative** +6 (16)
+>___
+>|STR|DEX|CON|INT|WIS|CHA|
+>|:---:|:---:|:---:|:---:|:---:|:---:|
+>|26 (+8)|22 (+6)|26 (+8)|3 (-4)|7 (-2)|20 (+5)|
+>___
+>- **Saving Throws** Str +14, Dex +12, Con +14, Int +2
+>- **Skills** Acrobatics +12, Athletics +20
+>- **Damage Immunities** poison; bludgeoning, piercing, and slashing from nonmagical attacks
+>- **Condition Immunities** charmed, exhaustion, frightened, poisoned
+>- **Senses** truesight 120 ft., passive Perception 8
+>- **Languages** -
+>- **Challenge** 18 (20,000 XP)
+>___
+>***Cleave (Hunter).*** When Gerhard makes a melee weapon attack, it can choose to make another attack with the same weapon against one other creature within 5 feet of the original target and within reach as part of the same attack.
+>
+>***Herald of Ruin.*** When Gerhard hits a physical barrier created by a spell, such as the effect of a *wall of force* or *forcecage* spell, or any other wall spell (such as *wall of fire* or *prismatic wall*), it can make a Strength check (DC equals 10 + the spell's level) to rupture the barrier and dispel the spell on a success.
+>
+>***Magic Resistance.*** Gerhard has advantage on saving throws against spells and other magical effects.
+>
+>***Smash (Hunter).*** Once per turn, when Gerhard hits a creature with a hooves attack, it becomes a critical hit.
+>
+>***Trample (Beast).*** If Gerhard hits a creature with a hooves attack, the target takes an extra 11 (2d10) bludgeoning damage and must succeed on a DC 22 Strength saving throw or be knocked prone.
+>
+>***Unbreaking Hide.*** While Gerhard has fewer than 166, 116, or 66 hit points, it gains a +2, +4, or +6 bonus to its AC, respectively.
+>
+>***Legendary Resistance (2/Day).*** If Gerhard fails a saving throw, it can choose to succeed instead.
+>
+>### Actions
+>***Multiattack (Beast).*** Gerhard uses its Charge and makes three attacks: one with its bite and two with its hooves. It can replace a hooves attack with a maul attack.
+>
+>***Multiattack (Hunter).*** Gerhard makes three attacks: one with its hooves and two with its maul. It can replace a maul attack with a hooves attack.
+>
+>***Bite.*** *Melee Weapon Attack:* +14 to hit, reach 5 ft., one target. *Hit:* 17 (2d8 + 8) piercing damage.
+>
+>***Hooves.*** *Melee Weapon Attack:* +14 to hit, reach 10 ft., one target. *Hit:* 19 (2d10 + 8) bludgeoning damage.
+>
+>***Maul.*** *Melee Weapon Attack:* +14 to hit, reach 5 ft., one target. *Hit:* 22 (4d6 + 8) bludgeoning damage.
+>
+>***Charge (Beast).*** Gerhard moves up to 20 feet in a straight line without provoking opportunity attacks, and can pass through the spaces of Large or smaller creatures. If it moves through a creature's space during that movement, the target must make a DC 22 Dexterity saving throw, taking 19 (2d10 + 8) bludgeoning damage and being knocked prone on a failed save. If Gerhard ends this movement in a creature's space, the creature is pushed out the nearest unoccupied space.
+>
+>***Spectral Slaughter (Hunter; Recharge 5-6).*** Gerhard sends forth up to six spectral duplicates of itself to strike down enemies within 120 feet of itself. Each enemy can be targeted by no more than two duplicates. Each duplicate makes a melee attack against a target that deals 14 (4d6) bludgeoning damage on a hit. Gerhard can then use a bonus action to move up to 120 feet in a straight line towards one of the targets without provoking opportunity attacks and make a maul attack.
+>
+>### Bonus Actions
+>***Stance.*** Gerhard changes between stances, either standing on all fours (beast) or standing on its hind legs (hunter), granting it certain features noted by that stance name.
+>
+>***Dash (Beast).*** Gerhard moves up to 40 feet.
+>
+>### Reactions
+>***Dodge (Beast).*** If Gerhard's speed isn't 0, and it is targeted by a melee attack, it moves back 10 feet without triggering opportunity attacks. If this causes Gerhard to leave the attack's reach, it evades the attack completely, causing it to miss.
+>
+>***Retributive Strike (Hunter).*** After taking damage, Gerhard makes one maul or hooves attack.
+>
+>### Legendary Actions
+>*Gerhard can take 2 legendary actions, choosing from the options below. Only one legendary action option can be used at a time and only at the end of another creature's turn. Gerhard regains spent legendary actions at the start of its turn.*
+>
+>- **Focus (Hunter; 1/Day).** Gerhard regains 21 (6d6) hit points and recharges its Spectral Slaughter.
+>- **Maul.** Gerhard makes one maul attack.
+>- **Regenerate.** Gerhard regains 21 (6d6) hit points.
+>- **Howl (Beast).** Gerhard releases a monstrous howl. Each creature of Gerhard's choice within 60 feet of it that can hear it gains 14 (4d6) temporary hit points.
+
+___
+>## The King of the Hunt
+>*Huge Humanoid & Aberration, Neutral Good or Neutral Evil*
+>___
+>- **Armor Class** 21 (natural armor)
+>- **Hit Points** 507 (35d12 + 280)
+>- **Speed** 50 ft., fly 150 ft.
+>- **Initiative** +6 (16)
+>___
+>|STR|DEX|CON|INT|WIS|CHA|
+>|:---:|:---:|:---:|:---:|:---:|:---:|
+>|26 (+8)|22 (+6)|26 (+8)|17 (+3)|17 (+3)|30 (+10)|
+>___
+>- **Saving Throws** Str +16, Dex +14, Con +16, Wis +11
+>- **Skills** Investigation +11, Perception +11, Religion +11
+>- **Damage Resistances** necrotic
+>- **Damage Immunities** poison, radiant; bludgeoning, piercing, and slashing from nonmagical attacks
+>- **Condition Immunities** exhaustion, frightened, poisoned
+>- **Senses** truesight 120 ft., passive Perception 21
+>- **Languages** all but rarely speaks, telepathy 120 ft.
+>- **Challenge** 28 (120,000 XP)
+>___
+>***Fey Ancestry.*** The King has advantage on saving throws against being charmed, and magic can't put the King to sleep.
+>
+>***Great Cleave (3/Day).*** When the King makes a melee weapon attack, it can make another attack with the same weapon against each other creature within reach and within 5 feet of the original target as part of the same action.
+>
+>***Leap Attack.*** Once per turn, if the King moves at least 15 feet straight toward a target and then hits it with a greatsword attack on the same turn, the target takes an extra 6 (1d12) slashing damage.
+>
+>***Legendary Resistance (5/Day).*** If the King fails a saving throw, it can choose to succeed instead.
+>
+>***Magic Resistance.*** The King has advantage on saving throws against spells and other magical effects.
+>
+>***Reactive.*** The King can take one reaction on every turn in combat.
+>
+>***Special Equipment.*** The King has an *Unbound Épée Solaire* (SGttEH page 256). The King can't be disarmed of it while it is conscious. The bonus to attack and damage rolls is already included in the stat block.
+>
+>***Undying Warrior.*** Having 0 hit points doesn't knock the King unconscious. He must still make death saving throws, and suffers the normal effects of taking damage while at 0 hit points.
+>
+>***Unstoppable.*** The King's speed can't be reduced, but effects like being paralyzed still prevent it from moving.
+>
+>### Actions
+>***Multiattack.*** The King makes three greatsword attacks, or four shortsword attacks if the Unbound Épée Solaire is transformed.
+>
+>***Greatsword.*** *Melee Weapon Attack:* +19 to hit, reach 10 ft., one target. *Hit:* 32 (6d6 + 11) slashing damage and 4 (1d8) radiant damage. If the King damages a creature twice on a turn with this attack, the target must succeed on a DC 25 Wisdom saving throw or become frightened of the King for 1 minute. A frightened creature can repeat the saving throw at the end of each of its turns, ending the effect on a success.
+>
+>***Shortsword.*** *Melee Weapon Attack:* +19 to hit, reach 10 ft., one target. *Hit:* 21 (3d6 + 11) slashing damage and 4 (1d8) radiant damage.
+>
+>### Bonus Actions
+>***Hunter's Pursuit.*** The King flies up to 70 feet toward a creature it can see without provoking opportunity attacks.
+>
+>***Misty Step.*** The King casts *misty step*. Charisma is its spellcasting ability for this spell.
+>
+>***Vicious Finisher (2/Day).*** *Melee Weapon Attack:* +16 to hit, reach 5 ft., one target. *Hit:* 138 (20d12 + 8) slashing damage. This attack scores a critical hit on a result of 15-20 on the die. The King can use this bonus action twice, once each when the King has fewer than half, and one-quarter its hit points.
+>
+>### Reactions
+>***Dodge Step.*** When a creature the King can see attacks it, the King can move 5 feet without provoking opportunity attacks and make a Dexterity saving throw with a DC equal to the attack roll's total. On a success, the King evades completely and the attack misses. On a failure, the King takes half the attack's damage if it hits.
+>
+>***Killing Blow.*** If the King sees a creature fall to 0 hit points, it can make an attack with its weapon against the creature. On a hit, the King pierces the target's vital organ and the target immediately dies.
+>
+>***Weapon Parry.*** The King adds 8 to its AC against one attack that would hit it. To do so, the King must see the attacker and be wielding a melee weapon. If the attacker made a ranged attack, the King can bend gravity and force the attacker to make a DC 26 Strength saving throw, pulling it up to 60 feet straight towards the King on a failure. This reaction can't be used two turns in a row.
+>
+>### Legendary Actions
+>*The King can take 3 legendary actions, choosing from the options below. Only one legendary action option can be used at a time and only at the end of another creature's turn. The King regains spent legendary actions at the start of its turn.*
+>
+>- **Enforced Duel.** The King magically teleports, along with any equipment it is wearing or carrying, up to 120 feet to an unoccupied space it can see. Before teleporting, it can force a creature that it can see within 120 feet of it to make a DC 26 Charisma saving throw. On a failure, the target is teleported to an unoccupied space within 5 feet of the King's destination.
+>- **Strike.** The King makes a greatsword attack or two shortsword attacks, depending on which form its weapon is in.
+>- **Mark of the Hunt (Costs 2 Actions).** The King marks its prey for death. Each creature of its choice within 300 feet of it that it can see must succeed on a DC 26 Charisma saving throw or be branded for 1 minute. The King gains a +7 bonus to damage rolls against branded targets. Any attack roll the King makes against a branded target is a critical hit on a roll of 18-20 on the d20. If a branded target dies, the King regains 30 hit points. The brand can be removed via a *remove curse* spell or similar effect.
