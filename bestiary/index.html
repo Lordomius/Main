@@ -954,7 +954,7 @@
 <div class="encounter-view" id="spellListView" style="display:none;">
   <div class="spell-list-toolbar">
     <input type="text" class="cat-search" id="spellSearch" placeholder="Search spells…">
-    <button class="cat-filter-btn" id="spellFilterBtn" data-action="toggle-spell-filters" title="Filter by level, school, components">Filters<span class="filter-badge" id="spellFilterBadge" style="display:none;">0</span></button>
+    <button class="cat-filter-btn" id="spellFilterBtn" data-action="toggle-spell-filters" title="Filter by level, school, saving throw, components">Filters<span class="filter-badge" id="spellFilterBadge" style="display:none;">0</span></button>
   </div>
   <div class="cat-filter-panel" id="spellFilterPanel" style="display:none;">
     <div class="cat-filter-group">
@@ -964,6 +964,10 @@
     <div class="cat-filter-group">
       <div class="cat-filter-group-label">School</div>
       <div class="cat-filter-chips" id="spellFilterSchoolChips"></div>
+    </div>
+    <div class="cat-filter-group">
+      <div class="cat-filter-group-label">Saving Throw</div>
+      <div class="cat-filter-chips" id="spellFilterSaveChips"></div>
     </div>
     <div class="cat-filter-group">
       <div class="cat-filter-group-label">Components (must have all selected)</div>
@@ -1127,6 +1131,7 @@
     view: 'bestiary',
     spellFilterLevels: [],
     spellFilterSchools: [],
+    spellFilterSaves: [],
     spellFilterComponents: [],
     spellFiltersOpen: false,
     // Encounter Builder's own copy of the bestiary's search+filters, kept
@@ -1144,6 +1149,7 @@
   var CREATURE_TYPES = ['aberration','beast','celestial','construct','dragon','elemental','fey','fiend','giant','humanoid','monstrosity','ooze','plant','undead'];
   var SPELL_LEVELS = ['Cantrip','1st level','2nd level','3rd level','4th level','5th level','6th level','7th level','8th level','9th level'];
   var SPELL_SCHOOLS = ['Abjuration','Conjuration','Divination','Enchantment','Evocation','Illusion','Necromancy','Transmutation'];
+  var SPELL_SAVES = ['Strength','Dexterity','Constitution','Intelligence','Wisdom','Charisma'];
   var SPELL_COMPONENTS = [{id:'V', label:'Verbal'}, {id:'S', label:'Somatic'}, {id:'M', label:'Material'}];
 
   function crLabelForIndex(idx){
@@ -2754,6 +2760,11 @@
       var schoolIdx = state.spellFilterSchools.indexOf(schoolVal);
       if(schoolIdx === -1) state.spellFilterSchools.push(schoolVal); else state.spellFilterSchools.splice(schoolIdx, 1);
       renderSpellList();
+    } else if(action === 'toggle-filter-spell-save'){
+      var saveVal = t.getAttribute('data-value');
+      var saveIdx = state.spellFilterSaves.indexOf(saveVal);
+      if(saveIdx === -1) state.spellFilterSaves.push(saveVal); else state.spellFilterSaves.splice(saveIdx, 1);
+      renderSpellList();
     } else if(action === 'toggle-filter-spell-component'){
       var compVal = t.getAttribute('data-value');
       var compIdx = state.spellFilterComponents.indexOf(compVal);
@@ -2762,6 +2773,7 @@
     } else if(action === 'clear-spell-filters'){
       state.spellFilterLevels = [];
       state.spellFilterSchools = [];
+      state.spellFilterSaves = [];
       state.spellFilterComponents = [];
       renderSpellList();
     } else if(action === 'toggle-enc-filters'){
@@ -4495,6 +4507,7 @@
       if(q && s.name.toLowerCase().indexOf(q) === -1) return false;
       if(state.spellFilterLevels.length && state.spellFilterLevels.indexOf(s.level) === -1) return false;
       if(state.spellFilterSchools.length && state.spellFilterSchools.indexOf(s.school) === -1) return false;
+      if(state.spellFilterSaves.length && (!s.save || state.spellFilterSaves.indexOf(s.save.ability) === -1)) return false;
       if(state.spellFilterComponents.length){
         // AND, not OR - matches the bestiary Features filter's convention:
         // picking Verbal + Somatic should only show spells needing both, not
@@ -4523,17 +4536,19 @@
   function renderSpellFilterPanel(){
     var levelEl = document.getElementById('spellFilterLevelChips');
     var schoolEl = document.getElementById('spellFilterSchoolChips');
+    var saveEl = document.getElementById('spellFilterSaveChips');
     var compEl = document.getElementById('spellFilterComponentChips');
-    if(!levelEl || !schoolEl || !compEl) return;
+    if(!levelEl || !schoolEl || !saveEl || !compEl) return;
     function chip(action, value, activeList, label){
       var active = activeList.indexOf(value) !== -1;
       return '<button type="button" class="filter-chip' + (active ? ' active' : '') + '" data-action="' + action + '" data-value="' + esc(value) + '">' + esc(label) + '</button>';
     }
     levelEl.innerHTML = SPELL_LEVELS.map(function(l){ return chip('toggle-filter-spell-level', l, state.spellFilterLevels, l); }).join('');
     schoolEl.innerHTML = SPELL_SCHOOLS.map(function(s){ return chip('toggle-filter-spell-school', s, state.spellFilterSchools, s); }).join('');
+    saveEl.innerHTML = SPELL_SAVES.map(function(a){ return chip('toggle-filter-spell-save', a, state.spellFilterSaves, a); }).join('');
     compEl.innerHTML = SPELL_COMPONENTS.map(function(c){ return chip('toggle-filter-spell-component', c.id, state.spellFilterComponents, c.label); }).join('');
 
-    var count = state.spellFilterLevels.length + state.spellFilterSchools.length + state.spellFilterComponents.length;
+    var count = state.spellFilterLevels.length + state.spellFilterSchools.length + state.spellFilterSaves.length + state.spellFilterComponents.length;
     var badge = document.getElementById('spellFilterBadge');
     if(badge){
       badge.textContent = count;
