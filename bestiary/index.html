@@ -4129,7 +4129,13 @@
       damage:'1d8', damageType:'piercing'},
     'cosmic eye': {name:'Cosmic Eye', level:'Cantrip', school:'Transmutation', time:'1 action', range:'150 feet', components:'M', materials:'an eldritch parasite', duration:'Instantaneous',
       desc:"Your eye darkens under the influence of the eldritch madness, appearing as an endless starry sky. Make a ranged spell attack against a creature within range as you fire a projectile of eldritch energy from your eye. On a hit, the target takes 1d8 necrotic damage. If you score a critical hit, you can reroll any roll of 4 or lower on the damage die until you get a higher result. At Higher Levels. This spell's damage increases by 1d8 when you reach 5th level (2d8), 11th level (3d8), and 17th level (4d8).",
-      damage:'1d8', damageType:'necrotic'}
+      damage:'1d8', damageType:'necrotic'},
+    'gravity spike': {name:'Gravity Spike', level:'Cantrip', school:'Transmutation', time:'1 action', range:'60 feet', components:'V, S', duration:'Instantaneous',
+      desc:"You create a localized gravitational field that temporarily shifts the landscape to impale a creature. Choose a creature on the ground you can see within range. The creature must make a Dexterity saving throw. On a failed save, the target takes 1d4 piercing damage and is knocked prone. On a successful save, the target takes half as much damage and isn't knocked prone. At Higher Levels. This spell's damage increases by 1d4 when you reach 5th level (2d4), 11th level (3d4), and 17th level (4d4).",
+      save:{ability:'Dexterity', dc:null}, damage:'1d4', damageType:'piercing'},
+    'gravity whip': {name:'Gravity Whip', level:'Cantrip', school:'Evocation', time:'1 action', range:'10 feet', components:'V, S', duration:'Instantaneous',
+      desc:"You weave gravity in your palm before striking. Make a melee spell attack against a creature within range. On a hit, it takes 1d4 bludgeoning damage and is pushed 10 feet in a straight line in a direction of your choice. In addition, its speed is reduced by 5 feet until the start of your next turn. At Higher Levels. This spell's damage increases by 1d4 when you reach 5th level (2d4), 11th level (3d4), and 17th level (4d4).",
+      damage:'1d4', damageType:'bludgeoning'}
   };
   // "Shamancraft" isn't a real separate spell: Icewind Dale: Rime of the
   // Frostmaiden's Reghed Shaman is a `_copy` of the core Druid with every
