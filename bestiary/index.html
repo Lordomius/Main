@@ -4561,6 +4561,17 @@
     if(panel) panel.style.display = state.spellFiltersOpen ? '' : 'none';
   }
 
+  // Splits off the "At Higher Levels." (or similar) upcast paragraph so it
+  // renders as its own <p>, giving it a visible blank-line gap from the main
+  // description instead of running on in the same paragraph.
+  var SPELL_UPCAST_LABEL_REGEX = /(At Higher Levels\.|Using a Higher-Level Spell Slot\.|Cantrip Upgrade\.)/;
+  function splitSpellDescSections(text){
+    var m = SPELL_UPCAST_LABEL_REGEX.exec(text);
+    if(!m) return [text];
+    var idx = m.index;
+    return [text.slice(0, idx).trim(), text.slice(idx).trim()];
+  }
+
   function openSpellWindow(key){
     var s = SPELLS[key];
     if(!s) return;
@@ -4582,7 +4593,9 @@
         '<div class="ss-label">Duration</div><div class="ss-val">' + esc(s.duration) + '</div>' +
       '</div>' +
       (s.save ? '<div class="spell-save">' + highlightAbilityChecks(esc(s.save.ability) + ' saving throw') + (typeof s.save.dc === 'number' ? ', DC ' + s.save.dc : '') + '</div>' : '') +
-      '<p class="spell-desc">' + highlightAbilityChecks(highlightConditions(highlightNumbers(esc(s.desc)))) + '</p>' +
+      splitSpellDescSections(s.desc).map(function(part){
+        return '<p class="spell-desc">' + highlightAbilityChecks(highlightConditions(highlightNumbers(esc(part)))) + '</p>';
+      }).join('') +
       (rolls ? '<div class="action-rolls">' + rolls + '</div>' : '');
     var spellPanel = document.getElementById('spellWindow');
     spellPanel.style.display = 'flex';
