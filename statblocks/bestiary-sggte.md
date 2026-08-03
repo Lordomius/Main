@@ -2294,9 +2294,9 @@ ___
 >### Actions
 >***Multiattack.*** The King makes three greatsword attacks, or four shortsword attacks if the Unbound Épée Solaire is transformed.
 >
->***Greatsword.*** *Melee Weapon Attack:* +19 to hit, reach 10 ft., one target. *Hit:* 32 (6d6 + 11) slashing damage and 4 (1d8) radiant damage. If the King damages a creature twice on a turn with this attack, the target must succeed on a DC 25 Wisdom saving throw or become frightened of the King for 1 minute. A frightened creature can repeat the saving throw at the end of each of its turns, ending the effect on a success.
+>***Greatsword.*** *Melee Weapon Attack:* +19 to hit, reach 10 ft., one target. *Hit:* 32 (6d6 + 11) slashing damage plus 4 (1d8) radiant damage. If the King damages a creature twice on a turn with this attack, the target must succeed on a DC 25 Wisdom saving throw or become frightened of the King for 1 minute. A frightened creature can repeat the saving throw at the end of each of its turns, ending the effect on a success.
 >
->***Shortsword.*** *Melee Weapon Attack:* +19 to hit, reach 10 ft., one target. *Hit:* 21 (3d6 + 11) slashing damage and 4 (1d8) radiant damage.
+>***Shortsword.*** *Melee Weapon Attack:* +19 to hit, reach 10 ft., one target. *Hit:* 21 (3d6 + 11) slashing damage plus 4 (1d8) radiant damage.
 >
 >### Bonus Actions
 >***Hunter's Pursuit.*** The King flies up to 70 feet toward a creature it can see without provoking opportunity attacks.
