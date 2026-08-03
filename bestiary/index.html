@@ -4120,7 +4120,16 @@
       desc:"You reshape the last six seconds of conversation in the minds of everyone nearby: each creature you choose within 5 feet of you forgets whatever you actually just said and instead recalls a more convenient statement of your choosing, believing it was what you said all along."},
     'fast friends': {name:'Fast Friends', level:'3rd level', school:'Enchantment', time:'1 action', range:'30 feet', components:'V', duration:'Concentration, up to 1 hour',
       desc:"Choose one humanoid within range that can see, hear, and understand you. On a failed save it becomes charmed by you for the duration and will perform any service or activity you ask of it, to the best of its ability, in a genuinely friendly manner. If a request would harm the target or conflicts with its usual activities and desires, it gets a new save to try to end the charm.",
-      save:{ability:'Wisdom', dc:null}}
+      save:{ability:'Wisdom', dc:null}},
+    'bestial roar': {name:'Bestial Roar', level:'Cantrip', school:'Transmutation', time:'1 action', range:'Self (10-foot radius)', components:'V', duration:'Instantaneous',
+      desc:"You release a loud, monstrous roar mimicking those of ravenous beasts, causing shockwaves around you. Each creature within 10 feet of you must succeed on a Strength saving throw or be pushed 10 feet away from you and be knocked prone. At Higher Levels. This spell's radius increases by 5 feet when you reach 5th level (15 feet), 11th level (20 feet), and 17th level (25 feet).",
+      save:{ability:'Strength', dc:null}},
+    'brittle bone throw': {name:'Brittle Bone Throw', level:'Cantrip', school:'Conjuration', time:'1 action', range:'60 feet', components:'V, S, M', materials:'bone powder', duration:'Instantaneous',
+      desc:"You hurl a splintered bone fragment at a creature within range. Make a ranged spell attack against the target. On a hit, the target takes 1d8 piercing damage. On a miss, you can shatter the bone mid-air and redirect the remnant towards another creature within 15 feet of the original target. Make another ranged spell attack. On a hit, the new target takes 1d4 piercing damage. At Higher Levels. This spell's damage increases by 1d8 and 1d4, respectively, when you reach 5th level (2d8, 2d4), 11th level (3d8, 3d4), and 17th level (4d8, 4d4).",
+      damage:'1d8', damageType:'piercing'},
+    'cosmic eye': {name:'Cosmic Eye', level:'Cantrip', school:'Transmutation', time:'1 action', range:'150 feet', components:'M', materials:'an eldritch parasite', duration:'Instantaneous',
+      desc:"Your eye darkens under the influence of the eldritch madness, appearing as an endless starry sky. Make a ranged spell attack against a creature within range as you fire a projectile of eldritch energy from your eye. On a hit, the target takes 1d8 necrotic damage. If you score a critical hit, you can reroll any roll of 4 or lower on the damage die until you get a higher result. At Higher Levels. This spell's damage increases by 1d8 when you reach 5th level (2d8), 11th level (3d8), and 17th level (4d8).",
+      damage:'1d8', damageType:'necrotic'}
   };
   // "Shamancraft" isn't a real separate spell: Icewind Dale: Rime of the
   // Frostmaiden's Reghed Shaman is a `_copy` of the core Druid with every
