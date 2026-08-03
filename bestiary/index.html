@@ -4457,6 +4457,27 @@
     });
   }
 
+  // Spell-window-only: highlight just the ability name(s) driving a save or
+  // check (e.g. "Dexterity saving throw", "Wisdom (Perception) check",
+  // "Strength and Constitution saving throw"). Deliberately not applied to
+  // statblock trait/action text - only openSpellWindow() calls this.
+  var ABILITY_WORD_SRC = '(?:Strength|Dexterity|Constitution|Intelligence|Wisdom|Charisma)';
+  var ABILITY_CHECK_REGEX = new RegExp(
+    '\\b(' + ABILITY_WORD_SRC + '(?:\\s*\\([^)]+\\))?' +
+    '(?:(?:,\\s*|\\s+(?:and|or)\\s+)' + ABILITY_WORD_SRC + '(?:\\s*\\([^)]+\\))?)*)' +
+    '\\s+(?:ability\\s+)?(?:saving throws?|checks?)\\b',
+    'g'
+  );
+  var ABILITY_WORD_ONLY_REGEX = new RegExp('\\b' + ABILITY_WORD_SRC + '\\b', 'g');
+  function highlightAbilityChecks(text){
+    return text.replace(ABILITY_CHECK_REGEX, function(whole, chain){
+      var highlightedChain = chain.replace(ABILITY_WORD_ONLY_REGEX, function(a){
+        return '<span class="num-highlight">' + a + '</span>';
+      });
+      return highlightedChain + whole.slice(chain.length);
+    });
+  }
+
   function highlightSpells(text){
     return text.replace(SPELL_REGEX, function(match){
       var key = unescapeHtml(match).toLowerCase();
@@ -4545,8 +4566,8 @@
         (s.materials ? '<div class="ss-label">Materials</div><div class="ss-val">' + esc(s.materials) + '</div>' : '') +
         '<div class="ss-label">Duration</div><div class="ss-val">' + esc(s.duration) + '</div>' +
       '</div>' +
-      (s.save ? '<div class="spell-save">' + esc(s.save.ability) + ' saving throw' + (typeof s.save.dc === 'number' ? ', DC ' + s.save.dc : '') + '</div>' : '') +
-      '<p class="spell-desc">' + highlightConditions(highlightNumbers(esc(s.desc))) + '</p>' +
+      (s.save ? '<div class="spell-save">' + highlightAbilityChecks(esc(s.save.ability) + ' saving throw') + (typeof s.save.dc === 'number' ? ', DC ' + s.save.dc : '') + '</div>' : '') +
+      '<p class="spell-desc">' + highlightAbilityChecks(highlightConditions(highlightNumbers(esc(s.desc)))) + '</p>' +
       (rolls ? '<div class="action-rolls">' + rolls + '</div>' : '');
     var spellPanel = document.getElementById('spellWindow');
     spellPanel.style.display = 'flex';
