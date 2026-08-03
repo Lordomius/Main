@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Aubry's Bestiary — Monster Library</title>
+<title>Aubry's Bestiary</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#c9a227">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -150,8 +150,12 @@
     color:var(--gold-light);letter-spacing:0.5px;margin:0 18px 0 0;
     display:flex;flex-direction:column;line-height:1.15;
   }
-  .app-title-owner{font-size:12.5px;color:var(--text-light-secondary);letter-spacing:1px;}
-  .app-title-main{font-size:22px;}
+  .app-title-owner{
+    font-size:21px;font-weight:bold;color:var(--gold-light);letter-spacing:0.5px;
+    background:var(--accent-glow);border-radius:4px;padding:0 6px;margin:0 0 1px -6px;
+    width:fit-content;
+  }
+  .app-title-main{font-size:20px;color:var(--text-light-secondary);letter-spacing:1px;}
   .toolbar .spacer{flex:1;}
   button{
     font-family:var(--font-body);cursor:pointer;
