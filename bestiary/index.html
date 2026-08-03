@@ -180,6 +180,8 @@
   }
   .settings-btn:hover{background:var(--forest-dark);}
   .settings-btn.open{background:var(--forest);color:#fff;transform:rotate(35deg);}
+  .dice-toggle-btn svg{width:20px;height:20px;}
+  .dice-toggle-btn.open{transform:none;}
 
   .settings-panel{
     position:absolute;top:56px;left:14px;width:280px;
@@ -632,6 +634,87 @@
   .condition-table th,.condition-table td{border:1px solid var(--forest-light);padding:4px 8px;text-align:left;}
   .condition-table th{color:var(--gold-light);}
   #conditionWindow .spellwin-body p{margin:0 0 8px;line-height:1.5;}
+
+  #diceWindow{left:410px;top:80px;width:340px;height:580px;z-index:216;}
+  .field-label{font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-light-secondary);margin:0 0 7px;}
+  .field-row-head{display:flex;justify-content:space-between;align-items:baseline;margin:0 0 7px;}
+  .field-row-head .field-label{margin:0;}
+  .link-btn{background:transparent;border:none;color:var(--text-light-secondary);text-decoration:underline;font-size:11.5px;cursor:pointer;font-family:var(--font-body);padding:0;}
+  .link-btn:hover{color:var(--gold-light);}
+  .die-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:14px;}
+  .die-chip{
+    position:relative;background:transparent;border:1px solid var(--forest-light);color:var(--gold-light);
+    border-radius:6px;padding:14px 4px;cursor:pointer;font-family:var(--font-body);
+    display:flex;align-items:center;justify-content:center;transition:all .12s;
+  }
+  .die-chip span{font-size:20px;font-weight:bold;letter-spacing:0.3px;}
+  .die-chip:hover{border-color:var(--gold-light);background:var(--card-bg-alt);}
+  .die-chip.has-count{border-color:var(--gold);color:#fff;background:var(--forest);}
+  .chip-count{
+    position:absolute;top:-7px;right:-7px;background:var(--gold);color:var(--desk);
+    font-size:11px;font-weight:bold;border-radius:9px;min-width:18px;height:18px;line-height:18px;
+    text-align:center;padding:0 4px;border:2px solid var(--desk-light);
+  }
+  .pool-area{margin-bottom:14px;}
+  .pool-empty{color:var(--text-light-secondary);font-style:italic;font-size:12.5px;}
+  .pool-pills{display:flex;flex-wrap:wrap;gap:6px;}
+  .pool-pill{
+    display:flex;align-items:center;gap:6px;background:var(--card-bg-alt);border:1px solid var(--forest-light);
+    border-radius:14px;padding:4px 6px 4px 12px;font-size:13px;color:var(--text-light);
+  }
+  .pool-pill button{
+    background:var(--card-bg-alt-hover);border:none;color:var(--gold-light);width:19px;height:19px;
+    border-radius:50%;font-size:13px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  }
+  .pool-pill button:hover{background:var(--forest-dark);color:#fff;}
+  .bonus-input-wrap{
+    display:flex;align-items:center;border:1px solid var(--forest-light);border-radius:5px;overflow:hidden;background:var(--desk);
+    max-width:140px;margin-bottom:14px;
+  }
+  .bonus-input-wrap span{padding:0 8px;color:var(--text-light-secondary);font-size:14px;}
+  .bonus-input-wrap input{
+    flex:1;min-width:0;background:transparent;border:none;color:var(--text-light);
+    font-family:var(--font-body);font-size:15px;padding:7px 8px 7px 0;text-align:right;
+  }
+  .bonus-input-wrap input:focus{outline:none;}
+  .roll-btn{
+    width:100%;background:var(--forest);border:1px solid var(--gold);color:#fff;
+    padding:10px;border-radius:6px;font-size:15px;font-family:var(--font-body);cursor:pointer;
+    letter-spacing:0.3px;transition:background .15s,transform .08s;
+  }
+  .roll-btn:hover{background:var(--btn-primary-hover);}
+  .roll-btn:active{transform:scale(0.98);}
+  .roll-btn:disabled{opacity:0.45;cursor:not-allowed;}
+  .roll-btn:disabled:hover{background:var(--forest);}
+  .dice-result-area{margin-top:14px;padding-top:12px;border-top:1px solid var(--forest-light);min-height:26px;}
+  .result-empty{color:var(--text-light-secondary);font-style:italic;font-size:13px;}
+  .result-line{padding:8px 10px;border-radius:4px;background:var(--card-bg-alt);}
+  .result-line.crit{background:var(--accent-glow-crit);border-left:3px solid var(--gold-light);}
+  .result-line.fumble{background:var(--fumble-bg);border-left:3px solid var(--fumble-color);}
+  .result-formula{font-size:12.5px;color:var(--text-light-secondary);margin-top:5px;}
+  .result-total{font-size:22px;font-family:var(--font-body);color:var(--gold-light);}
+  .result-total.crit{color:var(--gold-light);}
+  .result-total.fumble{color:var(--fumble-color);}
+  .result-dice-breakdown{font-size:12px;color:var(--text-light-secondary);margin-top:4px;}
+  .result-tag{
+    display:inline-block;font-size:10px;letter-spacing:0.4px;text-transform:uppercase;font-weight:bold;
+    padding:1px 6px;border-radius:8px;margin-left:6px;vertical-align:middle;
+  }
+  .result-tag.crit{background:var(--gold-light);color:var(--desk);}
+  .result-tag.fumble{background:var(--fumble-color);color:var(--desk);}
+  .dice-history-section{margin-top:16px;padding-top:12px;border-top:1px solid var(--forest-light);}
+  .dice-history-list{max-height:150px;overflow-y:auto;display:flex;flex-direction:column;gap:2px;}
+  .history-empty{color:var(--text-light-secondary);font-style:italic;font-size:12.5px;}
+  .dice-history-entry{
+    display:flex;justify-content:space-between;align-items:baseline;gap:10px;
+    padding:4px 6px;border-radius:3px;font-size:13px;border-bottom:1px solid rgba(58,90,112,0.35);
+  }
+  .dice-history-entry.crit{background:var(--accent-glow-crit);}
+  .dice-history-entry.fumble{background:var(--fumble-bg);}
+  .dice-history-entry .h-formula{color:var(--text-light-secondary);font-size:12px;}
+  .dice-history-entry .h-total{color:var(--gold-light);font-weight:bold;font-family:var(--font-body);flex-shrink:0;}
+  .dice-history-entry.crit .h-total{color:var(--gold-light);}
+  .dice-history-entry.fumble .h-total{color:var(--fumble-color);}
   .rolllog-head{
     display:flex;justify-content:space-between;align-items:center;color:var(--gold-light);
     padding:8px 12px;background:var(--card-bg-alt);border-bottom:1px solid var(--forest-light);
@@ -735,6 +818,12 @@
 
 <div class="toolbar">
   <button class="settings-btn" id="settingsBtn" data-action="toggle-settings" title="Settings">⚙</button>
+  <button class="settings-btn dice-toggle-btn" id="diceToggleBtn" data-action="toggle-dice-window" title="Dice roller">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round">
+      <polygon points="12,2 20,7 20,17 12,22 4,17 4,7"/>
+      <polygon points="12,2 20,17 4,17"/><polygon points="20,7 12,22 4,7"/>
+    </svg>
+  </button>
   <h1><span class="app-title-owner">Aubry's</span><span class="app-title-main">Bestiary</span></h1>
   <button class="tb-btn primary" data-action="new-monster">+ New monster</button>
   <button class="tb-btn" id="bestiaryNavBtn" data-action="show-bestiary">Bestiary</button>
@@ -905,6 +994,48 @@
   </div>
   <div class="spellwin-body" id="conditionWindowBody"></div>
   <div class="rolllog-resize" id="conditionWindowResize" title="Drag to resize"></div>
+</div>
+
+<div class="spellwin dicewin" id="diceWindow" style="display:none;">
+  <div class="spellwin-head" id="diceWindowHead">
+    <span>⋮⋮ Dice Roller</span>
+    <button data-action="close-dice-window">✕</button>
+  </div>
+  <div class="spellwin-body">
+    <div class="field-label">Add dice</div>
+    <div class="die-grid" id="dieGrid"></div>
+
+    <div class="field-row-head">
+      <div class="field-label">Current roll</div>
+      <button class="link-btn" data-action="clear-dice-pool">Clear</button>
+    </div>
+    <div class="pool-area" id="dicePoolArea">
+      <div class="pool-empty">Click a die above to add it to this roll.</div>
+    </div>
+
+    <div class="field-label">Bonus</div>
+    <div class="bonus-input-wrap">
+      <span>+/&minus;</span>
+      <input type="number" id="diceBonusInput" value="0" step="1">
+    </div>
+
+    <button class="roll-btn" id="diceRollBtn" data-action="roll-dice-pool" disabled>Add dice to roll</button>
+
+    <div class="dice-result-area" id="diceResultArea">
+      <div class="result-empty">No rolls yet — pick your dice and roll.</div>
+    </div>
+
+    <div class="dice-history-section">
+      <div class="field-row-head">
+        <div class="field-label">History</div>
+        <button class="link-btn" data-action="clear-dice-history">Clear</button>
+      </div>
+      <div class="dice-history-list" id="diceHistoryList">
+        <div class="history-empty">No rolls yet this session.</div>
+      </div>
+    </div>
+  </div>
+  <div class="rolllog-resize" id="diceWindowResize" title="Drag to resize"></div>
 </div>
 
 <div class="confirm-overlay" id="confirmOverlay" style="display:none;">
@@ -1585,7 +1716,7 @@
     document.getElementById('settingsPanel').classList.remove('open');
     document.getElementById('settingsBtn').classList.remove('open');
     bgHiddenPanels = [];
-    ['rolllogPanel', 'spellWindow', 'instanceWindowPanel', 'conditionWindow'].forEach(function(id){
+    ['rolllogPanel', 'spellWindow', 'instanceWindowPanel', 'conditionWindow', 'diceWindow'].forEach(function(id){
       var p = document.getElementById(id);
       if(p && p.style.display !== 'none'){
         bgHiddenPanels.push(id);
@@ -2795,6 +2926,25 @@
       openConditionWindow(t.getAttribute('data-condition'));
     } else if(action === 'close-condition-window'){
       closeConditionWindow();
+    } else if(action === 'toggle-dice-window'){
+      var diceWin = document.getElementById('diceWindow');
+      if(diceWin.style.display === 'none') openDiceWindow(); else closeDiceWindow();
+    } else if(action === 'close-dice-window'){
+      closeDiceWindow();
+    } else if(action === 'add-die'){
+      addDieToPool(parseInt(t.getAttribute('data-sides'), 10));
+    } else if(action === 'remove-die'){
+      removeDieFromPool(parseInt(t.getAttribute('data-sides'), 10));
+    } else if(action === 'clear-dice-pool'){
+      dicePool = {};
+      dicePoolOrder = [];
+      updateDiceChipCounts();
+      renderDicePool();
+    } else if(action === 'roll-dice-pool'){
+      rollDicePool();
+    } else if(action === 'clear-dice-history'){
+      diceHistory = [];
+      renderDiceHistory();
     } else if(action === 'roll-ability'){
       rollD20(parseInt(t.getAttribute('data-mod'), 10), t.getAttribute('data-label'));
     } else if(action === 'roll-save' || action === 'roll-skill' || action === 'roll-attack' || action === 'roll-initiative'){
@@ -4093,6 +4243,150 @@
     document.getElementById('conditionWindow').style.display = 'none';
   }
 
+  var DICE_TYPES = [4, 6, 8, 10, 12, 20, 100];
+  var DICE_MAX_PER_DIE = 20;
+  var dicePool = {};
+  var dicePoolOrder = [];
+  var diceBonus = 0;
+  var diceHistory = [];
+
+  function renderDiceChips(){
+    var el = document.getElementById('dieGrid');
+    el.innerHTML = DICE_TYPES.map(function(sides){
+      return '<button class="die-chip" data-action="add-die" data-sides="' + sides + '" id="dieChip' + sides + '"><span>d' + sides + '</span></button>';
+    }).join('');
+    updateDiceChipCounts();
+  }
+
+  function updateDiceChipCounts(){
+    DICE_TYPES.forEach(function(sides){
+      var chip = document.getElementById('dieChip' + sides);
+      if(!chip) return;
+      var count = dicePool[sides] || 0;
+      var badge = chip.querySelector('.chip-count');
+      if(count > 0){
+        chip.classList.add('has-count');
+        if(!badge){
+          badge = document.createElement('span');
+          badge.className = 'chip-count';
+          chip.appendChild(badge);
+        }
+        badge.textContent = 'x' + count;
+      } else {
+        chip.classList.remove('has-count');
+        if(badge) badge.remove();
+      }
+    });
+  }
+
+  function dicePoolFormula(){
+    var parts = dicePoolOrder.map(function(sides){ return dicePool[sides] + 'd' + sides; });
+    var formula = parts.join(' + ');
+    if(diceBonus) formula += (formula ? ' ' : '') + fmt(diceBonus);
+    return formula;
+  }
+
+  function renderDicePool(){
+    var el = document.getElementById('dicePoolArea');
+    var btn = document.getElementById('diceRollBtn');
+    if(!dicePoolOrder.length){
+      el.innerHTML = '<div class="pool-empty">Click a die above to add it to this roll.</div>';
+      btn.disabled = true;
+      btn.textContent = 'Add dice to roll';
+      return;
+    }
+    el.innerHTML = '<div class="pool-pills">' + dicePoolOrder.map(function(sides){
+      return '<span class="pool-pill">' + dicePool[sides] + 'd' + sides + '<button data-action="remove-die" data-sides="' + sides + '" title="Remove one">−</button></span>';
+    }).join('') + '</div>';
+    btn.disabled = false;
+    btn.textContent = 'Roll ' + dicePoolFormula();
+  }
+
+  function addDieToPool(sides){
+    var count = dicePool[sides] || 0;
+    if(count >= DICE_MAX_PER_DIE) return;
+    if(!count){
+      dicePool[sides] = 1;
+      dicePoolOrder.push(sides);
+    } else {
+      dicePool[sides] = count + 1;
+    }
+    updateDiceChipCounts();
+    renderDicePool();
+  }
+
+  function removeDieFromPool(sides){
+    if(!dicePool[sides]) return;
+    dicePool[sides] -= 1;
+    if(dicePool[sides] <= 0){
+      delete dicePool[sides];
+      dicePoolOrder = dicePoolOrder.filter(function(s){ return s !== sides; });
+    }
+    updateDiceChipCounts();
+    renderDicePool();
+  }
+
+  function renderDiceHistory(){
+    var el = document.getElementById('diceHistoryList');
+    if(!diceHistory.length){
+      el.innerHTML = '<div class="history-empty">No rolls yet this session.</div>';
+      return;
+    }
+    el.innerHTML = diceHistory.map(function(h){
+      var cls = 'dice-history-entry' + (h.isCrit ? ' crit' : (h.isFumble ? ' fumble' : ''));
+      var tag = h.isCrit ? ' <span class="result-tag crit">CRIT</span>' : (h.isFumble ? ' <span class="result-tag fumble">FUMBLE</span>' : '');
+      return '<div class="' + cls + '"><span class="h-formula">' + esc(h.formula) + '</span><span class="h-total">' + h.total + '</span>' + tag + '</div>';
+    }).join('');
+  }
+
+  function rollDicePool(){
+    if(!dicePoolOrder.length) return;
+    var breakdownParts = [];
+    var total = 0;
+    dicePoolOrder.forEach(function(sides){
+      var count = dicePool[sides];
+      var rolls = [];
+      for(var i = 0; i < count; i++) rolls.push(rollDie(sides));
+      var sum = rolls.reduce(function(a, b){ return a + b; }, 0);
+      total += sum;
+      breakdownParts.push(count + 'd' + sides + '(' + rolls.join('+') + ')');
+    });
+    total += diceBonus;
+    var isSingleD20 = dicePoolOrder.length === 1 && dicePoolOrder[0] === 20 && dicePool[20] === 1;
+    var isCrit = false, isFumble = false;
+    if(isSingleD20){
+      var natural = parseInt(/\((\d+)\)/.exec(breakdownParts[0])[1], 10);
+      isCrit = natural === 20;
+      isFumble = natural === 1;
+    }
+    var bonusTxt = diceBonus ? (' ' + fmt(diceBonus)) : '';
+    var formula = dicePoolFormula();
+    var detail = breakdownParts.join(' + ') + bonusTxt;
+
+    var el = document.getElementById('diceResultArea');
+    var resClass = 'result-line' + (isCrit ? ' crit' : (isFumble ? ' fumble' : ''));
+    var tag = isCrit ? ' <span class="result-tag crit">CRIT</span>' : (isFumble ? ' <span class="result-tag fumble">FUMBLE</span>' : '');
+    el.innerHTML = '<div class="' + resClass + '"><div class="result-formula">' + esc(formula) + '</div><div class="result-dice-breakdown">' + esc(detail) + '</div><div class="result-total">' + total + tag + '</div></div>';
+
+    diceHistory.unshift({formula: formula, total: total, isCrit: isCrit, isFumble: isFumble});
+    if(diceHistory.length > 40) diceHistory.pop();
+    renderDiceHistory();
+
+    addLog('Dice roller', detail, total, isCrit, isFumble);
+  }
+
+  function openDiceWindow(){
+    var panel = document.getElementById('diceWindow');
+    panel.style.display = 'flex';
+    bringPanelToFront(panel);
+    document.getElementById('diceToggleBtn').classList.add('open');
+  }
+
+  function closeDiceWindow(){
+    document.getElementById('diceWindow').style.display = 'none';
+    document.getElementById('diceToggleBtn').classList.remove('open');
+  }
+
   // Applied outermost (after highlightSpells, same as highlightSpells is
   // already applied after highlightNumbers/highlightCastingFrequency) -
   // condition names have no special characters so the escaping hazard
@@ -4655,10 +4949,20 @@
   var conditionWindowEl = document.getElementById('conditionWindow');
   makeDraggable(conditionWindowEl, document.getElementById('conditionWindowHead'), null);
   makeResizable(conditionWindowEl, document.getElementById('conditionWindowResize'), 260, 200, 640, 640, null);
+  var diceWindowEl = document.getElementById('diceWindow');
+  makeDraggable(diceWindowEl, document.getElementById('diceWindowHead'), null);
+  makeResizable(diceWindowEl, document.getElementById('diceWindowResize'), 300, 420, 480, 800, null);
 
-  [rolllogPanelEl, spellWindowEl, instanceWindowEl, conditionWindowEl].forEach(function(panel){
+  [rolllogPanelEl, spellWindowEl, instanceWindowEl, conditionWindowEl, diceWindowEl].forEach(function(panel){
     panel.addEventListener('pointerdown', function(){ bringPanelToFront(panel); }, true);
   });
+
+  document.getElementById('diceBonusInput').addEventListener('input', function(){
+    var v = parseInt(this.value, 10);
+    diceBonus = isNaN(v) ? 0 : v;
+    renderDicePool();
+  });
+  renderDiceChips();
 })();
 </script>
 <script>
