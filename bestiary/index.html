@@ -4327,7 +4327,30 @@
   // render on top of (and steal clicks from) a real page-jump link
   // covering the same text, like a TOC entry that already links to that
   // monster's page.
-  function buildPdfOverlays(page, viewport, containerEl){
+  // Some TOC-style entries have their hyperlink split across several
+  // adjacent Link annotation rects (a PDF-authoring artifact, e.g. one rect
+  // per differently-styled text run) that all point to the same page -
+  // merges those into a single overlay instead of stacking separate ones.
+  function mergePdfLinkBoxes(linkBoxes){
+    var merged = [];
+    linkBoxes.forEach(function(lb){
+      for(var i = 0; i < merged.length; i++){
+        if(merged[i].displayPage === lb.displayPage && pdfBoxesNear(merged[i].box, lb.box, 3)){
+          merged[i].box = pdfUnionBox(merged[i].box, lb.box);
+          return;
+        }
+      }
+      merged.push({box: lb.box, displayPage: lb.displayPage});
+    });
+    return merged;
+  }
+
+  function pdfBoxesNear(a, b, tol){
+    return (a[0] - tol) < (b[0] + b[2]) && (a[0] + a[2] + tol) > b[0] &&
+           (a[1] - tol) < (b[1] + b[3]) && (a[1] + a[3] + tol) > b[1];
+  }
+
+  function buildPdfOverlays(page, viewport, containerEl, displayPageNum){
     Promise.all([
       page.getAnnotations({intent: 'display'}).catch(function(){ return []; }),
       page.getTextContent().catch(function(){ return {items: []}; })
@@ -4348,7 +4371,7 @@
       });
 
       return Promise.all(linkPromises).then(function(linkResults){
-        var linkBoxes = linkResults.filter(Boolean);
+        var linkBoxes = mergePdfLinkBoxes(linkResults.filter(Boolean));
 
         linkBoxes.forEach(function(lb){
           var link = document.createElement('a');
@@ -4366,7 +4389,16 @@
           containerEl.appendChild(link);
         });
 
-        var index = buildMonsterLinkIndex();
+        // Every monster should only ever get a stat-block-window link in
+        // exactly one place in the running text: its own dedicated stat
+        // block page (the TOC/index entries are handled entirely by the
+        // real link annotations above). Restricting the match index to
+        // just the monster(s) whose own page equals this one also avoids
+        // generic single-word names lighting up wherever they're used in
+        // unrelated narrative/flavor text elsewhere in the book.
+        var index = buildMonsterLinkIndex().filter(function(entry){
+          return SGTTE_MONSTER_PAGES[entry.name] === displayPageNum;
+        });
         var items = (content.items || []).filter(function(it){ return it.str; });
         if(!index.length || !items.length) return;
 
@@ -4472,7 +4504,7 @@
         slot.renderedAtScale = state.pdfViewer.zoom;
         slot.rendering = false;
         updatePdfRenderedCount();
-        buildPdfOverlays(page, cssViewport, slot.el);
+        buildPdfOverlays(page, cssViewport, slot.el, num);
       });
     }).catch(function(err){
       slot.rendering = false;
