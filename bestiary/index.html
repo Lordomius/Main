@@ -2781,7 +2781,17 @@
 
   function renderEncPickerResults(){
     var resultsEl = document.getElementById('encPickerResults');
+    var input = document.getElementById('encPickerInput');
     if(!resultsEl) return;
+    // Only pop the results dropdown open while the search box itself is
+    // focused - filter-chip clicks re-render this same panel (since chips
+    // change what would match) but shouldn't yank the dropdown open over
+    // the filter panel the user is actively working in.
+    if(document.activeElement !== input){
+      resultsEl.style.display = 'none';
+      resultsEl.innerHTML = '';
+      return;
+    }
     var matches = encPickerMatches();
     if(matches === null){ resultsEl.style.display = 'none'; resultsEl.innerHTML = ''; return; }
     if(matches === 'full'){
