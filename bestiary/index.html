@@ -4320,6 +4320,32 @@
     return new RegExp(pattern, 'i');
   }
 
+  // A name can legitimately appear many times on a monster's own page -
+  // in flavor text, trait/action descriptions mentioning it by name, etc -
+  // and thanks to how PDF text extraction orders a two-column layout, those
+  // mentions often come out BEFORE the actual stat block heading in the
+  // extracted text even though the heading is visually first. Taking the
+  // first regex match landed the overlay on a random earlier mention
+  // instead of the real heading, so this instead picks whichever match
+  // sits closest just before the page's "Armor Class" line - i.e. the
+  // heading actually belonging to the stat block, since traits/actions
+  // never precede their own block's "Armor Class" in the source text.
+  function pdfFindHeadingMatch(fullText, acIndex, re){
+    var globalRe = new RegExp(re.source, re.flags.replace('g', '') + 'g');
+    var best = null, bestDist = Infinity;
+    var m;
+    while((m = globalRe.exec(fullText))){
+      if(m[0].length === 0){ globalRe.lastIndex++; continue; }
+      if(acIndex >= 0){
+        var dist = acIndex - (m.index + m[0].length);
+        if(dist >= 0 && dist < bestDist){ bestDist = dist; best = m; }
+      } else if(!best){
+        best = m;
+      }
+    }
+    return best;
+  }
+
   function buildMonsterLinkIndex(){
     return (state.repoMonsters || []).filter(function(m){
       return m.repoKey && m.repoKey.indexOf('md|bestiary-sggte.md|') === 0;
@@ -4441,9 +4467,10 @@
         // matches are preferred over core-fallback ones, and longer matches
         // over shorter ones, before overlaps are resolved.
         var candidates = [];
+        var acIndex = fullText.search(/Armor Class/i);
         index.forEach(function(entry){
-          var mFull = entry.fullRe.exec(fullText);
-          var mCore = entry.coreRe.exec(fullText);
+          var mFull = pdfFindHeadingMatch(fullText, acIndex, entry.fullRe);
+          var mCore = pdfFindHeadingMatch(fullText, acIndex, entry.coreRe);
           if(mFull) candidates.push({entry: entry, mStart: mFull.index, mEnd: mFull.index + mFull[0].length, priority: 1});
           else if(mCore) candidates.push({entry: entry, mStart: mCore.index, mEnd: mCore.index + mCore[0].length, priority: 0});
         });
