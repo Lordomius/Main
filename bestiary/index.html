@@ -4173,15 +4173,17 @@
     if(!slot || slot.rendering || slot.renderedAtScale === state.pdfViewer.zoom) return;
     slot.rendering = true;
     state.pdfViewer.doc.getPage(num + PDF_PAGE_OFFSET).then(function(page){
-      var targetWidth = 700 * state.pdfViewer.zoom * (window.devicePixelRatio || 1);
+      var dpr = window.devicePixelRatio || 1;
+      var cssWidth = slot.el.clientWidth || (700 * state.pdfViewer.zoom);
       var baseViewport = page.getViewport({scale: 1});
-      var scale = targetWidth / baseViewport.width;
-      var viewport = page.getViewport({scale: scale});
+      var cssScale = cssWidth / baseViewport.width;
+      var cssViewport = page.getViewport({scale: cssScale});
+      var renderViewport = page.getViewport({scale: cssScale * dpr});
       var canvas = document.createElement('canvas');
-      canvas.width = Math.ceil(viewport.width);
-      canvas.height = Math.ceil(viewport.height);
+      canvas.width = Math.ceil(renderViewport.width);
+      canvas.height = Math.ceil(renderViewport.height);
       var ctx = canvas.getContext('2d');
-      return page.render({canvasContext: ctx, viewport: viewport}).promise.then(function(){
+      return page.render({canvasContext: ctx, viewport: renderViewport}).promise.then(function(){
         slot.el.classList.remove('skeleton');
         slot.el.innerHTML = '';
         slot.el.appendChild(canvas);
@@ -4192,7 +4194,7 @@
         slot.renderedAtScale = state.pdfViewer.zoom;
         slot.rendering = false;
         updatePdfRenderedCount();
-        buildPdfLinkOverlay(page, viewport, slot.el);
+        buildPdfLinkOverlay(page, cssViewport, slot.el);
       });
     }).catch(function(err){
       slot.rendering = false;
