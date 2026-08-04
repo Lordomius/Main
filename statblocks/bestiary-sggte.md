@@ -1230,7 +1230,16 @@ ___
 >### Actions
 >***Multiattack.*** The belua makes three attacks: one with its bite and two with its claws.
 >
->***Bite.*** *Melee Weapon Attack:* +9 to hit, reach 5 ft., one target. *Hit:* 17 (2d8 + 8) piercing damage. This attack scores a critical hit on a roll of 19 or 20 on the d20. On a critical hit, the belua's monstrous jaws rip off one of the target's appendages. Roll a d12 on the following table for the result: 1-2 right forearm, 3-4 left forearm, 5-6 right hand, 7-8 left hand, 9 left leg, 10 right leg, 11 gut, 12 head. A creature that has an appendage ripped off takes 5 (1d10) necrotic damage at the start of each of its turns as it bleeds out, until it receives magical healing. If its gut is ripped off, it takes 11 (2d10) necrotic damage instead. A creature that loses its head dies if it can't live without it.
+>***Bite.*** *Melee Weapon Attack:* +9 to hit, reach 5 ft., one target. *Hit:* 17 (2d8 + 8) piercing damage. This attack scores a critical hit on a roll of 19 or 20 on the d20. On a critical hit, the belua's monstrous jaws rip off one of the target's appendages. Roll a d12 on the following table for the result:
+>- 1-2: Right forearm
+>- 3-4: Left forearm
+>- 5-6: Right hand
+>- 7-8: Left hand
+>- 9: Left leg
+>- 10: Right leg
+>- 11: Gut
+>- 12: Head
+>- A creature that has an appendage ripped off takes 5 (1d10) necrotic damage at the start of each of its turns as it bleeds out, until it receives magical healing. If its gut is ripped off, it takes 11 (2d10) necrotic damage instead. A creature that loses its head dies if it can't live without it.
 >
 >***Claw.*** *Melee Weapon Attack:* +9 to hit, reach 5 ft., one target. *Hit:* 13 (2d4 + 8) slashing damage.
 >

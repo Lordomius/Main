@@ -1404,6 +1404,13 @@
     addLog(label, breakdown.join(' + ') || expr, total, critOn, false, suffix);
   }
 
+  // A flat, non-damage die roll (e.g. a crit-effect lookup table) - never
+  // doubled by Crit mode, since it isn't damage.
+  function rollFlatDie(sides, label){
+    var result = rollDie(sides);
+    addLog(label, 'd' + sides, result, false, false);
+  }
+
   function currentLogKey(){
     return state.view === 'encounter' ? ('__encounter_' + (state.activeEncounterId || 'none') + '__') : (state.currentId || '__unassigned__');
   }
@@ -2308,6 +2315,14 @@
     return {dice: m[1].replace(/\s/g, ''), type: m[2] ? m[2].toLowerCase() : ''};
   }
 
+  // "Roll a d12 on the following table" style crit-effect lookups aren't
+  // damage, so they get their own plain (non-crit-doubled) die button
+  // rather than piggybacking on the damage roll.
+  function findTableRollDie(text){
+    var m = String(text || '').match(/\broll\s+(?:a|an)\s+d(\d+)\s+on\s+the\s+following\s+table/i);
+    return m ? parseInt(m[1], 10) : null;
+  }
+
   function renderStage(){
     var el = document.getElementById('stageInner');
     var m = getMonster(state.currentId);
@@ -2505,6 +2520,10 @@
     }
     if(item.damage){
       rolls += '<button class="stamp dmg" data-action="roll-damage" data-dice="' + esc(item.damage) + '" data-typelabel="' + esc(item.damageType||'') + '" data-label="' + esc(label) + ' — ' + esc(itemName) + ' damage">' + esc(item.damage) + (item.damageType ? (' ' + esc(item.damageType)) : '') + '</button>';
+      var tableDie = findTableRollDie(item.text);
+      if(tableDie){
+        rolls += '<button class="stamp" data-action="roll-table" data-sides="' + tableDie + '" data-label="' + esc(label) + ' — ' + esc(itemName) + ' table roll">d' + tableDie + '</button>';
+      }
       var bonusDmg = findBonusDamage(item.text);
       if(bonusDmg && (bonusDmg.dice !== item.damage || bonusDmg.type !== item.damageType)){
         rolls += '<button class="stamp dmg" data-action="roll-damage" data-dice="' + esc(bonusDmg.dice) + '" data-typelabel="' + esc(bonusDmg.type) + '" data-label="' + esc(label) + ' — ' + esc(itemName) + ' extra damage">' + esc(bonusDmg.dice) + (bonusDmg.type ? (' ' + esc(bonusDmg.type)) : '') + '</button>';
@@ -2520,7 +2539,8 @@
   function monsterActionsHtml(m, label){
     return (m.actions || []).map(function(a){
       var rolls = actionRollButtonsHtml(a, label, a.name);
-      return '<div class="action-row"><span class="a-name">' + esc(a.name) + '.</span> ' + highlightConditions(highlightSpells(highlightCastingFrequency(highlightNumbers(esc(a.text))))) +
+      var body = highlightConditions(highlightSpells(highlightCastingFrequency(highlightNumbers(esc(a.text))))).replace(/\n/g, '<br>');
+      return '<div class="action-row"><span class="a-name">' + esc(a.name) + '.</span> ' + body +
         (rolls ? '<div class="action-rolls">' + rolls + '</div>' : '') + '</div>';
     }).join('');
   }
@@ -3201,6 +3221,8 @@
       rollDamage(t.getAttribute('data-dice'), t.getAttribute('data-label'), t.getAttribute('data-typelabel'));
     } else if(action === 'roll-hp'){
       rollDamage(t.getAttribute('data-dice'), t.getAttribute('data-label'), '');
+    } else if(action === 'roll-table'){
+      rollFlatDie(parseInt(t.getAttribute('data-sides'), 10), t.getAttribute('data-label'));
     }
   });
 
@@ -4978,10 +5000,15 @@
         continue;
       }
 
+      var isSubListLine = /^[-*]\s+/.test(line);
       var plainText = stripMdEmphasis(line.replace(/^[-*]\s+/, ''));
       if(!plainText) continue;
       if(currentItem){
-        currentItem.text = (currentItem.text + ' ' + plainText).trim();
+        // A "- " bulleted continuation (e.g. a crit-hit table listed one
+        // entry per line, same as the PDF) starts its own line instead of
+        // flowing into the previous sentence like a wrapped paragraph does.
+        var sep = isSubListLine ? '\n' : ' ';
+        currentItem.text = (currentItem.text + sep + plainText).trim();
         extractAttackRolls(currentItem);
       } else {
         currentItem = pushItem(currentSection, '', plainText);
