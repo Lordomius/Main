@@ -303,6 +303,8 @@
   .pdf-page canvas{width:100%;height:100%;display:block;animation:pdfPageIn .25s ease;}
   @keyframes pdfPageIn{from{opacity:0;}to{opacity:1;}}
   .pdf-page-num-stamp{position:absolute;bottom:8px;right:10px;font-size:10px;color:#8b98a2;background:rgba(0,0,0,.55);padding:1px 6px;border-radius:3px;font-variant-numeric:tabular-nums;}
+  .pdf-link{position:absolute;cursor:pointer;border-radius:2px;transition:background .1s,outline-color .1s;outline:1px solid transparent;}
+  .pdf-link:hover{background:rgba(143,214,255,.18);outline-color:rgba(143,214,255,.55);}
 
   .pdf-status-strip{
     padding:6px 18px;font-size:11.5px;color:var(--text-light-secondary);background:var(--card-bg);
@@ -3961,6 +3963,7 @@
   }
 
   var SOURCEBOOK_PDF_NAME = "Steinhardt_s_Guide_to_the_Eldritch_Hunt.pdf";
+  var PDF_PAGE_OFFSET = 1; // leading cover page in the raw PDF isn't counted in the displayed page numbers
   var PDFJS_VERSION = "6.2.108";
   var PDFJS_URL = "https://cdn.jsdelivr.net/npm/pdfjs-dist@" + PDFJS_VERSION + "/build/pdf.min.mjs";
   var PDFJS_WORKER_URL = "https://cdn.jsdelivr.net/npm/pdfjs-dist@" + PDFJS_VERSION + "/build/pdf.worker.min.mjs";
@@ -4027,7 +4030,7 @@
       return pdfjsLib.getDocument({url: entry.download_url}).promise;
     }).then(function(doc){
       state.pdfViewer.doc = doc;
-      state.pdfViewer.numPages = doc.numPages;
+      state.pdfViewer.numPages = Math.max(0, doc.numPages - PDF_PAGE_OFFSET);
       state.pdfViewer.currentPage = 1;
       state.pdfViewer.status = 'ready';
       renderPdfViewStatus();
@@ -4126,11 +4129,50 @@
     updatePdfRenderedCount();
   }
 
+  function pdfRectToViewport(viewport, rect){
+    var p1 = viewport.convertToViewportPoint(rect[0], rect[1]);
+    var p2 = viewport.convertToViewportPoint(rect[2], rect[3]);
+    return [
+      Math.min(p1[0], p2[0]), Math.min(p1[1], p2[1]),
+      Math.abs(p2[0] - p1[0]), Math.abs(p2[1] - p1[1])
+    ];
+  }
+
+  function buildPdfLinkOverlay(page, viewport, containerEl){
+    page.getAnnotations({intent: 'display'}).then(function(annots){
+      annots.forEach(function(a){
+        if(a.subtype !== 'Link' || !a.dest || !a.rect) return;
+        var destPromise = typeof a.dest === 'string' ? state.pdfViewer.doc.getDestination(a.dest) : Promise.resolve(a.dest);
+        destPromise.then(function(dest){
+          if(!dest || !dest[0]) return null;
+          return state.pdfViewer.doc.getPageIndex(dest[0]);
+        }).then(function(rawIndex){
+          if(rawIndex === null || rawIndex === undefined) return;
+          var displayPage = Math.max(1, (rawIndex + 1) - PDF_PAGE_OFFSET);
+          var box = pdfRectToViewport(viewport, a.rect);
+          var link = document.createElement('a');
+          link.href = 'javascript:void(0)';
+          link.className = 'pdf-link';
+          link.style.left = box[0] + 'px';
+          link.style.top = box[1] + 'px';
+          link.style.width = box[2] + 'px';
+          link.style.height = box[3] + 'px';
+          link.title = 'Go to page ' + displayPage;
+          link.addEventListener('click', function(e){
+            e.preventDefault();
+            pdfGoToPage(displayPage);
+          });
+          containerEl.appendChild(link);
+        }).catch(function(){});
+      });
+    }).catch(function(){});
+  }
+
   function materializePdfPage(num){
     var slot = state.pdfViewer.slots[num];
     if(!slot || slot.rendering || slot.renderedAtScale === state.pdfViewer.zoom) return;
     slot.rendering = true;
-    state.pdfViewer.doc.getPage(num).then(function(page){
+    state.pdfViewer.doc.getPage(num + PDF_PAGE_OFFSET).then(function(page){
       var targetWidth = 700 * state.pdfViewer.zoom * (window.devicePixelRatio || 1);
       var baseViewport = page.getViewport({scale: 1});
       var scale = targetWidth / baseViewport.width;
@@ -4150,6 +4192,7 @@
         slot.renderedAtScale = state.pdfViewer.zoom;
         slot.rendering = false;
         updatePdfRenderedCount();
+        buildPdfLinkOverlay(page, viewport, slot.el);
       });
     }).catch(function(err){
       slot.rendering = false;
@@ -4161,7 +4204,7 @@
     var thumb = state.pdfViewer.thumbs[num];
     if(!thumb || thumb.rendered || thumb.rendering) return;
     thumb.rendering = true;
-    state.pdfViewer.doc.getPage(num).then(function(page){
+    state.pdfViewer.doc.getPage(num + PDF_PAGE_OFFSET).then(function(page){
       var baseViewport = page.getViewport({scale: 1});
       var scale = 130 / baseViewport.width;
       var viewport = page.getViewport({scale: scale});
