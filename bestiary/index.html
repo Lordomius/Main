@@ -1860,12 +1860,20 @@
 
   // Downscales huge phone-camera photos before they ever hit localStorage -
   // up to 10 uncompressed images would blow the ~5-10MB storage quota fast.
+  // GIFs get flattened to a static JPEG frame here too, regardless of their
+  // pixel dimensions: the background editor always renders through
+  // cropImageCover's canvas crop-to-fit anyway (see applyBgImages), so an
+  // animated GIF was never actually going to animate as a background - it
+  // was just carrying its whole (often multi-MB) animated byte size into
+  // localStorage for no visible benefit, which is what blew the quota and
+  // surfaced as the "could not save" error.
   function downscaleImage(dataUrl, maxDim, callback){
     var img = new Image();
+    var isGif = /^data:image\/gif/i.test(dataUrl);
     img.onload = function(){
       var w = img.width, h = img.height;
-      if(w <= maxDim && h <= maxDim){ callback(dataUrl); return; }
-      var scale = Math.min(maxDim / w, maxDim / h);
+      if(!isGif && w <= maxDim && h <= maxDim){ callback(dataUrl); return; }
+      var scale = Math.min(1, maxDim / w, maxDim / h);
       var canvas = document.createElement('canvas');
       canvas.width = Math.max(1, Math.round(w * scale));
       canvas.height = Math.max(1, Math.round(h * scale));
@@ -6054,6 +6062,11 @@
   document.getElementById('bgImageInput').addEventListener('change', function(e){
     var file = e.target.files[0];
     if(!file || state.bgImages.length >= BG_IMAGE_MAX) return;
+    if(file.type.indexOf('image/') !== 0){
+      alert('Only image files (JPG, PNG, GIF, WebP, etc.) can be used as background images.');
+      e.target.value = '';
+      return;
+    }
     var reader = new FileReader();
     reader.onload = function(){
       downscaleImage(reader.result, 1600, function(src){
