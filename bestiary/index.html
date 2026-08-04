@@ -305,6 +305,7 @@
   .pdf-page-num-stamp{position:absolute;bottom:8px;right:10px;font-size:10px;color:#8b98a2;background:rgba(0,0,0,.55);padding:1px 6px;border-radius:3px;font-variant-numeric:tabular-nums;}
   .pdf-link{position:absolute;cursor:pointer;border-radius:2px;transition:background .1s,outline-color .1s;outline:1px solid transparent;}
   .pdf-link:hover{background:color-mix(in srgb, var(--gold-light) 20%, transparent);outline-color:color-mix(in srgb, var(--gold-light) 60%, transparent);}
+  .pdf-monster-link:hover{background:color-mix(in srgb, var(--crimson-bright) 20%, transparent);outline-color:color-mix(in srgb, var(--crimson-bright) 60%, transparent);}
 
   .pdf-status-strip{
     padding:6px 18px;font-size:11.5px;color:var(--text-light-secondary);background:var(--card-bg);
@@ -1264,6 +1265,7 @@
     renamingEncounterId: null,
     renamingInstanceId: null,
     instanceWindowId: null,
+    pdfMonsterWindowId: null,
     view: 'bestiary',
     spellFilterLevels: [],
     spellFilterSchools: [],
@@ -2596,13 +2598,25 @@
   }
 
   function openInstanceWindow(instanceId){
+    state.pdfMonsterWindowId = null;
     state.instanceWindowId = instanceId;
+    renderInstanceWindow();
+    bringPanelToFront(document.getElementById('instanceWindowPanel'));
+  }
+
+  // Same floating panel as openInstanceWindow, but for looking up a monster
+  // directly by id (no encounter-instance context, no AC/HP overrides) -
+  // used by the PDF viewer's in-text monster name links.
+  function openPdfMonsterWindow(monsterId){
+    state.instanceWindowId = null;
+    state.pdfMonsterWindowId = monsterId;
     renderInstanceWindow();
     bringPanelToFront(document.getElementById('instanceWindowPanel'));
   }
 
   function closeInstanceWindow(){
     state.instanceWindowId = null;
+    state.pdfMonsterWindowId = null;
     document.getElementById('instanceWindowPanel').style.display = 'none';
   }
 
@@ -2614,20 +2628,35 @@
   // blocks the roll log the way an overlay backdrop would.
   function renderInstanceWindow(){
     var panel = document.getElementById('instanceWindowPanel');
-    var found = state.instanceWindowId ? findEncounterInstance(state.instanceWindowId) : null;
-    var m = found ? getMonster(found.group.monsterId) : null;
-    if(!m){
-      state.instanceWindowId = null;
-      panel.style.display = 'none';
-      return;
+    var m, label, ac, hp, hpSuffix;
+    if(state.pdfMonsterWindowId){
+      m = getMonster(state.pdfMonsterWindowId);
+      if(!m){
+        state.pdfMonsterWindowId = null;
+        panel.style.display = 'none';
+        return;
+      }
+      label = m.name;
+      ac = m.ac;
+      hp = m.hp;
+      hpSuffix = '';
+    } else {
+      var found = state.instanceWindowId ? findEncounterInstance(state.instanceWindowId) : null;
+      m = found ? getMonster(found.group.monsterId) : null;
+      if(!m){
+        state.instanceWindowId = null;
+        panel.style.display = 'none';
+        return;
+      }
+      var inst = found.instance;
+      label = inst.label;
+      ac = (inst.ac === undefined || inst.ac === null || inst.ac === '') ? m.ac : inst.ac;
+      hp = (inst.hp === undefined || inst.hp === null || inst.hp === '') ? m.hp : inst.hp;
+      hpSuffix = '/' + m.hp + (isBloodied(hp, m.hp) ? ' · Bloodied' : '');
     }
-    var inst = found.instance;
-    var label = inst.label;
-    var ac = (inst.ac === undefined || inst.ac === null || inst.ac === '') ? m.ac : inst.ac;
-    var hp = (inst.hp === undefined || inst.hp === null || inst.hp === '') ? m.hp : inst.hp;
 
     document.getElementById('instanceWindowTitle').textContent = label;
-    document.getElementById('instanceWindowSub').textContent = m.size + ' ' + m.type + ' · CR ' + m.cr + ' · AC ' + ac + ' · HP ' + hp + '/' + m.hp + (isBloodied(hp, m.hp) ? ' · Bloodied' : '');
+    document.getElementById('instanceWindowSub').textContent = m.size + ' ' + m.type + ' · CR ' + m.cr + ' · AC ' + ac + ' · HP ' + hp + hpSuffix;
 
     document.getElementById('instanceWindowBody').innerHTML =
       '<div class="sb-core">' +
@@ -4168,6 +4197,105 @@
     }).catch(function(){});
   }
 
+  function pdfMatMul(m1, m2){
+    return [
+      m1[0]*m2[0] + m1[2]*m2[1], m1[1]*m2[0] + m1[3]*m2[1],
+      m1[0]*m2[2] + m1[2]*m2[3], m1[1]*m2[2] + m1[3]*m2[3],
+      m1[0]*m2[4] + m1[2]*m2[5] + m1[4], m1[1]*m2[4] + m1[3]*m2[5] + m1[5]
+    ];
+  }
+
+  // Approximates where pdf.js's own text layer would place this item, in
+  // the same CSS-pixel space as pdfRectToViewport - good enough for a click
+  // target (doesn't need to match glyph shapes, just cover the name).
+  function pdfTextItemBox(viewport, item){
+    var tx = pdfMatMul(viewport.transform, item.transform);
+    if(Math.abs(Math.atan2(tx[1], tx[0])) > 0.01) return null; // skip rotated text
+    var fontHeight = Math.hypot(tx[2], tx[3]);
+    var fontAscent = fontHeight * 0.8;
+    var left = tx[4];
+    var top = tx[5] - fontAscent;
+    var width = item.width * tx[0];
+    if(width < 0){ left += width; width = -width; }
+    return [left, top, Math.abs(width), fontHeight];
+  }
+
+  function pdfUnionBox(a, b){
+    var left = Math.min(a[0], b[0]);
+    var top = Math.min(a[1], b[1]);
+    var right = Math.max(a[0] + a[2], b[0] + b[2]);
+    var bottom = Math.max(a[1] + a[3], b[1] + b[3]);
+    return [left, top, right - left, bottom - top];
+  }
+
+  function pdfEscRe(s){ return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
+  function pdfNameRegex(name){
+    var parts = name.split(',').map(function(p){ return p.trim(); }).filter(Boolean);
+    var pattern = parts.map(function(p){
+      return p.split(/\s+/).filter(Boolean).map(pdfEscRe).join('\\s+');
+    }).join('[,:\\-]?\\s*(?:[Tt]he\\s+)?');
+    return new RegExp(pattern, 'i');
+  }
+
+  function buildMonsterLinkIndex(){
+    return (state.repoMonsters || []).filter(function(m){
+      return m.repoKey && m.repoKey.indexOf('md|bestiary-sggte.md|') === 0;
+    }).map(function(m){
+      var core = m.name.replace(/\s*\([^)]*\)\s*$/, '').trim();
+      return {id: m.id, name: m.name, fullRe: pdfNameRegex(m.name), coreRe: pdfNameRegex(core)};
+    });
+  }
+
+  function buildPdfMonsterOverlay(page, viewport, containerEl){
+    var index = buildMonsterLinkIndex();
+    if(!index.length) return;
+    page.getTextContent().then(function(content){
+      var items = (content.items || []).filter(function(it){ return it.str; });
+      if(!items.length) return;
+      var fullText = '';
+      var itemStarts = [];
+      items.forEach(function(it){
+        itemStarts.push(fullText.length);
+        fullText += it.str + ' ';
+      });
+      var used = [];
+      index.forEach(function(entry){
+        var m = entry.fullRe.exec(fullText) || entry.coreRe.exec(fullText);
+        if(!m) return;
+        var mStart = m.index, mEnd = m.index + m[0].length;
+        if(used.some(function(r){ return mStart < r[1] && mEnd > r[0]; })) return;
+        var touched = [];
+        for(var i = 0; i < items.length; i++){
+          var segStart = itemStarts[i], segEnd = segStart + items[i].str.length;
+          if(segEnd > mStart && segStart < mEnd) touched.push(i);
+        }
+        if(!touched.length) return;
+        used.push([mStart, mEnd]);
+        var box = null;
+        touched.forEach(function(i){
+          var b = pdfTextItemBox(viewport, items[i]);
+          if(!b) return;
+          box = box ? pdfUnionBox(box, b) : b;
+        });
+        if(!box) return;
+        var link = document.createElement('a');
+        link.href = 'javascript:void(0)';
+        link.className = 'pdf-link pdf-monster-link';
+        link.style.left = box[0] + 'px';
+        link.style.top = box[1] + 'px';
+        link.style.width = box[2] + 'px';
+        link.style.height = box[3] + 'px';
+        link.title = 'Open ' + entry.name;
+        link.addEventListener('click', function(e){
+          e.preventDefault();
+          openPdfMonsterWindow(entry.id);
+        });
+        containerEl.appendChild(link);
+      });
+    }).catch(function(){});
+  }
+
   function materializePdfPage(num){
     var slot = state.pdfViewer.slots[num];
     if(!slot || slot.rendering || slot.renderedAtScale === state.pdfViewer.zoom) return;
@@ -4195,6 +4323,7 @@
         slot.rendering = false;
         updatePdfRenderedCount();
         buildPdfLinkOverlay(page, cssViewport, slot.el);
+        buildPdfMonsterOverlay(page, cssViewport, slot.el);
       });
     }).catch(function(err){
       slot.rendering = false;
