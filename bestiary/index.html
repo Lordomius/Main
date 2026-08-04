@@ -4251,6 +4251,37 @@
       state.pdfViewer.pendingJumpPage = null;
       pdfGoToPage(pendingPg);
     }
+
+    startPdfBackgroundPrerender();
+  }
+
+  var pdfBackgroundPrerenderActive = false;
+
+  // Slowly renders every remaining page in the background - one page at a
+  // time, only when the browser is otherwise idle - so the whole book ends
+  // up fully rendered without the burst of work that rendering all 491
+  // pages at once would cause. Runs regardless of which tab is currently
+  // showing; scrolling/zooming still renders whatever's needed on demand
+  // in the meantime via the usual IntersectionObserver path, this just
+  // fills in the rest for whenever the user gets there.
+  function startPdfBackgroundPrerender(){
+    if(pdfBackgroundPrerenderActive || !state.pdfViewer.numPages) return;
+    pdfBackgroundPrerenderActive = true;
+    var n = 1;
+    var idle = window.requestIdleCallback || function(cb){ setTimeout(function(){ cb({timeRemaining: function(){ return 0; }}); }, 200); };
+
+    function step(){
+      if(!state.pdfViewer.numPages || n > state.pdfViewer.numPages){
+        pdfBackgroundPrerenderActive = false;
+        return;
+      }
+      var target = n;
+      n++;
+      materializePdfPage(target).then(function(){
+        idle(step, {timeout: 3000});
+      });
+    }
+    idle(step, {timeout: 3000});
   }
 
   function pdfRectToViewport(viewport, rect){
@@ -4530,9 +4561,9 @@
 
   function materializePdfPage(num){
     var slot = state.pdfViewer.slots[num];
-    if(!slot || slot.rendering || slot.renderedAtScale === state.pdfViewer.zoom) return;
+    if(!slot || slot.rendering || slot.renderedAtScale === state.pdfViewer.zoom) return Promise.resolve();
     slot.rendering = true;
-    state.pdfViewer.doc.getPage(num + PDF_PAGE_OFFSET).then(function(page){
+    return state.pdfViewer.doc.getPage(num + PDF_PAGE_OFFSET).then(function(page){
       var dpr = window.devicePixelRatio || 1;
       var cssWidth = slot.el.clientWidth || (700 * state.pdfViewer.zoom);
       var baseViewport = page.getViewport({scale: 1});
