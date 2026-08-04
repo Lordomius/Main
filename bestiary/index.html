@@ -227,6 +227,10 @@
   .layout{display:flex;flex:1;min-height:0;}
 
   .encounter-view{flex:1;min-height:0;display:flex;flex-direction:column;overflow-y:auto;padding:16px 24px;}
+  .pdf-view{flex:1;min-height:0;display:flex;flex-direction:column;padding:16px 24px;}
+  .pdf-view iframe{flex:1;min-height:0;width:100%;border:1px solid var(--forest-light);border-radius:4px;background:#fff;}
+  .pdf-view-status{flex:1;display:flex;align-items:center;justify-content:center;color:var(--parchment);font-size:16px;text-align:center;flex-direction:column;gap:12px;}
+  .pdf-view-status button{background:var(--forest);color:#fff;border:none;border-radius:4px;padding:8px 16px;font-size:14px;cursor:pointer;}
   .enc-tabs{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:12px;flex-shrink:0;}
   .enc-tab{
     display:flex;align-items:center;gap:7px;background:var(--desk-light);border:1px solid var(--forest-light);
@@ -833,6 +837,7 @@
   <button class="tb-btn" id="bestiaryNavBtn" data-action="show-bestiary">Bestiary</button>
   <button class="tb-btn" id="encounterToggleBtn" data-action="show-encounter">Encounter Builder</button>
   <button class="tb-btn" id="spellListNavBtn" data-action="show-spells">Spell List</button>
+  <button class="tb-btn" id="sourcebookNavBtn" data-action="show-pdf">Sourcebook PDF</button>
   <div class="spacer"></div>
   <div class="mode-toggle" id="modeToggle">
     <button data-mode="normal" class="active">Normal</button>
@@ -983,6 +988,11 @@
   <div class="spell-list-grid" id="spellListGrid"></div>
 </div>
 
+<div class="pdf-view" id="pdfView" style="display:none;">
+  <div class="pdf-view-status" id="pdfViewStatus" style="display:none;"></div>
+  <iframe id="pdfViewFrame" style="display:none;" title="Sourcebook PDF"></iframe>
+</div>
+
 <div class="rolllog" id="rolllogPanel">
   <div class="rolllog-head" id="rolllogHead">
     <span>⋮⋮ Roll log</span>
@@ -1122,6 +1132,9 @@
     repoLibraryStatus: 'idle',
     repoLibraryError: '',
     repoOverrides: {},
+    sourcebookPdfStatus: 'idle',
+    sourcebookPdfUrl: '',
+    sourcebookPdfError: '',
     filterSizes: [],
     filterTypes: [],
     filterFeatures: [],
@@ -2206,16 +2219,22 @@
     document.getElementById('mainLayout').style.display = state.view === 'bestiary' ? 'flex' : 'none';
     document.getElementById('encounterView').style.display = state.view === 'encounter' ? 'flex' : 'none';
     document.getElementById('spellListView').style.display = state.view === 'spells' ? 'flex' : 'none';
+    document.getElementById('pdfView').style.display = state.view === 'pdf' ? 'flex' : 'none';
     var bestBtn = document.getElementById('bestiaryNavBtn');
     if(bestBtn) bestBtn.classList.toggle('active', state.view === 'bestiary');
     var encBtn = document.getElementById('encounterToggleBtn');
     if(encBtn) encBtn.classList.toggle('active', state.view === 'encounter');
     var spellBtn = document.getElementById('spellListNavBtn');
     if(spellBtn) spellBtn.classList.toggle('active', state.view === 'spells');
+    var pdfBtn = document.getElementById('sourcebookNavBtn');
+    if(pdfBtn) pdfBtn.classList.toggle('active', state.view === 'pdf');
     if(state.view === 'encounter'){
       renderEncounter();
     } else if(state.view === 'spells'){
       renderSpellList();
+    } else if(state.view === 'pdf'){
+      if(state.sourcebookPdfStatus === 'idle') fetchSourcebookPdf();
+      else renderPdfView();
     } else {
       renderCatalog();
       renderStage();
@@ -2755,6 +2774,11 @@
     } else if(action === 'show-spells'){
       state.view = 'spells';
       render();
+    } else if(action === 'show-pdf'){
+      state.view = 'pdf';
+      render();
+    } else if(action === 'retry-pdf'){
+      fetchSourcebookPdf();
     } else if(action === 'toggle-spell-filters'){
       state.spellFiltersOpen = !state.spellFiltersOpen;
       renderSpellFilterPanel();
@@ -3796,6 +3820,60 @@
       state.repoLibraryError = (err && err.message) || String(err);
       renderCatalog();
     });
+  }
+
+  var SOURCEBOOK_PDF_NAME = "Steinhardt_s_Guide_to_the_Eldritch_Hunt.pdf";
+
+  function fetchSourcebookPdf(){
+    var cfg = state.repoLibraryConfig;
+    if(!cfg || !cfg.owner || !cfg.repo){
+      state.sourcebookPdfStatus = 'error';
+      state.sourcebookPdfError = 'No repo configured.';
+      renderPdfView();
+      return;
+    }
+    state.sourcebookPdfStatus = 'loading';
+    renderPdfView();
+    var apiUrl = 'https://api.github.com/repos/' + encodeURIComponent(cfg.owner) + '/' + encodeURIComponent(cfg.repo) +
+      '/contents/' + encodeURIComponent(SOURCEBOOK_PDF_NAME) + (cfg.branch ? '?ref=' + encodeURIComponent(cfg.branch) : '');
+    fetch(apiUrl, {headers:{'Accept':'application/vnd.github+json'}}).then(function(res){
+      if(!res.ok) throw new Error('GitHub API returned ' + res.status);
+      return res.json();
+    }).then(function(entry){
+      if(!entry || !entry.download_url) throw new Error('PDF not found in the repo.');
+      return fetch(entry.download_url);
+    }).then(function(res){
+      if(!res.ok) throw new Error('Could not download the PDF (' + res.status + ').');
+      return res.blob();
+    }).then(function(blob){
+      var pdfBlob = blob.type === 'application/pdf' ? blob : blob.slice(0, blob.size, 'application/pdf');
+      if(state.sourcebookPdfUrl) URL.revokeObjectURL(state.sourcebookPdfUrl);
+      state.sourcebookPdfUrl = URL.createObjectURL(pdfBlob);
+      state.sourcebookPdfStatus = 'ready';
+      renderPdfView();
+    }).catch(function(err){
+      state.sourcebookPdfStatus = 'error';
+      state.sourcebookPdfError = (err && err.message) || String(err);
+      renderPdfView();
+    });
+  }
+
+  function renderPdfView(){
+    var statusEl = document.getElementById('pdfViewStatus');
+    var frameEl = document.getElementById('pdfViewFrame');
+    if(state.sourcebookPdfStatus === 'ready' && state.sourcebookPdfUrl){
+      statusEl.style.display = 'none';
+      frameEl.style.display = 'block';
+      if(frameEl.getAttribute('src') !== state.sourcebookPdfUrl) frameEl.setAttribute('src', state.sourcebookPdfUrl);
+    } else {
+      frameEl.style.display = 'none';
+      statusEl.style.display = 'flex';
+      if(state.sourcebookPdfStatus === 'error'){
+        statusEl.innerHTML = '<div>Couldn’t load the PDF: ' + esc(state.sourcebookPdfError) + '</div><button data-action="retry-pdf">Retry</button>';
+      } else {
+        statusEl.innerHTML = '<div>Loading the sourcebook PDF (it’s a large file, this may take a moment)…</div>';
+      }
+    }
   }
 
   function parseNameBonusList(text){
