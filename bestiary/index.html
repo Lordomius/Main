@@ -4280,8 +4280,14 @@
     var fontAscent = fontHeight * 0.8;
     var left = tx[4];
     var top = tx[5] - fontAscent;
-    var width = item.width * tx[0];
-    if(width < 0){ left += width; width = -width; }
+    // item.width from getTextContent() is already an absolute width in the
+    // PDF's own page-space units (independent of any render scale) - it
+    // must only be scaled by the viewport's own scale, not by tx[0], which
+    // is that scale combined with the item's own font-size transform and
+    // would double-apply the font size (a 20pt-tall heading's width was
+    // coming out ~20x too wide before this fix).
+    var viewportScale = Math.hypot(viewport.transform[0], viewport.transform[1]);
+    var width = item.width * viewportScale;
     return [left, top, Math.abs(width), fontHeight];
   }
 
@@ -4370,11 +4376,28 @@
           itemStarts.push(fullText.length);
           fullText += pdfNormalizeText(it.str) + ' ';
         });
-        var used = [];
+        // Collect every candidate match first rather than resolving overlaps
+        // in list order - a generic single-word name (e.g. "Hunter") or a
+        // shared "core" fallback (stripped of a disambiguating "(Second
+        // Form)"-style suffix) would otherwise claim a span of text before a
+        // longer, more specific name ever got a chance to match the exact
+        // same spot (e.g. "Veiled Hunter", or "Orr...(Second Form)" losing
+        // out to "Orr...(First Form)"'s unqualified core fallback). Full-name
+        // matches are preferred over core-fallback ones, and longer matches
+        // over shorter ones, before overlaps are resolved.
+        var candidates = [];
         index.forEach(function(entry){
-          var m = entry.fullRe.exec(fullText) || entry.coreRe.exec(fullText);
-          if(!m) return;
-          var mStart = m.index, mEnd = m.index + m[0].length;
+          var mFull = entry.fullRe.exec(fullText);
+          var mCore = entry.coreRe.exec(fullText);
+          if(mFull) candidates.push({entry: entry, mStart: mFull.index, mEnd: mFull.index + mFull[0].length, priority: 1});
+          else if(mCore) candidates.push({entry: entry, mStart: mCore.index, mEnd: mCore.index + mCore[0].length, priority: 0});
+        });
+        candidates.sort(function(a, b){
+          return (b.priority - a.priority) || ((b.mEnd - b.mStart) - (a.mEnd - a.mStart));
+        });
+        var used = [];
+        candidates.forEach(function(c){
+          var entry = c.entry, mStart = c.mStart, mEnd = c.mEnd;
           if(used.some(function(r){ return mStart < r[1] && mEnd > r[0]; })) return;
           var touched = [];
           for(var i = 0; i < items.length; i++){
