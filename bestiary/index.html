@@ -4024,7 +4024,7 @@
       var pdfjsLib = results[0];
       var entry = results[1];
       if(!entry || !entry.download_url) throw new Error('PDF not found in the repo.');
-      return pdfjsLib.getDocument(entry.download_url).promise;
+      return pdfjsLib.getDocument({url: entry.download_url}).promise;
     }).then(function(doc){
       state.pdfViewer.doc = doc;
       state.pdfViewer.numPages = doc.numPages;
