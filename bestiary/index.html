@@ -3192,6 +3192,9 @@
   document.getElementById('pdfPageInput').addEventListener('change', function(){
     pdfGoToPage(parseInt(this.value, 10) || 1);
   });
+  document.getElementById('pdfStage').addEventListener('scroll', function(){
+    pdfLastScrollActivity = Date.now();
+  }, {passive: true});
   document.addEventListener('keydown', function(e){
     if(state.view !== 'pdf' || e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
     if(e.key === 'ArrowRight') pdfGoToPage(state.pdfViewer.currentPage + 1);
@@ -4264,6 +4267,11 @@
   // showing; scrolling/zooming still renders whatever's needed on demand
   // in the meantime via the usual IntersectionObserver path, this just
   // fills in the rest for whenever the user gets there.
+  // Updated by a scroll listener on #pdfStage - lets the background loop
+  // below tell "user is actively browsing right now" apart from "PDF tab
+  // just happens to be open" and back off accordingly.
+  var pdfLastScrollActivity = 0;
+
   function startPdfBackgroundPrerender(){
     if(pdfBackgroundPrerenderActive || !state.pdfViewer.numPages) return;
     pdfBackgroundPrerenderActive = true;
@@ -4273,6 +4281,16 @@
     function step(){
       if(!state.pdfViewer.numPages || n > state.pdfViewer.numPages){
         pdfBackgroundPrerenderActive = false;
+        return;
+      }
+      // requestIdleCallback already yields to real interaction on its own,
+      // but this adds an explicit guard: if the user scrolled the PDF
+      // recently, sit out this round entirely (without skipping the page -
+      // it stays next in line) rather than start a fresh page render that
+      // could still land mid-scroll and compete for the main thread with
+      // whatever page just came into view on demand.
+      if(Date.now() - pdfLastScrollActivity < 400){
+        idle(step, {timeout: 500});
         return;
       }
       var target = n;
