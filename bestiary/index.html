@@ -944,6 +944,7 @@
   <div class="repo-cfg-row"><label>Branch</label><input type="text" id="repoCfgBranch"></div>
   <div class="repo-cfg-row"><label>Path</label><input type="text" id="repoCfgPath"></div>
   <button class="settings-btn-full" data-action="save-repo-config">Save &amp; refresh</button>
+  <button class="settings-btn-full" data-action="refresh-repo-library">Refresh library</button>
 </div>
 <input type="file" id="imageUploadInput" accept="image/*">
 <input type="file" id="bgImageInput" accept="image/*">
@@ -1216,6 +1217,7 @@
   var STORAGE_KEY = 'dndBestiaryLibrary_v1';
   var THEME_STORAGE_KEY = 'dndBestiaryTheme_v1';
   var BGIMG_STORAGE_KEY = 'dndBestiaryBgImages_v2';
+  var REPO_CACHE_KEY = 'dndBestiaryRepoCache_v1';
   var BG_IMAGE_MAX = 10;
 
   // Every valid CR value in ascending order, used as slider steps: the
@@ -1241,6 +1243,7 @@
     repoMonsters: [],
     repoLibraryStatus: 'idle',
     repoLibraryError: '',
+    repoLibraryBgRefreshing: false,
     repoOverrides: {},
     pdfViewer: {
       status: 'idle', // idle | loading | error | ready
@@ -2238,6 +2241,10 @@
       el.style.display = '';
       el.className = 'cat-status-strip error';
       el.textContent = 'Could not load repo statblocks: ' + (state.repoLibraryError || 'unknown error');
+    } else if(state.repoLibraryBgRefreshing){
+      el.style.display = '';
+      el.className = 'cat-status-strip';
+      el.textContent = 'Refreshing statblocks…';
     } else {
       el.style.display = 'none';
     }
@@ -2876,6 +2883,8 @@
       };
       saveLibrary();
       fetchRepoLibrary();
+    } else if(action === 'refresh-repo-library'){
+      fetchRepoLibrary({force: true});
     } else if(action === 'toggle-new-folder'){
       var row = document.getElementById('catFolderNewRow');
       var opening = !row.classList.contains('open');
@@ -3928,7 +3937,42 @@
     return merged;
   }
 
-  function fetchRepoLibrary(){
+  function repoCacheMatchesConfig(cache, cfg){
+    return !!cache && cache.owner === cfg.owner && cache.repo === cfg.repo &&
+      cache.branch === (cfg.branch || '') && cache.path === cfg.path;
+  }
+
+  function loadRepoLibraryCache(cfg){
+    try{
+      var raw = localStorage.getItem(REPO_CACHE_KEY);
+      if(!raw) return null;
+      var cache = JSON.parse(raw);
+      if(!cache || !Array.isArray(cache.monsters)) return null;
+      if(!repoCacheMatchesConfig(cache, cfg)) return null;
+      return cache;
+    }catch(err){
+      return null;
+    }
+  }
+
+  function saveRepoLibraryCache(cfg, etag, monsters){
+    try{
+      localStorage.setItem(REPO_CACHE_KEY, JSON.stringify({
+        v: 1, owner: cfg.owner, repo: cfg.repo, branch: cfg.branch || '', path: cfg.path,
+        etag: etag || null, monsters: monsters, savedAt: Date.now()
+      }));
+    }catch(err){
+      console.warn('Could not cache repo library locally (localStorage full?)', err);
+    }
+  }
+
+  // Serves any locally cached copy of the repo library immediately (so the
+  // catalog is never empty/broken just because GitHub's unauthenticated API
+  // rate limit got hit), then refreshes from the network in the background.
+  // A conditional If-None-Match request means an unchanged folder costs
+  // GitHub's rate limit nothing (304 responses don't count against it).
+  function fetchRepoLibrary(opts){
+    opts = opts || {};
     var cfg = state.repoLibraryConfig;
     if(!cfg || !cfg.owner || !cfg.repo || !cfg.path){
       state.repoLibraryStatus = 'error';
@@ -3937,25 +3981,73 @@
       repoLibraryReadyResolve();
       return;
     }
-    state.repoLibraryStatus = 'loading';
-    state.repoLibraryError = '';
-    renderCatalog();
+    var cache = loadRepoLibraryCache(cfg);
+    var servedFromCache = false;
+    if(cache && !opts.force){
+      state.repoMonsters = cache.monsters;
+      state.repoLibraryStatus = 'loaded';
+      state.repoLibraryBgRefreshing = true;
+      servedFromCache = true;
+      render();
+      repoLibraryReadyResolve();
+    } else {
+      state.repoLibraryStatus = 'loading';
+      state.repoLibraryError = '';
+      state.repoLibraryBgRefreshing = false;
+      renderCatalog();
+    }
+
+    function finishSuccess(monsters, etag){
+      state.repoMonsters = monsters;
+      state.repoLibraryStatus = 'loaded';
+      state.repoLibraryBgRefreshing = false;
+      render();
+      saveRepoLibraryCache(cfg, etag, monsters);
+      if(!servedFromCache) repoLibraryReadyResolve();
+    }
+    function finishFailure(err){
+      console.error('Could not load repo library', err);
+      state.repoLibraryBgRefreshing = false;
+      if(cache){
+        // Keep showing the cached catalog rather than blanking it out.
+        state.repoLibraryStatus = 'loaded';
+        state.repoLibraryError = '';
+        renderCatalog();
+      } else {
+        state.repoMonsters = [];
+        state.repoLibraryStatus = 'error';
+        state.repoLibraryError = (err && err.message) || String(err);
+        renderCatalog();
+      }
+      if(!servedFromCache) repoLibraryReadyResolve();
+    }
+
     var pathSegs = cfg.path.split('/').filter(function(x){ return x; }).map(encodeURIComponent).join('/');
     var apiUrl = 'https://api.github.com/repos/' + encodeURIComponent(cfg.owner) + '/' + encodeURIComponent(cfg.repo) +
       '/contents/' + pathSegs + (cfg.branch ? '?ref=' + encodeURIComponent(cfg.branch) : '');
-    fetch(apiUrl, {headers:{'Accept':'application/vnd.github+json'}}).then(function(res){
+    var headers = {'Accept':'application/vnd.github+json'};
+    if(cache && cache.etag) headers['If-None-Match'] = cache.etag;
+
+    fetch(apiUrl, {headers: headers}).then(function(res){
+      if(res.status === 304 && cache){
+        finishSuccess(cache.monsters, cache.etag);
+        return null;
+      }
       if(!res.ok) throw new Error('GitHub API returned ' + res.status);
-      return res.json();
-    }).then(function(entries){
-      if(!Array.isArray(entries)) throw new Error('That path is not a folder.');
-      var files = entries.filter(function(e){ return e.type === 'file' && /\.(md|json)$/i.test(e.name); });
-      return Promise.all(files.map(function(f){
-        return fetch(f.download_url).then(function(r){
-          if(!r.ok) throw new Error('Could not fetch ' + f.name);
-          return r.text();
-        }).then(function(text){ return {name: f.name, text: text}; });
-      }));
-    }).then(function(fileResults){
+      var etag = res.headers.get('ETag');
+      return res.json().then(function(entries){
+        if(!Array.isArray(entries)) throw new Error('That path is not a folder.');
+        var files = entries.filter(function(e){ return e.type === 'file' && /\.(md|json)$/i.test(e.name); });
+        return Promise.all(files.map(function(f){
+          return fetch(f.download_url).then(function(r){
+            if(!r.ok) throw new Error('Could not fetch ' + f.name);
+            return r.text();
+          }).then(function(text){ return {name: f.name, text: text}; });
+        })).then(function(fileResults){ return {fileResults: fileResults, etag: etag}; });
+      });
+    }).then(function(result){
+      if(!result) return; // 304 branch already resolved above
+      var fileResults = result.fileResults;
       var monsters = [];
       var rawEntries = [];
       var rawIndex = {};
@@ -4008,18 +4100,9 @@
           console.error('Could not convert monster ' + (e && e.name), err);
         }
       });
-      state.repoMonsters = monsters.filter(function(m){ return !state.repoOverrides[m.repoKey]; });
-      state.repoLibraryStatus = 'loaded';
-      render();
-      repoLibraryReadyResolve();
-    }).catch(function(err){
-      console.error('Could not load repo library', err);
-      state.repoMonsters = [];
-      state.repoLibraryStatus = 'error';
-      state.repoLibraryError = (err && err.message) || String(err);
-      renderCatalog();
-      repoLibraryReadyResolve();
-    });
+      var filtered = monsters.filter(function(m){ return !state.repoOverrides[m.repoKey]; });
+      finishSuccess(filtered, result.etag);
+    }).catch(finishFailure);
   }
 
   // Display page number (i.e. the book's own printed page number, which
