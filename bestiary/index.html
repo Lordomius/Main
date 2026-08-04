@@ -2667,14 +2667,22 @@
       hpSuffix = '/' + m.hp + (isBloodied(hp, m.hp) ? ' · Bloodied' : '');
     }
 
+    var initBonus = abilityMod(m.abilities.dex || 10);
+
     document.getElementById('instanceWindowTitle').textContent = label;
-    document.getElementById('instanceWindowSub').textContent = m.size + ' ' + m.type + ' · CR ' + m.cr + ' · AC ' + ac + ' · HP ' + hp + hpSuffix;
+    document.getElementById('instanceWindowSub').textContent = m.size + ' ' + m.type + ' · CR ' + m.cr;
     document.getElementById('instanceWindowSourcebookBtn').style.display = SGTTE_MONSTER_PAGES[m.name] ? '' : 'none';
 
     document.getElementById('instanceWindowBody').innerHTML =
       '<div class="sb-core">' +
+        '<div><b>AC</b> ' + esc(ac) + (m.acNote ? ' (' + esc(m.acNote) + ')' : '') + '</div>' +
+        '<div><b>HP</b> ' + esc(hp) + esc(hpSuffix) + (m.hpDice ? ' (' + esc(m.hpDice) + ')' : '') +
+          (m.hpDice ? ' <button class="pill" style="padding:2px 8px;font-size:13px;" data-action="roll-hp" data-dice="' + esc(m.hpDice) + '" data-label="' + esc(label) + ' — hit points">roll</button>' : '') +
+        '</div>' +
         '<div><b>Speed</b> ' + esc(m.speed) + '</div>' +
-        '<div><b>Initiative</b> ' + fmt(abilityMod(m.abilities.dex || 10)) + '</div>' +
+        '<div><b>Initiative</b> ' + fmt(initBonus) +
+          ' <button class="pill" style="padding:2px 8px;font-size:13px;" data-action="roll-initiative" data-bonus="' + initBonus + '" data-label="' + esc(label) + ' — initiative">roll</button>' +
+        '</div>' +
       '</div>' +
       '<div class="section-title">Ability checks</div>' +
       '<div class="ability-grid">' + encAbilityBoxesHtml(m, label) + '</div>' +
