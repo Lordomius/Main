@@ -4251,34 +4251,15 @@
     ];
   }
 
-  function buildPdfLinkOverlay(page, viewport, containerEl){
-    page.getAnnotations({intent: 'display'}).then(function(annots){
-      annots.forEach(function(a){
-        if(a.subtype !== 'Link' || !a.dest || !a.rect) return;
-        var destPromise = typeof a.dest === 'string' ? state.pdfViewer.doc.getDestination(a.dest) : Promise.resolve(a.dest);
-        destPromise.then(function(dest){
-          if(!dest || !dest[0]) return null;
-          return state.pdfViewer.doc.getPageIndex(dest[0]);
-        }).then(function(rawIndex){
-          if(rawIndex === null || rawIndex === undefined) return;
-          var displayPage = Math.max(1, (rawIndex + 1) - PDF_PAGE_OFFSET);
-          var box = pdfRectToViewport(viewport, a.rect);
-          var link = document.createElement('a');
-          link.href = 'javascript:void(0)';
-          link.className = 'pdf-link';
-          link.style.left = box[0] + 'px';
-          link.style.top = box[1] + 'px';
-          link.style.width = box[2] + 'px';
-          link.style.height = box[3] + 'px';
-          link.title = 'Go to page ' + displayPage;
-          link.addEventListener('click', function(e){
-            e.preventDefault();
-            pdfGoToPage(displayPage);
-          });
-          containerEl.appendChild(link);
-        }).catch(function(){});
-      });
-    }).catch(function(){});
+  function pdfBoxesOverlap(a, b){
+    return a[0] < b[0] + b[2] && a[0] + a[2] > b[0] && a[1] < b[1] + b[3] && a[1] + a[3] > b[1];
+  }
+
+  // PDF text extraction sometimes uses typographic punctuation (curly
+  // apostrophes, en/em dashes) where our stored monster names use plain
+  // ASCII ones - normalize so matching isn't thrown off by that.
+  function pdfNormalizeText(s){
+    return String(s).replace(/[‘’ʼʻ]/g, "'").replace(/[–—]/g, '-');
   }
 
   function pdfMatMul(m1, m2){
@@ -4331,62 +4312,113 @@
     });
   }
 
-  function buildPdfMonsterOverlay(page, viewport, containerEl){
-    var index = buildMonsterLinkIndex();
-    if(!index.length) return;
-    page.getTextContent().then(function(content){
-      var items = (content.items || []).filter(function(it){ return it.str; });
-      if(!items.length) return;
-      var fullText = '';
-      var itemStarts = [];
-      items.forEach(function(it){
-        itemStarts.push(fullText.length);
-        fullText += it.str + ' ';
+  // Builds both kinds of PDF click overlays for a page in one coordinated
+  // pass: the PDF's own embedded page-jump links (TOC/index entries etc.)
+  // and monster-name mentions that open the stat block window. Both rely
+  // on separate async pdf.js calls (getAnnotations/getTextContent) that
+  // can resolve in either order, so they're joined here rather than run
+  // as two independent functions - otherwise a monster-name overlay could
+  // render on top of (and steal clicks from) a real page-jump link
+  // covering the same text, like a TOC entry that already links to that
+  // monster's page.
+  function buildPdfOverlays(page, viewport, containerEl){
+    Promise.all([
+      page.getAnnotations({intent: 'display'}).catch(function(){ return []; }),
+      page.getTextContent().catch(function(){ return {items: []}; })
+    ]).then(function(results){
+      var annots = results[0] || [];
+      var content = results[1] || {items: []};
+
+      var linkAnnots = annots.filter(function(a){ return a.subtype === 'Link' && a.dest && a.rect; });
+      var linkPromises = linkAnnots.map(function(a){
+        var destPromise = typeof a.dest === 'string' ? state.pdfViewer.doc.getDestination(a.dest) : Promise.resolve(a.dest);
+        return destPromise.then(function(dest){
+          if(!dest || !dest[0]) return null;
+          return state.pdfViewer.doc.getPageIndex(dest[0]).then(function(rawIndex){
+            if(rawIndex === null || rawIndex === undefined) return null;
+            return {box: pdfRectToViewport(viewport, a.rect), displayPage: Math.max(1, (rawIndex + 1) - PDF_PAGE_OFFSET)};
+          });
+        }).catch(function(){ return null; });
       });
-      var used = [];
-      index.forEach(function(entry){
-        var m = entry.fullRe.exec(fullText) || entry.coreRe.exec(fullText);
-        if(!m) return;
-        var mStart = m.index, mEnd = m.index + m[0].length;
-        if(used.some(function(r){ return mStart < r[1] && mEnd > r[0]; })) return;
-        var touched = [];
-        for(var i = 0; i < items.length; i++){
-          var segStart = itemStarts[i], segEnd = segStart + items[i].str.length;
-          if(segEnd > mStart && segStart < mEnd) touched.push(i);
-        }
-        if(!touched.length) return;
-        used.push([mStart, mEnd]);
-        var box = null;
-        touched.forEach(function(i){
-          var full = pdfTextItemBox(viewport, items[i]);
-          if(!full) return;
-          var strLen = items[i].str.length;
-          if(strLen <= 0) return;
-          // Crop to just the portion of this item the match actually covers -
-          // an item can contain more text than the name itself (e.g. a whole
-          // heading line), so using its full box would overshoot past the name.
-          var localStart = Math.max(0, mStart - itemStarts[i]);
-          var localEnd = Math.min(strLen, mEnd - itemStarts[i]);
-          if(localEnd <= localStart) return;
-          var fracStart = localStart / strLen;
-          var fracEnd = localEnd / strLen;
-          var cropped = [full[0] + full[2] * fracStart, full[1], full[2] * (fracEnd - fracStart), full[3]];
-          box = box ? pdfUnionBox(box, cropped) : cropped;
+
+      return Promise.all(linkPromises).then(function(linkResults){
+        var linkBoxes = linkResults.filter(Boolean);
+
+        linkBoxes.forEach(function(lb){
+          var link = document.createElement('a');
+          link.href = 'javascript:void(0)';
+          link.className = 'pdf-link';
+          link.style.left = lb.box[0] + 'px';
+          link.style.top = lb.box[1] + 'px';
+          link.style.width = lb.box[2] + 'px';
+          link.style.height = lb.box[3] + 'px';
+          link.title = 'Go to page ' + lb.displayPage;
+          link.addEventListener('click', function(e){
+            e.preventDefault();
+            pdfGoToPage(lb.displayPage);
+          });
+          containerEl.appendChild(link);
         });
-        if(!box) return;
-        var link = document.createElement('a');
-        link.href = 'javascript:void(0)';
-        link.className = 'pdf-link pdf-monster-link';
-        link.style.left = box[0] + 'px';
-        link.style.top = box[1] + 'px';
-        link.style.width = box[2] + 'px';
-        link.style.height = box[3] + 'px';
-        link.title = 'Open ' + entry.name;
-        link.addEventListener('click', function(e){
-          e.preventDefault();
-          openPdfMonsterWindow(entry.id);
+
+        var index = buildMonsterLinkIndex();
+        var items = (content.items || []).filter(function(it){ return it.str; });
+        if(!index.length || !items.length) return;
+
+        var fullText = '';
+        var itemStarts = [];
+        items.forEach(function(it){
+          itemStarts.push(fullText.length);
+          fullText += pdfNormalizeText(it.str) + ' ';
         });
-        containerEl.appendChild(link);
+        var used = [];
+        index.forEach(function(entry){
+          var m = entry.fullRe.exec(fullText) || entry.coreRe.exec(fullText);
+          if(!m) return;
+          var mStart = m.index, mEnd = m.index + m[0].length;
+          if(used.some(function(r){ return mStart < r[1] && mEnd > r[0]; })) return;
+          var touched = [];
+          for(var i = 0; i < items.length; i++){
+            var segStart = itemStarts[i], segEnd = segStart + items[i].str.length;
+            if(segEnd > mStart && segStart < mEnd) touched.push(i);
+          }
+          if(!touched.length) return;
+          var box = null;
+          touched.forEach(function(i){
+            var full = pdfTextItemBox(viewport, items[i]);
+            if(!full) return;
+            var strLen = items[i].str.length;
+            if(strLen <= 0) return;
+            // Crop to just the portion of this item the match actually covers -
+            // an item can contain more text than the name itself (e.g. a whole
+            // heading line), so using its full box would overshoot past the name.
+            var localStart = Math.max(0, mStart - itemStarts[i]);
+            var localEnd = Math.min(strLen, mEnd - itemStarts[i]);
+            if(localEnd <= localStart) return;
+            var fracStart = localStart / strLen;
+            var fracEnd = localEnd / strLen;
+            var cropped = [full[0] + full[2] * fracStart, full[1], full[2] * (fracEnd - fracStart), full[3]];
+            box = box ? pdfUnionBox(box, cropped) : cropped;
+          });
+          if(!box) return;
+          // A real page-jump link already covers this text (e.g. a TOC or
+          // index entry) - let it win instead of shadowing it with a
+          // "open stat block" overlay in the exact same spot.
+          if(linkBoxes.some(function(lb){ return pdfBoxesOverlap(box, lb.box); })) return;
+          used.push([mStart, mEnd]);
+          var link = document.createElement('a');
+          link.href = 'javascript:void(0)';
+          link.className = 'pdf-link pdf-monster-link';
+          link.style.left = box[0] + 'px';
+          link.style.top = box[1] + 'px';
+          link.style.width = box[2] + 'px';
+          link.style.height = box[3] + 'px';
+          link.title = 'Open ' + entry.name;
+          link.addEventListener('click', function(e){
+            e.preventDefault();
+            openPdfMonsterWindow(entry.id);
+          });
+          containerEl.appendChild(link);
+        });
       });
     }).catch(function(){});
   }
@@ -4417,8 +4449,7 @@
         slot.renderedAtScale = state.pdfViewer.zoom;
         slot.rendering = false;
         updatePdfRenderedCount();
-        buildPdfLinkOverlay(page, cssViewport, slot.el);
-        buildPdfMonsterOverlay(page, cssViewport, slot.el);
+        buildPdfOverlays(page, cssViewport, slot.el);
       });
     }).catch(function(err){
       slot.rendering = false;
