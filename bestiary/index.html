@@ -3923,6 +3923,7 @@
       state.repoLibraryStatus = 'error';
       state.repoLibraryError = 'No repo library configured.';
       renderCatalog();
+      repoLibraryReadyResolve();
       return;
     }
     state.repoLibraryStatus = 'loading';
@@ -3999,12 +4000,14 @@
       state.repoMonsters = monsters.filter(function(m){ return !state.repoOverrides[m.repoKey]; });
       state.repoLibraryStatus = 'loaded';
       render();
+      repoLibraryReadyResolve();
     }).catch(function(err){
       console.error('Could not load repo library', err);
       state.repoMonsters = [];
       state.repoLibraryStatus = 'error';
       state.repoLibraryError = (err && err.message) || String(err);
       renderCatalog();
+      repoLibraryReadyResolve();
     });
   }
 
@@ -4078,6 +4081,14 @@
   var pdfPreloadObserver = null;
   var pdfViewObserver = null;
   var pdfThumbObserver = null;
+  // The sourcebook PDF preloads in the background independently of
+  // fetchRepoLibrary(), so a page can materialize (and build its monster-
+  // name overlay) before state.repoMonsters has the SGttE entries yet.
+  // That page would then be permanently stuck without its overlay, since
+  // pages only render once. buildPdfOverlays() waits on this before doing
+  // its monster-name matching, so it always sees the real monster list.
+  var repoLibraryReadyResolve = null;
+  var repoLibraryReadyPromise = new Promise(function(resolve){ repoLibraryReadyResolve = resolve; });
 
   function loadPdfJsLib(){
     if(!pdfjsLibPromise){
@@ -4335,7 +4346,7 @@
     var merged = [];
     linkBoxes.forEach(function(lb){
       for(var i = 0; i < merged.length; i++){
-        if(merged[i].displayPage === lb.displayPage && pdfBoxesNear(merged[i].box, lb.box, 3)){
+        if(merged[i].displayPage === lb.displayPage && pdfLinksOnSameLine(merged[i].box, lb.box, 3)){
           merged[i].box = pdfUnionBox(merged[i].box, lb.box);
           return;
         }
@@ -4345,15 +4356,23 @@
     return merged;
   }
 
-  function pdfBoxesNear(a, b, tol){
-    return (a[0] - tol) < (b[0] + b[2]) && (a[0] + a[2] + tol) > b[0] &&
-           (a[1] - tol) < (b[1] + b[3]) && (a[1] + a[3] + tol) > b[1];
+  // Only merges rects that are horizontally adjacent/overlapping on
+  // (nearly) the same line - a zero-width "connector" rect the PDF export
+  // sometimes leaves between adjacent TOC rows can be geometrically close
+  // to the row below without being part of it, which previously merged
+  // whole separate entries together into one link spanning multiple lines.
+  function pdfLinksOnSameLine(a, b, tol){
+    var vOverlap = Math.min(a[1] + a[3], b[1] + b[3]) - Math.max(a[1], b[1]);
+    var minHeight = Math.min(a[3], b[3]);
+    if(minHeight <= 0 || vOverlap < minHeight * 0.5) return false;
+    return (a[0] - tol) < (b[0] + b[2]) && (a[0] + a[2] + tol) > b[0];
   }
 
   function buildPdfOverlays(page, viewport, containerEl, displayPageNum){
     Promise.all([
       page.getAnnotations({intent: 'display'}).catch(function(){ return []; }),
-      page.getTextContent().catch(function(){ return {items: []}; })
+      page.getTextContent().catch(function(){ return {items: []}; }),
+      repoLibraryReadyPromise
     ]).then(function(results){
       var annots = results[0] || [];
       var content = results[1] || {items: []};
@@ -4371,7 +4390,11 @@
       });
 
       return Promise.all(linkPromises).then(function(linkResults){
-        var linkBoxes = mergePdfLinkBoxes(linkResults.filter(Boolean));
+        var linkBoxes = mergePdfLinkBoxes(linkResults.filter(Boolean)).filter(function(lb){
+          // some rects are zero-width/height "connector" artifacts in the
+          // source PDF with no real clickable area of their own
+          return lb.box[2] > 0 && lb.box[3] > 0;
+        });
 
         linkBoxes.forEach(function(lb){
           var link = document.createElement('a');
