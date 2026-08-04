@@ -1192,6 +1192,7 @@
     </div>
     <div class="instance-window-head-actions">
       <button data-action="lookup-instance-online">Look up online</button>
+      <button data-action="open-sourcebook-from-instance-window" id="instanceWindowSourcebookBtn" style="display:none;">Open Sourcebook</button>
       <button data-action="close-instance-window">✕</button>
     </div>
   </div>
@@ -1251,7 +1252,8 @@
       thumbOpen: false,
       slots: {},
       thumbs: {},
-      visiblePages: {}
+      visiblePages: {},
+      pendingJumpPage: null
     },
     filterSizes: [],
     filterTypes: [],
@@ -2033,6 +2035,15 @@
     return !!(m && typeof m.id === 'string' && m.id.indexOf('repo_') === 0);
   }
 
+  // Resolves whichever monster the floating instance/monster window is
+  // currently showing, regardless of whether it's in encounter-instance
+  // mode (state.instanceWindowId) or plain lookup mode (state.pdfMonsterWindowId).
+  function getInstanceWindowMonster(){
+    if(state.pdfMonsterWindowId) return getMonster(state.pdfMonsterWindowId);
+    var found = state.instanceWindowId ? findEncounterInstance(state.instanceWindowId) : null;
+    return found ? getMonster(found.group.monsterId) : null;
+  }
+
   // Hides a live repo-sourced monster (by its stable repoKey) from future
   // renders/fetches. Used whenever the user touches a repo monster in a way
   // that needs to persist locally (edit, delete, file into a folder) — from
@@ -2303,6 +2314,7 @@
     var topbarButtons =
       '<button data-action="duplicate-monster" data-id="' + esc(m.id) + '">Duplicate</button>' +
       '<button data-action="lookup-monster-online" data-id="' + esc(m.id) + '">Look up online</button>' +
+      (SGTTE_MONSTER_PAGES[m.name] ? '<button data-action="open-sourcebook-at-monster" data-monster-name="' + esc(m.name) + '">Open Sourcebook</button>' : '') +
       '<button data-action="edit-monster" data-id="' + esc(m.id) + '">Edit</button>' +
       '<button class="danger" data-action="delete-monster" data-id="' + esc(m.id) + '">Delete</button>';
     el.innerHTML =
@@ -2657,6 +2669,7 @@
 
     document.getElementById('instanceWindowTitle').textContent = label;
     document.getElementById('instanceWindowSub').textContent = m.size + ' ' + m.type + ' · CR ' + m.cr + ' · AC ' + ac + ' · HP ' + hp + hpSuffix;
+    document.getElementById('instanceWindowSourcebookBtn').style.display = SGTTE_MONSTER_PAGES[m.name] ? '' : 'none';
 
     document.getElementById('instanceWindowBody').innerHTML =
       '<div class="sb-core">' +
@@ -3040,11 +3053,15 @@
     } else if(action === 'close-instance-window'){
       closeInstanceWindow();
     } else if(action === 'lookup-instance-online'){
-      var lookupFound = state.instanceWindowId ? findEncounterInstance(state.instanceWindowId) : null;
-      var lookupMon = lookupFound ? getMonster(lookupFound.group.monsterId) : null;
+      var lookupMon = getInstanceWindowMonster();
       if(lookupMon){
         window.open('https://www.google.com/search?q=' + encodeURIComponent(lookupMon.name + ' D&D 5e monster'), '_blank', 'noopener,noreferrer');
       }
+    } else if(action === 'open-sourcebook-at-monster'){
+      openSourcebookAtMonster(t.getAttribute('data-monster-name'));
+    } else if(action === 'open-sourcebook-from-instance-window'){
+      var sbMon = getInstanceWindowMonster();
+      if(sbMon) openSourcebookAtMonster(sbMon.name);
     } else if(action === 'encounter-remove-instance'){
       var remInstEnc = getActiveEncounter();
       if(remInstEnc){
@@ -3991,6 +4008,67 @@
     });
   }
 
+  // Display page number (i.e. the book's own printed page number, which
+  // equals raw PDF page minus PDF_PAGE_OFFSET) each SGttE monster's stat
+  // block actually starts on - found via the PDF's own table of contents,
+  // then verified by scanning forward for the page that actually contains
+  // "Armor Class" and the monster's own name (a few TOC entries point to
+  // the narrative page immediately before the mechanical stat block).
+  var SGTTE_MONSTER_PAGES = {
+    "Parasitic Geist": 310,
+    "Fallen Luyarnhian": 311,
+    "Corvian Dweller": 312,
+    "Geist": 313,
+    "Enhanced Patient": 314,
+    "Zealot": 315,
+    "Butcher": 316,
+    "Scourge Lycan": 317,
+    "Guardian Gargoyle": 318,
+    "Hunter": 319,
+    "Razorblade Bitzer": 320,
+    "Screechwing": 321,
+    "Abductor": 322,
+    "Revenant Bear": 323,
+    "Wisp Liege": 324,
+    "Reviled Hound": 326,
+    "Scorched Adjudicator": 328,
+    "Ales Nebulae": 330,
+    "Dullahan": 331,
+    "Living Artillery": 334,
+    "Nightmare Centipede": 336,
+    "Skulking Shade": 337,
+    "Dreadcrow": 338,
+    "Nightgaunt": 340,
+    "Cloistered Maiden": 342,
+    "Chained Giant": 343,
+    "Hollow Sentinel": 346,
+    "Jaeger": 348,
+    "Lunar Revenant": 349,
+    "Roaring Mane": 351,
+    "Blue-Flame Custodian": 352,
+    "Cervus Tenebris": 354,
+    "Devouring Belua": 356,
+    "Owlbear": 357,
+    "Penitent": 360,
+    "Galvanized Prowler": 362,
+    "Death": 364,
+    "Dreamer's Minor Avatar": 365,
+    "Soul-Snatching Aranea": 368,
+    "Ectellax, The Flayed (Adult Eldritch Dragon)": 371,
+    "Orr, The Grieving Rebirth (First Form)": 372,
+    "Orr, The Grieving Rebirth (Second Form)": 375,
+    "Goat Mother's Avatar": 378,
+    "Veiled Hunter": 380,
+    "The Defiled Librarian": 382,
+    "Tisiphone, The Primal Chaos": 384,
+    "Malach, Angel of Flesh": 386,
+    "Vicar Priscilla": 388,
+    "Abaddon, Failed Sentinel": 390,
+    "Radiant Watcher": 392,
+    "Gerhard, Accursed Knight": 394,
+    "The King of the Hunt": 396
+  };
+
   var SOURCEBOOK_PDF_NAME = "Steinhardt_s_Guide_to_the_Eldritch_Hunt.pdf";
   var PDF_PAGE_OFFSET = 1; // leading cover page in the raw PDF isn't counted in the displayed page numbers
   var PDFJS_VERSION = "6.2.108";
@@ -4156,6 +4234,12 @@
     document.getElementById('pdfPrevBtn').disabled = true;
     document.getElementById('pdfNextBtn').disabled = total <= 1;
     updatePdfRenderedCount();
+
+    if(state.pdfViewer.pendingJumpPage){
+      var pendingPg = state.pdfViewer.pendingJumpPage;
+      state.pdfViewer.pendingJumpPage = null;
+      pdfGoToPage(pendingPg);
+    }
   }
 
   function pdfRectToViewport(viewport, rect){
@@ -4274,9 +4358,20 @@
         used.push([mStart, mEnd]);
         var box = null;
         touched.forEach(function(i){
-          var b = pdfTextItemBox(viewport, items[i]);
-          if(!b) return;
-          box = box ? pdfUnionBox(box, b) : b;
+          var full = pdfTextItemBox(viewport, items[i]);
+          if(!full) return;
+          var strLen = items[i].str.length;
+          if(strLen <= 0) return;
+          // Crop to just the portion of this item the match actually covers -
+          // an item can contain more text than the name itself (e.g. a whole
+          // heading line), so using its full box would overshoot past the name.
+          var localStart = Math.max(0, mStart - itemStarts[i]);
+          var localEnd = Math.min(strLen, mEnd - itemStarts[i]);
+          if(localEnd <= localStart) return;
+          var fracStart = localStart / strLen;
+          var fracEnd = localEnd / strLen;
+          var cropped = [full[0] + full[2] * fracStart, full[1], full[2] * (fracEnd - fracStart), full[3]];
+          box = box ? pdfUnionBox(box, cropped) : cropped;
         });
         if(!box) return;
         var link = document.createElement('a');
@@ -4381,6 +4476,24 @@
     if(!slot) return;
     var distance = Math.abs(n - state.pdfViewer.currentPage);
     slot.el.scrollIntoView({behavior: distance > 15 ? 'auto' : 'smooth', block: 'start'});
+  }
+
+  // Switches to the Sourcebook tab and jumps straight to a given monster's
+  // stat block page. If the PDF isn't loaded/ready yet, queues the jump so
+  // buildPdfPageStack() can carry it out the moment the document is ready.
+  function openSourcebookAtMonster(monsterName){
+    var pg = SGTTE_MONSTER_PAGES[monsterName];
+    if(!pg) return;
+    closeInstanceWindow();
+    state.view = 'pdf';
+    if(state.pdfViewer.status === 'ready'){
+      render();
+      pdfGoToPage(pg);
+    } else {
+      state.pdfViewer.pendingJumpPage = pg;
+      render();
+      if(state.pdfViewer.status === 'idle' || state.pdfViewer.status === 'error') openSourcebookPdf();
+    }
   }
 
   function setPdfZoom(z){
