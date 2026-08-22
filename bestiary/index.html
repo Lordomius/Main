@@ -1677,7 +1677,19 @@
         state.folders = (data && data.folders) || [];
         state.collapsedFolders = (data && data.collapsedFolders) || {};
         state.sortMode = (data && data.sortMode) || 'name-asc';
-        if(data && data.repoLibraryConfig) state.repoLibraryConfig = data.repoLibraryConfig;
+        if(data && data.repoLibraryConfig){
+          state.repoLibraryConfig = data.repoLibraryConfig;
+          // One-time heal: browsers that saved their config before the fix in
+          // 2bd9f90 have 'claude/bestiary-file-b1lrxn' (a deleted dev branch)
+          // baked into localStorage, which keeps 404ing forever even though
+          // the shipped default was corrected. Only touch it when it still
+          // matches the official repo, so a user's own custom fork/branch
+          // config is left alone.
+          var rlc = state.repoLibraryConfig;
+          if(rlc && rlc.owner === 'Lordomius' && rlc.repo === 'Main' && rlc.branch === 'claude/bestiary-file-b1lrxn'){
+            rlc.branch = '';
+          }
+        }
         state.repoOverrides = (data && data.repoOverrides) || {};
         state.filterSizes = (data && data.filterSizes) || [];
         state.filterTypes = (data && data.filterTypes) || [];
