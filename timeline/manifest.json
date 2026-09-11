@@ -1,0 +1,9 @@
+{
+	"id": "vertical-timeline",
+	"name": "Vertical Timeline",
+	"version": "0.1.0",
+	"minAppVersion": "1.4.0",
+	"description": "A zig-zag vertical timeline of events, each linkable to a note.",
+	"author": "",
+	"isDesktopOnly": false
+}
