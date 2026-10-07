@@ -671,6 +671,13 @@
   .stamp:active{transform:scale(0.9) rotate(-3deg);}
   .stamp.dmg{background:var(--crimson);}
   .stamp:hover{filter:brightness(1.25);}
+  .portent-die{
+    display:inline-flex;align-items:center;justify-content:center;min-width:40px;
+    border:1px solid var(--forest-light);color:var(--gold-light);border-radius:20px;
+    padding:5px 12px;font-size:14.5px;font-family:var(--font-mono);font-weight:bold;
+  }
+  .portent-die.crit{border-color:var(--gold-light);}
+  .portent-die.fumble{color:var(--crimson-bright);border-color:var(--crimson-bright);}
 
   .section-title{
     font-family:var(--font-display);font-size:18px;color:var(--gold-light);
@@ -1285,7 +1292,10 @@
     encFilterFeatures: [],
     encFilterCrMinIdx: 0,
     encFilterCrMaxIdx: CR_SCALE.length - 1,
-    encFiltersOpen: false
+    encFiltersOpen: false,
+    // Foretelling rolls for the main stage and PDF popup, keyed by view
+    // ({monsterId, rolls}); encounter instances keep theirs on the instance.
+    portentRolls: {}
   };
 
   var CREATURE_SIZES = ['tiny','small','medium','large','huge','gargantuan'];
@@ -2312,13 +2322,69 @@
     if(panel) panel.style.display = state.filtersOpen ? '' : 'none';
   }
 
-  function traitLikeHtml(list, creatureLabel){
+  function traitLikeHtml(list, creatureLabel, portentCtx){
     return (list || []).map(function(t){
       var body = highlightConditions(highlightSpells(highlightCastingFrequency(highlightNumbers(esc(t.text)))));
       var nameHtml = t.name ? '<b>' + esc(t.name) + '.</b> ' : '';
-      var rolls = actionRollButtonsHtml(t, creatureLabel, t.name);
+      var rolls = actionRollButtonsHtml(t, creatureLabel, t.name) + portentRollHtml(t, creatureLabel, portentCtx);
       return '<div class="trait">' + nameHtml + body + (rolls ? '<div class="action-rolls">' + rolls + '</div>' : '') + '</div>';
     }).join('');
+  }
+
+  // Portent-style traits ("rolls three d20s and records the numbers") get a
+  // button that rolls that many d20s and keeps them on display until
+  // rerolled. Where the rolls live depends on which stat block is showing
+  // them (portentCtx): an encounter instance stores them on the instance
+  // itself, so they survive closing its window and go away with it; the
+  // main stage ('stage') and PDF popup ('pdf') keep them only while that
+  // view stays on the same creature.
+  var PORTENT_COUNT_WORDS = {one:1, two:2, three:3, four:4, five:5, six:6};
+  function portentDiceCount(text){
+    var mt = String(text || '').match(/\brolls?\s+(one|two|three|four|five|six|\d+)\s+d20s?\b[^.]*\brecords?\b/i);
+    if(!mt) return 0;
+    return PORTENT_COUNT_WORDS[mt[1].toLowerCase()] || parseInt(mt[1], 10) || 0;
+  }
+
+  function getPortentRolls(ctx, monsterId){
+    if(!ctx) return null;
+    if(ctx.indexOf('inst:') === 0){
+      var found = findEncounterInstance(ctx.slice(5));
+      return found && found.instance.portent ? found.instance.portent : null;
+    }
+    var entry = state.portentRolls[ctx];
+    return entry && entry.monsterId === monsterId ? entry.rolls : null;
+  }
+
+  function portentRollHtml(item, label, ctx){
+    var count = portentDiceCount(item.text);
+    if(!count || !ctx) return '';
+    var ctxMonsterId = ctx === 'stage' ? state.currentId : (ctx === 'pdf' ? state.pdfMonsterWindowId : '');
+    var rolls = getPortentRolls(ctx, ctxMonsterId);
+    var html = '<button class="stamp" data-action="roll-portent" data-ctx="' + esc(ctx) + '" data-monster-id="' + esc(ctxMonsterId) + '" data-count="' + count + '" data-label="' + esc(label) + ' — ' + esc(item.name) + '">' +
+      (rolls ? 'Reroll ' : 'Roll ') + count + 'd20</button>';
+    if(rolls){
+      html += rolls.map(function(r){
+        var cls = 'portent-die' + (r === 20 ? ' crit' : (r === 1 ? ' fumble' : ''));
+        return '<span class="' + cls + '" title="Foretelling roll">' + r + '</span>';
+      }).join('');
+    }
+    return html;
+  }
+
+  function rollPortent(ctx, monsterId, count, label){
+    var rolls = [];
+    for(var i = 0; i < count; i++) rolls.push(rollDie(20));
+    if(ctx.indexOf('inst:') === 0){
+      var found = findEncounterInstance(ctx.slice(5));
+      if(!found) return;
+      found.instance.portent = rolls;
+      saveLibrary();
+      renderInstanceWindow();
+    } else {
+      state.portentRolls[ctx] = {monsterId: monsterId, rolls: rolls};
+      if(ctx === 'stage') renderStage(); else renderInstanceWindow();
+    }
+    addLog(label, count + 'd20', rolls.join(', '), rolls.indexOf(20) !== -1, false);
   }
 
   function findBonusDamage(text){
@@ -2350,6 +2416,9 @@
       el.innerHTML = '<div class="empty-state"><div class="big">No creature selected</div>Choose one from the catalog on the left,<br>or create a new one to begin.</div>';
       return;
     }
+    // Switching the stage to another creature drops its foretelling rolls,
+    // so coming back to the same creature later starts fresh.
+    if(state.portentRolls.stage && state.portentRolls.stage.monsterId !== m.id) delete state.portentRolls.stage;
     var dexMod = abilityMod(m.abilities.dex || 10);
     var initBonus = (m.initiative === null || m.initiative === undefined || m.initiative === '') ? dexMod : Number(m.initiative);
 
@@ -2384,7 +2453,7 @@
         '<div class="ability-grid">' + encAbilityBoxesHtml(m, m.name) + '</div>' +
         '<div class="section-title">Saving throws</div>' +
         '<div class="ability-grid save-grid">' + encSaveBoxesHtml(m, m.name) + '</div>' +
-        monsterDetailHtml(m, m.name) +
+        monsterDetailHtml(m, m.name, 'stage') +
       '</div>';
   }
 
@@ -2567,13 +2636,13 @@
 
   // Skills through legendary actions - everything in a full stat block after
   // the ability/save grids.
-  function monsterDetailHtml(m, label){
+  function monsterDetailHtml(m, label, portentCtx){
     var skillsHtml = monsterSkillsHtml(m, label);
-    var traitsHtml = traitLikeHtml(m.traits, label);
+    var traitsHtml = traitLikeHtml(m.traits, label, portentCtx);
     var actionsHtml = monsterActionsHtml(m, label);
-    var legendaryHtml = traitLikeHtml(m.legendary, label);
-    var reactionsHtml = traitLikeHtml(m.reactions, label);
-    var bonusActionsHtml = traitLikeHtml(m.bonusActions, label);
+    var legendaryHtml = traitLikeHtml(m.legendary, label, portentCtx);
+    var reactionsHtml = traitLikeHtml(m.reactions, label, portentCtx);
+    var bonusActionsHtml = traitLikeHtml(m.bonusActions, label, portentCtx);
     var lairActionsHtml = traitLikeHtml(m.lairActions, label);
     var regionalEffectsHtml = traitLikeHtml(m.regionalEffects, label);
     return (skillsHtml ? '<div class="pillrow">' + skillsHtml + '</div>' : '') +
@@ -2667,6 +2736,7 @@
   // directly by id (no encounter-instance context, no AC/HP overrides) -
   // used by the PDF viewer's in-text monster name links.
   function openPdfMonsterWindow(monsterId){
+    delete state.portentRolls.pdf;
     state.instanceWindowId = null;
     state.pdfMonsterWindowId = monsterId;
     renderInstanceWindow();
@@ -2674,6 +2744,7 @@
   }
 
   function closeInstanceWindow(){
+    delete state.portentRolls.pdf;
     state.instanceWindowId = null;
     state.pdfMonsterWindowId = null;
     document.getElementById('instanceWindowPanel').style.display = 'none';
@@ -2735,7 +2806,7 @@
       '<div class="ability-grid">' + encAbilityBoxesHtml(m, label) + '</div>' +
       '<div class="section-title">Saving throws</div>' +
       '<div class="ability-grid save-grid">' + encSaveBoxesHtml(m, label) + '</div>' +
-      monsterDetailHtml(m, label);
+      monsterDetailHtml(m, label, state.pdfMonsterWindowId ? 'pdf' : 'inst:' + state.instanceWindowId);
     panel.style.display = 'flex';
   }
 
@@ -3129,6 +3200,8 @@
     } else if(action === 'open-sourcebook-from-instance-window'){
       var sbMon = getInstanceWindowMonster();
       if(sbMon) openSourcebookAtMonster(sbMon.name);
+    } else if(action === 'roll-portent'){
+      rollPortent(t.getAttribute('data-ctx'), t.getAttribute('data-monster-id'), parseInt(t.getAttribute('data-count'), 10), t.getAttribute('data-label'));
     } else if(action === 'encounter-remove-instance'){
       var remInstEnc = getActiveEncounter();
       if(remInstEnc){
