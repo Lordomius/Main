@@ -13,6 +13,12 @@ section in the catalog) — no rebuilding, no re-uploading through the app.
   - A 5etools-style bestiary file: `{"monster": [ {...}, {...} ]}`
   - The app's own export format: `{"version": 1, "monsters": [ {...} ]}`
 
+## Subfolders
+
+Files can be grouped into subfolders (up to three levels deep) and are
+picked up the same way. Homebrew creatures live in `homebrew/`, one file per
+creature.
+
 ## How it works
 
 The app calls the GitHub API to list whatever files are currently in this

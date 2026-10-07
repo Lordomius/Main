@@ -4089,13 +4089,32 @@
       var etag = res.headers.get('ETag');
       return res.json().then(function(entries){
         if(!Array.isArray(entries)) throw new Error('That path is not a folder.');
-        var files = entries.filter(function(e){ return e.type === 'file' && /\.(md|json)$/i.test(e.name); });
-        return Promise.all(files.map(function(f){
-          return fetch(f.download_url).then(function(r){
-            if(!r.ok) throw new Error('Could not fetch ' + f.name);
-            return r.text();
-          }).then(function(text){ return {name: f.name, text: text}; });
-        })).then(function(fileResults){ return {fileResults: fileResults, etag: etag}; });
+        // Subfolders (e.g. statblocks/homebrew/) are listed too, so files can
+        // be grouped without the app caring. A subfolder's contents changing
+        // changes its sha in this listing, so the top-level ETag still
+        // invalidates the cache correctly. Top-level files keep their bare
+        // name; nested ones are named by their path below the root folder.
+        function collectFiles(list, prefix, depth){
+          var files = list.filter(function(e){ return e.type === 'file' && /\.(md|json)$/i.test(e.name); })
+            .map(function(e){ return {name: prefix + e.name, download_url: e.download_url}; });
+          var dirs = depth < 3 ? list.filter(function(e){ return e.type === 'dir'; }) : [];
+          return Promise.all(dirs.map(function(d){
+            return fetch(d.url, {headers: {'Accept':'application/vnd.github+json'}}).then(function(r){
+              if(!r.ok) throw new Error('Could not list ' + prefix + d.name);
+              return r.json();
+            }).then(function(sub){ return collectFiles(sub, prefix + d.name + '/', depth + 1); });
+          })).then(function(nested){
+            return nested.reduce(function(acc, n){ return acc.concat(n); }, files);
+          });
+        }
+        return collectFiles(entries, '', 0).then(function(files){
+          return Promise.all(files.map(function(f){
+            return fetch(f.download_url).then(function(r){
+              if(!r.ok) throw new Error('Could not fetch ' + f.name);
+              return r.text();
+            }).then(function(text){ return {name: f.name, text: text}; });
+          }));
+        }).then(function(fileResults){ return {fileResults: fileResults, etag: etag}; });
       });
     }).then(function(result){
       if(!result) return; // 304 branch already resolved above
@@ -5357,6 +5376,11 @@
     'osteophagia': {name:"Osteophagia", level:'9th level', school:'Conjuration', time:'1 action', range:'Touch', components:'V, S', duration:'Instantaneous',
         desc:"The most lethal osteomantic power. You can cause the skeleton of a creature to liquefy in a matter of seconds, causing the body to collapse in on itself. Choose a creature within your reach; it must succeed on a Constitution saving throw or die. A successful save prevents the death by skeletal collapse, but the creature still takes 10d6 necrotic damage. Creatures without bones and creatures whose CR or character level is equal to or higher than the caster's CR or character level are immune to this spell.",
       save:{ability:'Constitution', dc:null}, damage:'10d6', damageType:'necrotic'},
+    'mind sliver': {name:'Mind Sliver', level:'Cantrip', school:'Enchantment', time:'1 action', range:'60 feet', components:'V', duration:'1 round',
+      desc:"You drive a disorienting spike of psychic energy into the mind of a creature you can see within range. On a failed save, the target takes 1d6 psychic damage, and the first time it makes a saving throw before the end of your next turn, it subtracts 1d4 from the roll. The damage increases by one die at 5th, 11th, and 17th level.",
+      save:{ability:'Intelligence', dc:null}, damage:'1d6', damageType:'psychic'},
+    'silvery barbs': {name:'Silvery Barbs', level:'1st level', school:'Enchantment', time:'1 reaction, which you take when a creature you can see within 60 feet of yourself succeeds on an attack roll, an ability check, or a saving throw', range:'60 feet', components:'V', duration:'Instantaneous',
+      desc:"You magically distract the triggering creature and turn its momentary uncertainty into encouragement for another creature. The triggering creature must reroll the d20 and use the lower roll. You can then choose a different creature you can see within range (you can choose yourself); it has advantage on the next attack roll, ability check, or saving throw it makes within 1 minute. A creature can be empowered by only one use of this spell at a time."},
   };
   // "Shamancraft" isn't a real separate spell: Icewind Dale: Rime of the
   // Frostmaiden's Reghed Shaman is a `_copy` of the core Druid with every
