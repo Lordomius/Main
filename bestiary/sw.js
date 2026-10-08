@@ -10,8 +10,8 @@
 // happily answers from the browser's own HTTP cache (governed by GitHub
 // Pages' Cache-Control headers) without ever making a real request, which
 // is how this quietly stopped updating.
-var CACHE_NAME = 'bestiary-shell-v2';
-var APP_SHELL = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
+var CACHE_NAME = 'bestiary-shell-v3';
+var APP_SHELL = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './fonts/Marcellus-Regular.woff2'];
 
 self.addEventListener('install', function(event){
   self.skipWaiting();
